@@ -1,0 +1,16 @@
+[
+  {
+    "apiVersion": "operator.apps.openshift.io/v1",
+    "kind": "RunOnceDurationOverride",
+    "metadata": {
+      "name": "cluster"
+    },
+    "spec": {
+      "podResourceOverride": {
+        "spec": {
+          "activeDeadlineSecondsOverride": 3600
+        }
+      }
+    }
+  }
+]
