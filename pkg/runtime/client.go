@@ -23,7 +23,7 @@ type Client struct {
 func NewClient(config *rest.Config) (clients *Client, err error) {
 	operator, buildErr := versioned.NewForConfig(config)
 	if buildErr != nil {
-		err = fmt.Errorf("failed to construct client for autoscaling.openshift.io - %s", buildErr.Error())
+		err = fmt.Errorf("failed to construct client for apps.openshift.io - %s", buildErr.Error())
 		return
 	}
 

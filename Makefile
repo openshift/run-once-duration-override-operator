@@ -113,6 +113,12 @@ deploy:
 
 	$(KUBECTL) apply -n $(OPERATOR_NAMESPACE) -f $(KUBE_MANIFESTS_DIR)
 
+# run e2e test(s)
+e2e:
+	$(KUBECTL) -n $(OPERATOR_NAMESPACE) rollout status -w deployment/clusterresourceoverride-operator
+	export GO111MODULE=on
+	$(GO) test -v -count=1 -timeout=15m ./test/e2e/... --kubeconfig=${KUBECONFIG} --namespace=$(OPERATOR_NAMESPACE)
+
 # apply OLM resources to deploy the operator.
 olm-apply:
 	$(KUBECTL) apply -n $(OPERATOR_NAMESPACE) -f $(OLM_MANIFESTS_DIR)

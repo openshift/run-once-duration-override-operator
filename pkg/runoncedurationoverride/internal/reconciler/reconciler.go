@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/apps/v1"
-	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/handlers"
 	dynamicclient "github.com/openshift/run-once-duration-override-operator/pkg/dynamic"
 	"github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
 	appsv1listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/apps/v1"
+	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/handlers"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
