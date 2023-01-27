@@ -123,9 +123,9 @@ type PodResourceOverride struct {
 // PodResourceOverrideSpec is the configuration for the RunOnceDurationOverride
 // admission controller which overrides user-provided container request/limit values.
 type PodResourceOverrideSpec struct {
-	// ActiveDeadlineSecondsOverride (if > 0) overrides activeDeadlineSecondsOverride field of pod;
+	// ActiveDeadlineSeconds (if > 0) overrides activeDeadlineSeconds field of pod;
 	// if pod's restartPolicy is set to Never or OnFailure.
-	ActiveDeadlineSecondsOverride int64 `json:"activeDeadlineSecondsOverride"`
+	ActiveDeadlineSeconds int64 `json:"activeDeadlineSeconds"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

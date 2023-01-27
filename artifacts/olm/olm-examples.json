@@ -8,7 +8,7 @@
     "spec": {
       "podResourceOverride": {
         "spec": {
-          "activeDeadlineSecondsOverride": 3600
+          "activeDeadlineSeconds": 3600
         }
       }
     }

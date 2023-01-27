@@ -18,14 +18,14 @@ import (
 
 func TestClusterResourceOverrideAdmissionWithOptIn(t *testing.T) {
 	tests := []struct {
-		name           string
-		request        *corev1.PodSpec
-		limitRangeSpec *corev1.LimitRangeSpec
-		resourceWant   map[string]corev1.ResourceRequirements
+		name         string
+		request      *corev1.PodSpec
+		resourceWant map[string]*int64
 	}{
 		{
 			name: "WithMultipleContainers",
 			request: &corev1.PodSpec{
+				ActiveDeadlineSeconds: pointer.Int64Ptr(2400),
 				Containers: []corev1.Container{
 					{
 						Name:  "db",
@@ -34,12 +34,6 @@ func TestClusterResourceOverrideAdmissionWithOptIn(t *testing.T) {
 							{
 								Name:          "db",
 								ContainerPort: 60000,
-							},
-						},
-						Resources: corev1.ResourceRequirements{
-							Limits: corev1.ResourceList{
-								corev1.ResourceMemory: resource.MustParse("1024Mi"),
-								corev1.ResourceCPU:    resource.MustParse("1000m"),
 							},
 						},
 						SecurityContext: &corev1.SecurityContext{
@@ -81,32 +75,15 @@ func TestClusterResourceOverrideAdmissionWithOptIn(t *testing.T) {
 					},
 				},
 			},
-			resourceWant: map[string]corev1.ResourceRequirements{
-				"db": {
-					Limits: corev1.ResourceList{
-						corev1.ResourceMemory: resource.MustParse("1024Mi"),
-						corev1.ResourceCPU:    resource.MustParse("2000m"),
-					},
-					Requests: corev1.ResourceList{
-						corev1.ResourceMemory: resource.MustParse("512Mi"),
-						corev1.ResourceCPU:    resource.MustParse("500m"),
-					},
-				},
-				"app": {
-					Limits: corev1.ResourceList{
-						corev1.ResourceMemory: resource.MustParse("512Mi"),
-						corev1.ResourceCPU:    resource.MustParse("1000m"),
-					},
-					Requests: corev1.ResourceList{
-						corev1.ResourceMemory: resource.MustParse("256Mi"),
-						corev1.ResourceCPU:    resource.MustParse("250m"),
-					},
-				},
+			resourceWant: map[string]*int64{
+				"db":  pointer.Int64Ptr(2400),
+				"app": pointer.Int64Ptr(2400),
 			},
 		},
 		{
 			name: "WithInitContainer",
 			request: &corev1.PodSpec{
+				ActiveDeadlineSeconds: pointer.Int64Ptr(1200),
 				InitContainers: []corev1.Container{
 					{
 						Name:  "init",
@@ -162,44 +139,16 @@ func TestClusterResourceOverrideAdmissionWithOptIn(t *testing.T) {
 					},
 				},
 			},
-			resourceWant: map[string]corev1.ResourceRequirements{
-				"init": {
-					Limits: corev1.ResourceList{
-						corev1.ResourceMemory: resource.MustParse("1024Mi"),
-						corev1.ResourceCPU:    resource.MustParse("2000m"),
-					},
-					Requests: corev1.ResourceList{
-						corev1.ResourceMemory: resource.MustParse("512Mi"),
-						corev1.ResourceCPU:    resource.MustParse("500m"),
-					},
-				},
-				"app": {
-					Limits: corev1.ResourceList{
-						corev1.ResourceMemory: resource.MustParse("512Mi"),
-						corev1.ResourceCPU:    resource.MustParse("1000m"),
-					},
-					Requests: corev1.ResourceList{
-						corev1.ResourceMemory: resource.MustParse("256Mi"),
-						corev1.ResourceCPU:    resource.MustParse("250m"),
-					},
-				},
+			resourceWant: map[string]*int64{
+				"init": pointer.Int64Ptr(1200),
+				"app":  pointer.Int64Ptr(1200),
 			},
 		},
 
 		{
 			name: "WithLimitRangeWithDefaultLimitForCPUAndMemory",
-			limitRangeSpec: &corev1.LimitRangeSpec{
-				Limits: []corev1.LimitRangeItem{
-					{
-						Type: corev1.LimitTypeContainer,
-						Default: corev1.ResourceList{
-							corev1.ResourceMemory: resource.MustParse("512Mi"),
-							corev1.ResourceCPU:    resource.MustParse("2000m"),
-						},
-					},
-				},
-			},
 			request: &corev1.PodSpec{
+				ActiveDeadlineSeconds: pointer.Int64Ptr(800),
 				Containers: []corev1.Container{
 					{
 						Name:  "app",
@@ -223,37 +172,15 @@ func TestClusterResourceOverrideAdmissionWithOptIn(t *testing.T) {
 					},
 				},
 			},
-			resourceWant: map[string]corev1.ResourceRequirements{
-				"app": {
-					Limits: corev1.ResourceList{
-						corev1.ResourceMemory: resource.MustParse("512Mi"),
-						corev1.ResourceCPU:    resource.MustParse("1000m"),
-					},
-					Requests: corev1.ResourceList{
-						corev1.ResourceMemory: resource.MustParse("256Mi"),
-						corev1.ResourceCPU:    resource.MustParse("250m"),
-					},
-				},
+			resourceWant: map[string]*int64{
+				"app": pointer.Int64Ptr(800),
 			},
 		},
 
-		// LimitRange Maximum for CPU is 1000m, the operator, as expected is going to
-		// override the CPU limit of the Pod to 2000m (since LimitCPUToMemoryPercent=200).
-		// But then it should clamp it to the namespace Limit Maximum.
 		{
 			name: "WithLimitRangeWithMaximumForCPU",
-			limitRangeSpec: &corev1.LimitRangeSpec{
-				Limits: []corev1.LimitRangeItem{
-					{
-						Type: corev1.LimitTypeContainer,
-						Max: corev1.ResourceList{
-							corev1.ResourceMemory: resource.MustParse("1024Mi"),
-							corev1.ResourceCPU:    resource.MustParse("1000m"),
-						},
-					},
-				},
-			},
 			request: &corev1.PodSpec{
+				ActiveDeadlineSeconds: pointer.Int64Ptr(1100),
 				Containers: []corev1.Container{
 					{
 						Name:  "app",
@@ -282,17 +209,8 @@ func TestClusterResourceOverrideAdmissionWithOptIn(t *testing.T) {
 					},
 				},
 			},
-			resourceWant: map[string]corev1.ResourceRequirements{
-				"app": {
-					Limits: corev1.ResourceList{
-						corev1.ResourceMemory: resource.MustParse("1024Mi"),
-						corev1.ResourceCPU:    resource.MustParse("1000m"),
-					},
-					Requests: corev1.ResourceList{
-						corev1.ResourceMemory: resource.MustParse("512Mi"),
-						corev1.ResourceCPU:    resource.MustParse("250m"),
-					},
-				},
+			resourceWant: map[string]*int64{
+				"app": pointer.Int64Ptr(1100),
 			},
 		},
 	}
@@ -304,9 +222,7 @@ func TestClusterResourceOverrideAdmissionWithOptIn(t *testing.T) {
 
 	// ensure we have the webhook up and running with the desired config
 	configuration := appsv1.PodResourceOverrideSpec{
-		LimitCPUToMemoryPercent:     200,
-		CPURequestToLimitPercent:    25,
-		MemoryRequestToLimitPercent: 50,
+		ActiveDeadlineSeconds: 200,
 	}
 	override := appsv1.PodResourceOverride{
 		Spec: configuration,
@@ -329,12 +245,6 @@ func TestClusterResourceOverrideAdmissionWithOptIn(t *testing.T) {
 				ns, disposer := helper.NewNamespace(t, client.Kubernetes, "croe2e", true)
 				defer disposer.Dispose()
 				namespace := ns.GetName()
-
-				// make sure we add limit range for the namespace.
-				if test.limitRangeSpec != nil {
-					_, disposer := helper.NewLimitRanges(t, client.Kubernetes, namespace, *test.limitRangeSpec)
-					defer disposer.Dispose()
-				}
 
 				podGot, disposer := helper.NewPod(t, client.Kubernetes, namespace, *test.request)
 				defer disposer.Dispose()

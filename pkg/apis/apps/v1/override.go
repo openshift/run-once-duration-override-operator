@@ -23,12 +23,12 @@ func (in *RunOnceDurationOverride) IsTimeToRotateCert() bool {
 }
 
 func (in *PodResourceOverrideSpec) String() string {
-	return fmt.Sprintf("ActiveDeadlineSecondsOverride=%d", in.ActiveDeadlineSecondsOverride)
+	return fmt.Sprintf("ActiveDeadlineSeconds=%d", in.ActiveDeadlineSeconds)
 }
 
 func (in *PodResourceOverrideSpec) Validate() error {
-	if in.ActiveDeadlineSecondsOverride < 0 {
-		return errors.New("invalid value for ActiveDeadlineSecondsOverride, must be a positive value")
+	if in.ActiveDeadlineSeconds < 0 {
+		return errors.New("invalid value for ActiveDeadlineSeconds, must be a positive value")
 	}
 
 	return nil

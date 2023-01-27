@@ -312,23 +312,3 @@ func MustMatchMemoryAndCPU(t *testing.T, resourceWant map[string]corev1.Resource
 		IsMatch(t, want, got)
 	}
 }
-
-func NewLimitRanges(t *testing.T, client kubernetes.Interface, namespace string, spec corev1.LimitRangeSpec) (object *corev1.LimitRange, disposer Disposer) {
-	request := corev1.LimitRange{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "cro-limits-",
-			Namespace:    namespace,
-		},
-		Spec: spec,
-	}
-
-	object, err := client.CoreV1().LimitRanges(namespace).Create(context.TODO(), &request, metav1.CreateOptions{})
-	require.NoError(t, err)
-	require.NotNil(t, object)
-
-	disposer = func() {
-		err := client.CoreV1().LimitRanges(object.Namespace).Delete(context.TODO(), object.Name, metav1.DeleteOptions{})
-		require.NoError(t, err)
-	}
-	return
-}
