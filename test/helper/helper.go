@@ -17,8 +17,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	autoscalingv1 "github.com/openshift/cluster-resource-override-admission-operator/pkg/apis/autoscaling/v1"
-	"github.com/openshift/cluster-resource-override-admission-operator/pkg/generated/clientset/versioned"
+	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/apps/v1"
+	"github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
 )
 
 var (
@@ -32,7 +32,7 @@ func (d Disposer) Dispose() {
 	d()
 }
 
-type ConditionFunc func(override *autoscalingv1.ClusterResourceOverride) bool
+type ConditionFunc func(override *appsv1.RunOnceDurationOverride) bool
 
 type Client struct {
 	Operator   versioned.Interface
@@ -41,7 +41,7 @@ type Client struct {
 
 func NewClient(t *testing.T, config *rest.Config) *Client {
 	operator, err := versioned.NewForConfig(config)
-	require.NoErrorf(t, err, "failed to construct client for autoscaling.openshift.io - %v", err)
+	require.NoErrorf(t, err, "failed to construct client for apps.openshift.io - %v", err)
 
 	kubeclient, err := kubernetes.NewForConfig(config)
 	require.NoErrorf(t, err, "failed to construct client for kubernetes - %v", err)
@@ -52,19 +52,19 @@ func NewClient(t *testing.T, config *rest.Config) *Client {
 	}
 }
 
-func EnsureAdmissionWebhook(t *testing.T, client versioned.Interface, name string, override autoscalingv1.PodResourceOverride) (current *autoscalingv1.ClusterResourceOverride, changed bool) {
+func EnsureAdmissionWebhook(t *testing.T, client versioned.Interface, name string, override appsv1.PodResourceOverride) (current *appsv1.RunOnceDurationOverride, changed bool) {
 	changed = true
-	cluster := autoscalingv1.ClusterResourceOverride{
+	cluster := appsv1.RunOnceDurationOverride{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "cluster",
 		},
-		Spec: autoscalingv1.ClusterResourceOverrideSpec{
+		Spec: appsv1.RunOnceDurationOverrideSpec{
 			PodResourceOverride: override,
 		},
 	}
 
 	var err error
-	current, err = client.AutoscalingV1().ClusterResourceOverrides().Create(context.TODO(), &cluster, metav1.CreateOptions{})
+	current, err = client.AppsV1().RunOnceDurationOverrides().Create(context.TODO(), &cluster, metav1.CreateOptions{})
 	if err == nil {
 		return
 	}
@@ -73,7 +73,7 @@ func EnsureAdmissionWebhook(t *testing.T, client versioned.Interface, name strin
 		require.FailNowf(t, "unexpected error - %s", err.Error())
 	}
 
-	current, err = client.AutoscalingV1().ClusterResourceOverrides().Get(context.TODO(), "cluster", metav1.GetOptions{})
+	current, err = client.AppsV1().RunOnceDurationOverrides().Get(context.TODO(), "cluster", metav1.GetOptions{})
 	require.NoErrorf(t, err, "failed to get - %v", err)
 	require.NotNil(t, current)
 
@@ -84,14 +84,14 @@ func EnsureAdmissionWebhook(t *testing.T, client versioned.Interface, name strin
 	}
 
 	current.Spec.PodResourceOverride = *override.DeepCopy()
-	current, err = client.AutoscalingV1().ClusterResourceOverrides().Update(context.TODO(), current, metav1.UpdateOptions{})
+	current, err = client.AppsV1().RunOnceDurationOverrides().Update(context.TODO(), current, metav1.UpdateOptions{})
 	require.NoErrorf(t, err, "failed to update - %v", err)
 	require.NotNil(t, current)
 	return
 }
 
 func RemoveAdmissionWebhook(t *testing.T, client versioned.Interface, name string) {
-	_, err := client.AutoscalingV1().ClusterResourceOverrides().Get(context.TODO(), name, metav1.GetOptions{})
+	_, err := client.AppsV1().RunOnceDurationOverrides().Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		if !k8serrors.IsAlreadyExists(err) {
 			require.FailNowf(t, "unexpected error - %s", err.Error())
@@ -100,7 +100,7 @@ func RemoveAdmissionWebhook(t *testing.T, client versioned.Interface, name strin
 		return
 	}
 
-	err = client.AutoscalingV1().ClusterResourceOverrides().Delete(context.TODO(), name, metav1.DeleteOptions{})
+	err = client.AppsV1().RunOnceDurationOverrides().Delete(context.TODO(), name, metav1.DeleteOptions{})
 	require.NoError(t, err)
 }
 
@@ -113,7 +113,7 @@ func NewNamespace(t *testing.T, client kubernetes.Interface, name string, optIn 
 
 	if optIn {
 		request.ObjectMeta.Labels = map[string]string{
-			"clusterresourceoverrides.admission.autoscaling.openshift.io/enabled": "true",
+			"runoncedurationoverrides.admission.apps.openshift.io/enabled": "true",
 		}
 	}
 
@@ -193,17 +193,17 @@ func NewPodWithResourceRequirement(t *testing.T, client kubernetes.Interface, na
 	return
 }
 
-func GetClusterResourceOverride(t *testing.T, client versioned.Interface, name string) *autoscalingv1.ClusterResourceOverride {
-	current, err := client.AutoscalingV1().ClusterResourceOverrides().Get(context.TODO(), name, metav1.GetOptions{})
+func GetClusterResourceOverride(t *testing.T, client versioned.Interface, name string) *appsv1.RunOnceDurationOverride {
+	current, err := client.AppsV1().RunOnceDurationOverrides().Get(context.TODO(), name, metav1.GetOptions{})
 	require.NoError(t, err)
 	require.NotNil(t, current)
 
 	return current
 }
 
-func Wait(t *testing.T, client versioned.Interface, name string, f ConditionFunc) (override *autoscalingv1.ClusterResourceOverride) {
+func Wait(t *testing.T, client versioned.Interface, name string, f ConditionFunc) (override *appsv1.RunOnceDurationOverride) {
 	err := wait.Poll(WaitInterval, WaitTimeout, func() (done bool, err error) {
-		override, err = client.AutoscalingV1().ClusterResourceOverrides().Get(context.TODO(), name, metav1.GetOptions{})
+		override, err = client.AppsV1().RunOnceDurationOverrides().Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {
 			return
 		}
@@ -221,8 +221,8 @@ func Wait(t *testing.T, client versioned.Interface, name string, f ConditionFunc
 	return
 }
 
-func GetAvailableConditionFunc(original *autoscalingv1.ClusterResourceOverride, expectNewResourceVersion bool) ConditionFunc {
-	return func(current *autoscalingv1.ClusterResourceOverride) bool {
+func GetAvailableConditionFunc(original *appsv1.RunOnceDurationOverride, expectNewResourceVersion bool) ConditionFunc {
+	return func(current *appsv1.RunOnceDurationOverride) bool {
 		switch {
 		// we expect current to have a different resource version than original
 		case expectNewResourceVersion:
@@ -233,7 +233,7 @@ func GetAvailableConditionFunc(original *autoscalingv1.ClusterResourceOverride, 
 	}
 }
 
-func GetCondition(override *autoscalingv1.ClusterResourceOverride, condType autoscalingv1.ClusterResourceOverrideConditionType) *autoscalingv1.ClusterResourceOverrideCondition {
+func GetCondition(override *appsv1.RunOnceDurationOverride, condType appsv1.RunOnceDurationOverrideConditionType) *appsv1.RunOnceDurationOverrideCondition {
 	for i := range override.Status.Conditions {
 		condition := &override.Status.Conditions[i]
 		if condition.Type == condType {
@@ -244,9 +244,9 @@ func GetCondition(override *autoscalingv1.ClusterResourceOverride, condType auto
 	return nil
 }
 
-func IsAvailable(override *autoscalingv1.ClusterResourceOverride) bool {
-	available := GetCondition(override, autoscalingv1.Available)
-	readinessFailure := GetCondition(override, autoscalingv1.InstallReadinessFailure)
+func IsAvailable(override *appsv1.RunOnceDurationOverride) bool {
+	available := GetCondition(override, appsv1.Available)
+	readinessFailure := GetCondition(override, appsv1.InstallReadinessFailure)
 	if available == nil || readinessFailure == nil {
 		return false
 	}
@@ -311,24 +311,4 @@ func MustMatchMemoryAndCPU(t *testing.T, resourceWant map[string]corev1.Resource
 		got := GetContainer(t, name, specGot)
 		IsMatch(t, want, got)
 	}
-}
-
-func NewLimitRanges(t *testing.T, client kubernetes.Interface, namespace string, spec corev1.LimitRangeSpec) (object *corev1.LimitRange, disposer Disposer) {
-	request := corev1.LimitRange{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "cro-limits-",
-			Namespace:    namespace,
-		},
-		Spec: spec,
-	}
-
-	object, err := client.CoreV1().LimitRanges(namespace).Create(context.TODO(), &request, metav1.CreateOptions{})
-	require.NoError(t, err)
-	require.NotNil(t, object)
-
-	disposer = func() {
-		err := client.CoreV1().LimitRanges(object.Namespace).Delete(context.TODO(), object.Name, metav1.DeleteOptions{})
-		require.NoError(t, err)
-	}
-	return
 }

@@ -6,8 +6,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	dynamicclient "github.com/openshift/cluster-resource-override-admission-operator/pkg/dynamic"
-	"github.com/openshift/cluster-resource-override-admission-operator/pkg/generated/clientset/versioned"
+	dynamicclient "github.com/openshift/run-once-duration-override-operator/pkg/dynamic"
+	"github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
 	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apiregistrationclientset "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset"
 )
@@ -23,7 +23,7 @@ type Client struct {
 func NewClient(config *rest.Config) (clients *Client, err error) {
 	operator, buildErr := versioned.NewForConfig(config)
 	if buildErr != nil {
-		err = fmt.Errorf("failed to construct client for autoscaling.openshift.io - %s", buildErr.Error())
+		err = fmt.Errorf("failed to construct client for apps.openshift.io - %s", buildErr.Error())
 		return
 	}
 

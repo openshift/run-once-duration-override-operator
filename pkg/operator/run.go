@@ -2,27 +2,27 @@ package operator
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-resource-override-admission-operator/pkg/secondarywatch"
+	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 	"k8s.io/klog"
 	"net/http"
 	"time"
 
-	"github.com/openshift/cluster-resource-override-admission-operator/pkg/clusterresourceoverride"
-	"github.com/openshift/cluster-resource-override-admission-operator/pkg/controller"
-	"github.com/openshift/cluster-resource-override-admission-operator/pkg/runtime"
+	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride"
+	"github.com/openshift/run-once-duration-override-operator/pkg/controller"
+	"github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 )
 
 const (
-	// DefaultCR is the name of the global cluster-scoped ClusterResourceOverride object that
+	// DefaultCR is the name of the global cluster-scoped RunOnceDurationOverride object that
 	// the operator will be watching for.
-	// All other ClusterResourceOverride object(s) are ignored since the operand is
+	// All other RunOnceDurationOverride object(s) are ignored since the operand is
 	// basically a cluster singleton.
 	DefaultCR = "cluster"
 
 	// Default worker count is 1.
 	DefaultWorkerCount = 1
 
-	// Default ResyncPeriod for primary (ClusterResourceOverride objects)
+	// Default ResyncPeriod for primary (RunOnceDurationOverride objects)
 	DefaultResyncPeriodPrimaryResource = 1 * time.Hour
 
 	// Default ResyncPeriod for all secondary resources that the operator manages.
@@ -61,7 +61,7 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 	})
 
 	// start the controllers
-	c, enqueuer, err := clusterresourceoverride.New(&clusterresourceoverride.Options{
+	c, enqueuer, err := runoncedurationoverride.New(&runoncedurationoverride.Options{
 		ResyncPeriod:   DefaultResyncPeriodPrimaryResource,
 		Workers:        DefaultWorkerCount,
 		RuntimeContext: context,

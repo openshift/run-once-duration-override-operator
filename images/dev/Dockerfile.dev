@@ -1,4 +1,4 @@
 FROM centos:7
 
-ADD bin/cluster-resource-override-admission-operator /usr/bin
+ADD bin/run-once-duration-override-operator /usr/bin
 

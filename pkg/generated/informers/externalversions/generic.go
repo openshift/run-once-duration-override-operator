@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Red Hat, Inc.
+Copyright 2023 Red Hat, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ package externalversions
 import (
 	"fmt"
 
-	v1 "github.com/openshift/cluster-resource-override-admission-operator/pkg/apis/autoscaling/v1"
+	v1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/apps/v1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -52,9 +52,9 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=autoscaling.openshift.io, Version=v1
-	case v1.SchemeGroupVersion.WithResource("clusterresourceoverrides"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Autoscaling().V1().ClusterResourceOverrides().Informer()}, nil
+	// Group=apps.openshift.io, Version=v1
+	case v1.SchemeGroupVersion.WithResource("runoncedurationoverrides"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Apps().V1().RunOnceDurationOverrides().Informer()}, nil
 
 	}
 

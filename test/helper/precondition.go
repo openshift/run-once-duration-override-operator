@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	webhookName = "clusterresourceoverrides.admission.autoscaling.openshift.io"
+	webhookName = "runoncedurationoverrides.admission.apps.openshift.io"
 )
 
 type PreCondition struct {

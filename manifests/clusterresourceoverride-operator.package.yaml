@@ -1,4 +1,0 @@
-packageName: clusterresourceoverride
-channels:
-  - name: stable
-    currentCSV: clusterresourceoverride-operator.v4.13.0

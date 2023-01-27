@@ -11,8 +11,8 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/openshift/cluster-resource-override-admission-operator/pkg/dynamic"
-	"github.com/openshift/cluster-resource-override-admission-operator/test/helper"
+	"github.com/openshift/run-once-duration-override-operator/pkg/dynamic"
+	"github.com/openshift/run-once-duration-override-operator/test/helper"
 )
 
 func TestDynamicClient(t *testing.T) {

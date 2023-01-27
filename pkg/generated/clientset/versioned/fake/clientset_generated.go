@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Red Hat, Inc.
+Copyright 2023 Red Hat, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/openshift/cluster-resource-override-admission-operator/pkg/generated/clientset/versioned"
-	autoscalingv1 "github.com/openshift/cluster-resource-override-admission-operator/pkg/generated/clientset/versioned/typed/autoscaling/v1"
-	fakeautoscalingv1 "github.com/openshift/cluster-resource-override-admission-operator/pkg/generated/clientset/versioned/typed/autoscaling/v1/fake"
+	clientset "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
+	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned/typed/apps/v1"
+	fakeappsv1 "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned/typed/apps/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -76,7 +76,7 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 
 var _ clientset.Interface = &Clientset{}
 
-// AutoscalingV1 retrieves the AutoscalingV1Client
-func (c *Clientset) AutoscalingV1() autoscalingv1.AutoscalingV1Interface {
-	return &fakeautoscalingv1.FakeAutoscalingV1{Fake: &c.Fake}
+// AppsV1 retrieves the AppsV1Client
+func (c *Clientset) AppsV1() appsv1.AppsV1Interface {
+	return &fakeappsv1.FakeAppsV1{Fake: &c.Fake}
 }

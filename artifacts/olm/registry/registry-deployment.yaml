@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: clusterresourceoverride-operator-registry
+  name: runoncedurationoverride-operator-registry
 spec:
   replicas: 1
   selector:
     matchLabels:
-      registry.operator.clusterresourceoverride: "true"
+      registry.operator.runoncedurationoverride: "true"
   template:
     metadata:
       labels:
-        registry.operator.clusterresourceoverride: "true"
-      name: clusterresourceoverride-operator-registry
+        registry.operator.runoncedurationoverride: "true"
+      name: runoncedurationoverride-operator-registry
     spec:
       initContainers:
       - name: mutate-csv-and-generate-sqlite-db
-        image: CLUSTERRESOURCEOVERRIDE_OPERATOR_REGISTRY_IMAGE
+        image: RUNONCEDURATIONOVERRIDE_OPERATOR_REGISTRY_IMAGE
         imagePullPolicy: Always
         command:
         - sh
@@ -23,13 +23,13 @@ spec:
         - /scripts/registry-init.sh
         envFrom:
         - configMapRef:
-            name: clusterresourceoverride-operator-registry-env
+            name: runoncedurationoverride-operator-registry-env
         volumeMounts:
         - name: workdir
           mountPath: /bundle
       containers:
-      - name: clusterresourceoverride-operator-registry
-        image: CLUSTERRESOURCEOVERRIDE_OPERATOR_REGISTRY_IMAGE
+      - name: runoncedurationoverride-operator-registry
+        image: RUNONCEDURATIONOVERRIDE_OPERATOR_REGISTRY_IMAGE
         imagePullPolicy: Always
         command:
         - /usr/bin/registry-server

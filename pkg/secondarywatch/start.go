@@ -7,7 +7,7 @@ import (
 
 	"time"
 
-	"github.com/openshift/cluster-resource-override-admission-operator/pkg/runtime"
+	"github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 	"k8s.io/client-go/informers"
 )
 

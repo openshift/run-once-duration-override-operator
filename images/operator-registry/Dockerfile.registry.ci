@@ -29,7 +29,7 @@ RUN chmod ugo+rwx -R /manifests
 
 WORKDIR /bundle
 
-ENV CSV_FILE_PATH=/manifests/${VERSION}/clusterresourceoverride-operator.v${VERSION}.0.clusterserviceversion.yaml
+ENV CSV_FILE_PATH=/manifests/${VERSION}/runoncedurationoverride-operator.v${VERSION}.0.clusterserviceversion.yaml
 ENV VERSION=${VERSION}
 
 EXPOSE 50051

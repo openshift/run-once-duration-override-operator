@@ -1,32 +1,32 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: clusterresourceoverride-operator
-  name: clusterresourceoverride-operator
+  namespace: runoncedurationoverride-operator
+  name: runoncedurationoverride-operator
   labels:
-    clusterresourceoverride.operator: "true"
+    runoncedurationoverride.operator: "true"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      clusterresourceoverride.operator: "true"
+      runoncedurationoverride.operator: "true"
   template:
     metadata:
-      name: clusterresourceoverride
+      name: runoncedurationoverride
       labels:
-        clusterresourceoverride.operator: "true"
+        runoncedurationoverride.operator: "true"
     spec:
-      serviceAccountName: clusterresourceoverride-operator
+      serviceAccountName: runoncedurationoverride-operator
       securityContext:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
       containers:
-        - name: clusterresourceoverride-operator
-          image: CLUSTERRESOURCEOVERRIDE_OPERATOR_IMAGE
+        - name: runoncedurationoverride-operator
+          image: RUNONCEDURATIONOVERRIDE_OPERATOR_IMAGE
           imagePullPolicy: Always
           command:
-            - /usr/bin/cluster-resource-override-admission-operator
+            - /usr/bin/run-once-duration-override-operator
           args:
             - "start"
             - "--namespace=$(OPERAND_NAMESPACE)"
@@ -41,7 +41,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: OPERAND_IMAGE
-              value: CLUSTERRESOURCEOVERRIDE_OPERAND_IMAGE
+              value: RUNONCEDURATIONOVERRIDE_OPERAND_IMAGE
             - name: OPERAND_VERSION
               value: 1.0.0
           ports:

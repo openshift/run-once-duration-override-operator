@@ -4,7 +4,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	apiregistrationv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 
-	"github.com/openshift/cluster-resource-override-admission-operator/pkg/dynamic"
+	"github.com/openshift/run-once-duration-override-operator/pkg/dynamic"
 )
 
 func NewAPIServiceEnsurer(client dynamic.Ensurer) *APIServiceEnsurer {

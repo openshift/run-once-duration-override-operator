@@ -63,7 +63,7 @@ func (d *daemonset) New() *appsv1.DaemonSet {
 							Image:           values.OperandImage,
 							ImagePullPolicy: corev1.PullAlways,
 							Command: []string{
-								"/usr/bin/cluster-resource-override-admission",
+								"/usr/bin/run-once-duration-override",
 							},
 							Args: []string{
 								"--secure-port=9400",
@@ -75,7 +75,7 @@ func (d *daemonset) New() *appsv1.DaemonSet {
 							Env: []corev1.EnvVar{
 								{
 									Name:  "CONFIGURATION_PATH",
-									Value: "/etc/clusterresourceoverride/config/override.yaml",
+									Value: "/etc/runoncedurationoverride/config/override.yaml",
 								},
 							},
 							Ports: []corev1.ContainerPort{
@@ -102,7 +102,7 @@ func (d *daemonset) New() *appsv1.DaemonSet {
 								},
 								{
 									Name:      "configuration",
-									MountPath: "/etc/clusterresourceoverride/config/override.yaml",
+									MountPath: "/etc/runoncedurationoverride/config/override.yaml",
 									SubPath:   values.ConfigurationKey,
 								},
 							},

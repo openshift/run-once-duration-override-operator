@@ -4,7 +4,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog"
 
-	"github.com/openshift/cluster-resource-override-admission-operator/pkg/runtime"
+	"github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 )
 
 func newResourceEventHandler(enqueuer runtime.Enqueuer) *resourceEventHandler {

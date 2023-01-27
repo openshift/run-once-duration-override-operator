@@ -1,16 +1,14 @@
 [
   {
-    "apiVersion": "operator.autoscaling.openshift.io/v1",
-    "kind": "ClusterResourceOverride",
+    "apiVersion": "operator.apps.openshift.io/v1",
+    "kind": "RunOnceDurationOverride",
     "metadata": {
       "name": "cluster"
     },
     "spec": {
       "podResourceOverride": {
         "spec": {
-          "memoryRequestToLimitPercent": 50,
-          "cpuRequestToLimitPercent": 25,
-          "limitCPUToMemoryPercent": 200
+          "activeDeadlineSeconds": 3600
         }
       }
     }

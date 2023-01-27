@@ -22,9 +22,9 @@ const (
 	ComponentPlaceholder = "${component}"
 
 	// The matching component names in CI for the operator, operand and the operator registry image.
-	OperatorName = "cluster-resource-override-admission-operator"
-	OperandName  = "cluster-resource-override-admission"
-	RegistryName = "cluster-resource-override-admission-operator-registry"
+	OperatorName = "run-once-duration-override-operator"
+	OperandName  = "run-once-duration-override"
+	RegistryName = "run-once-duration-override-operator-registry"
 )
 
 // all keys in data section of the ConfigMap

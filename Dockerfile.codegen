@@ -1,6 +1,6 @@
-FROM golang:1.16
+FROM golang:1.19
 
-WORKDIR /go/src/github.com/openshift/cluster-resource-override-admission-operator
+WORKDIR /go/src/github.com/openshift/run-once-duration-override-operator
 
 COPY Makefile Makefile
 

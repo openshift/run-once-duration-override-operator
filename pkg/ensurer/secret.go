@@ -1,7 +1,7 @@
 package ensurer
 
 import (
-	"github.com/openshift/cluster-resource-override-admission-operator/pkg/dynamic"
+	"github.com/openshift/run-once-duration-override-operator/pkg/dynamic"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )

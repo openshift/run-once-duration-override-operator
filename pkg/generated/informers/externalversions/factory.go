@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Red Hat, Inc.
+Copyright 2023 Red Hat, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,9 +23,9 @@ import (
 	sync "sync"
 	time "time"
 
-	versioned "github.com/openshift/cluster-resource-override-admission-operator/pkg/generated/clientset/versioned"
-	autoscaling "github.com/openshift/cluster-resource-override-admission-operator/pkg/generated/informers/externalversions/autoscaling"
-	internalinterfaces "github.com/openshift/cluster-resource-override-admission-operator/pkg/generated/informers/externalversions/internalinterfaces"
+	versioned "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
+	apps "github.com/openshift/run-once-duration-override-operator/pkg/generated/informers/externalversions/apps"
+	internalinterfaces "github.com/openshift/run-once-duration-override-operator/pkg/generated/informers/externalversions/internalinterfaces"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -172,9 +172,9 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
-	Autoscaling() autoscaling.Interface
+	Apps() apps.Interface
 }
 
-func (f *sharedInformerFactory) Autoscaling() autoscaling.Interface {
-	return autoscaling.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) Apps() apps.Interface {
+	return apps.New(f, f.namespace, f.tweakListOptions)
 }

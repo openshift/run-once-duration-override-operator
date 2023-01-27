@@ -9,11 +9,11 @@ import (
 	"k8s.io/klog"
 	"os"
 
-	"github.com/openshift/cluster-resource-override-admission-operator/pkg/operator"
+	"github.com/openshift/run-once-duration-override-operator/pkg/operator"
 )
 
 const (
-	OperatorName          = "clusterresourceoverride"
+	OperatorName          = "runoncedurationoverride"
 	OperandImageEnvName   = "OPERAND_IMAGE"
 	OperandVersionEnvName = "OPERAND_VERSION"
 )

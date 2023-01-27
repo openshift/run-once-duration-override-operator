@@ -1,12 +1,6 @@
 approvers:
-- deads2k
-- sanchezl
-- tkashem
-- sjenning
-- rphillips
-- joelsmith
+- ardaguclu
+- ingvagabund
 reviewers:
-- sanchezl
-- tkashem
-- awgreene
-component: "Node"
+- ardaguclu
+- ingvagabund

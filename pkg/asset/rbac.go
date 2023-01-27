@@ -3,7 +3,7 @@ package asset
 import (
 	"fmt"
 
-	operatorruntime "github.com/openshift/cluster-resource-override-admission-operator/pkg/runtime"
+	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -96,7 +96,7 @@ func (s *rbac) New() []*RBACItem {
 				Rules: []rbacv1.PolicyRule{
 					{
 						APIGroups: []string{
-							"autoscaling.openshift.io",
+							"apps.openshift.io",
 						},
 						Resources: []string{
 							s.values.Name,

@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: clusterresourceoverride-operator
+  name: runoncedurationoverride-operator
 rules:
   # to have the power to create 'RoleBinding' that refs extension-apiserver-authentication-reader
   # in kube-system namespace.
@@ -40,11 +40,11 @@ rules:
 
   # to have the power to reconcile request(s)
   - apiGroups:
-    - operator.autoscaling.openshift.io
+    - operator.apps.openshift.io
     resources:
-    - clusterresourceoverrides
-    - clusterresourceoverrides/status
-    - clusterresourceoverrides/finalizers
+    - runoncedurationoverride
+    - runoncedurationoverride/status
+    - runoncedurationoverride/finalizers
     verbs:
     - update
     - get
@@ -90,9 +90,9 @@ rules:
 
   # to grant the operand power to create admission reviews
   - apiGroups:
-    - autoscaling.openshift.io
+    - apps.openshift.io
     resources:
-    - clusterresourceoverride
+    - runoncedurationoverride
     verbs:
     - create
 
@@ -144,9 +144,9 @@ rules:
 
   # to grant power to the operand to allow anonymous access to the admission server
   - apiGroups:
-    - admission.autoscaling.openshift.io
+    - admission.apps.openshift.io
     resources:
-    - clusterresourceoverrides
+    - runoncedurationoverride
     verbs:
     - create
     - get
@@ -154,8 +154,8 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: clusterresourceoverride-operator
-  namespace: clusterresourceoverride-operator
+  name: runoncedurationoverride-operator
+  namespace: runoncedurationoverride-operator
 rules:
   # to have the power to ensure RBAC for the operand
   - apiGroups:
@@ -214,26 +214,26 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: clusterresourceoverride-operator
+  name: runoncedurationoverride-operator
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: clusterresourceoverride-operator
+  name: runoncedurationoverride-operator
 subjects:
   - kind: ServiceAccount
-    name: clusterresourceoverride-operator
-    namespace: clusterresourceoverride-operator
+    name: runoncedurationoverride-operator
+    namespace: runoncedurationoverride-operator
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: clusterresourceoverride-operator
-  namespace: clusterresourceoverride-operator
+  name: runoncedurationoverride-operator
+  namespace: runoncedurationoverride-operator
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: clusterresourceoverride-operator
+  name: runoncedurationoverride-operator
 subjects:
   - kind: ServiceAccount
-    name: clusterresourceoverride-operator
-    namespace: clusterresourceoverride-operator
+    name: runoncedurationoverride-operator
+    namespace: runoncedurationoverride-operator

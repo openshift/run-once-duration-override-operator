@@ -68,7 +68,7 @@ func (d *deployment) New() *appsv1.Deployment {
 							Env: []corev1.EnvVar{
 								{
 									Name:  "CONFIGURATION_PATH",
-									Value: "/etc/clusterresourceoverride/config/override.yaml",
+									Value: "/etc/runoncedurationoverride/config/override.yaml",
 								},
 							},
 							Ports: []corev1.ContainerPort{
@@ -93,7 +93,7 @@ func (d *deployment) New() *appsv1.Deployment {
 								},
 								{
 									Name:      "configuration",
-									MountPath: "/etc/clusterresourceoverride/config/override.yaml",
+									MountPath: "/etc/runoncedurationoverride/config/override.yaml",
 									SubPath:   values.ConfigurationKey,
 								},
 							},

@@ -6,9 +6,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	listersappsv1 "k8s.io/client-go/listers/apps/v1"
 
-	"github.com/openshift/cluster-resource-override-admission-operator/pkg/asset"
-	"github.com/openshift/cluster-resource-override-admission-operator/pkg/ensurer"
-	operatorruntime "github.com/openshift/cluster-resource-override-admission-operator/pkg/runtime"
+	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
+	"github.com/openshift/run-once-duration-override-operator/pkg/ensurer"
+	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 )
 
 func NewDaemonSetInstall(lister listersappsv1.DaemonSetLister, oc operatorruntime.OperandContext, asset *asset.Asset, deployment *ensurer.DaemonSetEnsurer) Interface {

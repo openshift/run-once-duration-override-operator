@@ -3,8 +3,8 @@ package asset
 import (
 	"fmt"
 
-	autoscalingv1 "github.com/openshift/cluster-resource-override-admission-operator/pkg/apis/autoscaling/v1"
-	"github.com/openshift/cluster-resource-override-admission-operator/pkg/runtime"
+	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/apps/v1"
+	"github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 )
 
 func New(context runtime.OperandContext) *Asset {
@@ -14,17 +14,17 @@ func New(context runtime.OperandContext) *Asset {
 		ServiceAccountName:             context.WebhookName(),
 		OperandImage:                   context.OperandImage(),
 		OperandVersion:                 context.OperandVersion(),
-		AdmissionAPIGroup:              "admission.autoscaling.openshift.io",
+		AdmissionAPIGroup:              "admission.apps.openshift.io",
 		AdmissionAPIVersion:            "v1",
-		AdmissionAPIResource:           "clusterresourceoverrides",
-		OwnerLabelKey:                  "operator.autoscaling.openshift.io/clusterresourceoverride",
+		AdmissionAPIResource:           "runoncedurationoverrides",
+		OwnerLabelKey:                  "operator.apps.openshift.io/runoncedurationoverride",
 		OwnerLabelValue:                "true",
-		SelectorLabelKey:               "clusterresourceoverride",
+		SelectorLabelKey:               "runoncedurationoverride",
 		SelectorLabelValue:             "true",
 		ConfigurationKey:               "configuration.yaml",
-		ConfigurationHashAnnotationKey: fmt.Sprintf("%s.%s/configuration.hash", context.WebhookName(), autoscalingv1.GroupName),
-		ServingCertHashAnnotationKey:   fmt.Sprintf("%s.%s/servingcert.hash", context.WebhookName(), autoscalingv1.GroupName),
-		OwnerAnnotationKey:             fmt.Sprintf("%s.%s/owner", context.WebhookName(), autoscalingv1.GroupName),
+		ConfigurationHashAnnotationKey: fmt.Sprintf("%s.%s/configuration.hash", context.WebhookName(), appsv1.GroupName),
+		ServingCertHashAnnotationKey:   fmt.Sprintf("%s.%s/servingcert.hash", context.WebhookName(), appsv1.GroupName),
+		OwnerAnnotationKey:             fmt.Sprintf("%s.%s/owner", context.WebhookName(), appsv1.GroupName),
 	}
 
 	return &Asset{

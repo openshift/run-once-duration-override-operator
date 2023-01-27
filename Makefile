@@ -15,15 +15,15 @@ GO_TEST_PACKAGES :=./pkg/... ./cmd/...
 KUBECTL = kubectl
 VERSION := 4.13
 
-OPERATOR_NAMESPACE 			:= clusterresourceoverride-operator
-OPERATOR_DEPLOYMENT_NAME 	:= clusterresourceoverride-operator
+OPERATOR_NAMESPACE 			:= runoncedurationoverride-operator
+OPERATOR_DEPLOYMENT_NAME 	:= runoncedurationoverride-operator
 
-export OLD_OPERATOR_IMAGE_URL_IN_CSV 	= quay.io/openshift/clusterresourceoverride-rhel8-operator:$(VERSION)
-export OLD_OPERAND_IMAGE_URL_IN_CSV 	= quay.io/openshift/clusterresourceoverride-rhel8:$(VERSION)
-export CSV_FILE_PATH_IN_REGISTRY_IMAGE 	= /manifests/stable/clusterresourceoverride-operator.clusterserviceversion.yaml
+export OLD_OPERATOR_IMAGE_URL_IN_CSV 	= quay.io/openshift/runoncedurationoverride-rhel8-operator:$(VERSION)
+export OLD_OPERAND_IMAGE_URL_IN_CSV 	= quay.io/openshift/runoncedurationoverride-rhel8:$(VERSION)
+export CSV_FILE_PATH_IN_REGISTRY_IMAGE 	= /manifests/stable/runoncedurationoverride-operator.clusterserviceversion.yaml
 
-LOCAL_OPERATOR_IMAGE	?= quay.io/redhat/clusterresourceoverride-operator:latest
-LOCAL_OPERAND_IMAGE 	?= quay.io/redhat/clusterresourceoverride:latest
+LOCAL_OPERATOR_IMAGE	?= quay.io/redhat/runoncedurationoverride-operator:latest
+LOCAL_OPERAND_IMAGE 	?= quay.io/redhat/runoncedurationoverride:latest
 export LOCAL_OPERATOR_IMAGE
 export LOCAL_OPERAND_IMAGE
 export LOCAL_OPERATOR_REGISTRY_IMAGE
@@ -36,7 +36,7 @@ include $(addprefix ./vendor/github.com/openshift/library-go/alpha-build-machine
 
 # build image for ci
 CI_IMAGE_REGISTRY ?=registry.ci.openshift.org
-$(call build-image,clusterresourceoverride-operator,$(CI_IMAGE_REGISTRY)/autoscaling/clusterresourceoverride-operator,./images/ci/Dockerfile,.)
+$(call build-image,runoncedurationoverride-operator,$(CI_IMAGE_REGISTRY)/apps/runoncedurationoverride-operator,./images/ci/Dockerfile,.)
 
 REGISTRY_SETUP_BINARY := bin/registry-setup
 
@@ -80,21 +80,21 @@ operator-registry-deploy-local: operator-registry-generate operator-registry-ima
 operator-registry-deploy-ci: operator-registry-generate operator-registry-deploy
 
 # TODO: Use alpha-build-machinery for codegen
-PKG=github.com/openshift/cluster-resource-override-admission-operator
+PKG=github.com/openshift/run-once-duration-override-operator
 CODEGEN_INTERNAL:=./vendor/k8s.io/code-generator/generate-internal-groups.sh
 
 codegen:
 	docker build -t cro:codegen -f Dockerfile.codegen .
 	docker run --name cro-codegen cro:codegen /bin/true
-	docker cp cro-codegen:/go/src/github.com/openshift/cluster-resource-override-admission-operator/pkg/generated/. ./pkg/generated
-	docker cp cro-codegen:/go/src/github.com/openshift/cluster-resource-override-admission-operator/pkg/apis/. ./pkg/apis
+	docker cp cro-codegen:/go/src/github.com/openshift/run-once-duration-override-operator/pkg/generated/. ./pkg/generated
+	docker cp cro-codegen:/go/src/github.com/openshift/run-once-duration-override-operator/pkg/apis/. ./pkg/apis
 	docker rm cro-codegen
 
 codegen-internal: export GO111MODULE := off
 codegen-internal:
 	mkdir -p vendor/k8s.io/code-generator/hack
 	cp boilerplate.go.txt vendor/k8s.io/code-generator/hack/boilerplate.go.txt
-	$(CODEGEN_INTERNAL) deepcopy,conversion,client,lister,informer $(PKG)/pkg/generated $(PKG)/pkg/apis $(PKG)/pkg/apis "autoscaling:v1"
+	$(CODEGEN_INTERNAL) deepcopy,conversion,client,lister,informer $(PKG)/pkg/generated $(PKG)/pkg/apis $(PKG)/pkg/apis "apps:v1"
 
 # deploy the operator using kube manifests (no OLM)
 deploy: KUBE_MANIFESTS_SOURCE := "$(ARTIFACTS)/deploy"
@@ -105,7 +105,7 @@ deploy:
 	rm -rf $(KUBE_MANIFESTS_DIR)
 	mkdir -p $(KUBE_MANIFESTS_DIR)
 	cp -r $(KUBE_MANIFESTS_SOURCE)/* $(KUBE_MANIFESTS_DIR)/
-	cp manifests/stable/clusterresourceoverride.crd.yaml $(KUBE_MANIFESTS_DIR)/
+	cp manifests/stable/runoncedurationoverride.crd.yaml $(KUBE_MANIFESTS_DIR)/
 	cp $(ARTIFACTS)/registry-env.yaml $(KUBE_MANIFESTS_DIR)/
 
 	$(REGISTRY_SETUP_BINARY) --mode=$(DEPLOY_MODE) --olm=false --configmap=$(CONFIGMAP_ENV_FILE)
@@ -179,7 +179,7 @@ operator-registry-image-ci:
 # build and push the OLM manifests for this operator into an operator-registry image.
 # this builds an image with the generated database, (unlike image used for ci)
 operator-registry-image: MANIFESTS_DIR := "$(OUTPUT_DIR)/manifests"
-operator-registry-image: CSV_FILE := "$(MANIFESTS_DIR)/stable/clusterresourceoverride-operator.clusterserviceversion.yaml"
+operator-registry-image: CSV_FILE := "$(MANIFESTS_DIR)/stable/runoncedurationoverride-operator.clusterserviceversion.yaml"
 operator-registry-image:
 	rm -rf $(MANIFESTS_DIR)
 	mkdir -p $(MANIFESTS_DIR)

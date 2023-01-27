@@ -15,19 +15,19 @@ func NewOperandContext(name, namespace, resource, image, version string) Operand
 }
 
 type OperandContext interface {
-	// Name is the name of the ClusterResourceOverride admission webhook server.
+	// Name is the name of the RunOnceDurationOverride admission webhook server.
 	// This name will be used to create kube resources.
 	// // More info: http://kubernetes.io/docs/user-guide/identifiers#names.
 	WebhookName() string
 
-	// Namespace is the namespace where the ClusterResourceOverride admission
+	// Namespace is the namespace where the RunOnceDurationOverride admission
 	// webhook server is installed.
 	WebhookNamespace() string
 
-	// OperandImage points to the operand (ClusterResourceOverride admission webhook) image.
+	// OperandImage points to the operand (RunOnceDurationOverride admission webhook) image.
 	OperandImage() string
 
-	// OperandVersion is the version of the operand (ClusterResourceOverride admission webhook).
+	// OperandVersion is the version of the operand (RunOnceDurationOverride admission webhook).
 	OperandVersion() string
 
 	// ResourceName is the name of the CustomResource that will manage this operand.
