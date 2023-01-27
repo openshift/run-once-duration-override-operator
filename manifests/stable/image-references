@@ -1,0 +1,13 @@
+---
+kind: ImageStream
+apiVersion: image.openshift.io/v1
+spec:
+  tags:
+  - name: clusterresourceoverride-rhel8-operator
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/clusterresourceoverride-rhel8-operator:4.13
+  - name: clusterresourceoverride-rhel8
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/clusterresourceoverride-rhel8:4.13
