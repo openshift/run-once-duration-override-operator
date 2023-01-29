@@ -115,7 +115,7 @@ deploy:
 
 # run e2e test(s)
 e2e:
-	$(KUBECTL) -n $(OPERATOR_NAMESPACE) rollout status -w deployment/clusterresourceoverride-operator
+	$(KUBECTL) -n $(OPERATOR_NAMESPACE) rollout status -w deployment/runoncedurationoverride-operator
 	export GO111MODULE=on
 	$(GO) test -v -count=1 -timeout=15m ./test/e2e/... --kubeconfig=${KUBECONFIG} --namespace=$(OPERATOR_NAMESPACE)
 

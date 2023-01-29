@@ -16,11 +16,11 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/test/helper"
 )
 
-func TestClusterResourceOverrideAdmissionWithOptIn(t *testing.T) {
+func TestRunOnceDurationWithOptIn(t *testing.T) {
 	tests := []struct {
 		name         string
 		request      *corev1.PodSpec
-		resourceWant map[string]*int64
+		resourceWant *int64
 	}{
 		{
 			name: "WithMultipleContainers",
@@ -75,10 +75,7 @@ func TestClusterResourceOverrideAdmissionWithOptIn(t *testing.T) {
 					},
 				},
 			},
-			resourceWant: map[string]*int64{
-				"db":  pointer.Int64Ptr(2400),
-				"app": pointer.Int64Ptr(2400),
-			},
+			resourceWant: pointer.Int64Ptr(2400),
 		},
 		{
 			name: "WithInitContainer",
@@ -139,16 +136,13 @@ func TestClusterResourceOverrideAdmissionWithOptIn(t *testing.T) {
 					},
 				},
 			},
-			resourceWant: map[string]*int64{
-				"init": pointer.Int64Ptr(1200),
-				"app":  pointer.Int64Ptr(1200),
-			},
+			resourceWant: pointer.Int64Ptr(1200),
 		},
-
 		{
 			name: "WithLimitRangeWithDefaultLimitForCPUAndMemory",
 			request: &corev1.PodSpec{
 				ActiveDeadlineSeconds: pointer.Int64Ptr(800),
+				RestartPolicy:         corev1.RestartPolicyNever,
 				Containers: []corev1.Container{
 					{
 						Name:  "app",
@@ -172,11 +166,68 @@ func TestClusterResourceOverrideAdmissionWithOptIn(t *testing.T) {
 					},
 				},
 			},
-			resourceWant: map[string]*int64{
-				"app": pointer.Int64Ptr(800),
-			},
+			resourceWant: pointer.Int64Ptr(800),
 		},
-
+		{
+			name: "WithLimitRangeWithDefaultLimitForCPUAndMemory",
+			request: &corev1.PodSpec{
+				ActiveDeadlineSeconds: pointer.Int64Ptr(800),
+				RestartPolicy:         corev1.RestartPolicyAlways,
+				Containers: []corev1.Container{
+					{
+						Name:  "app",
+						Image: "openshift/hello-openshift",
+						Ports: []corev1.ContainerPort{
+							{
+								Name:          "app",
+								ContainerPort: 60100,
+							},
+						},
+						SecurityContext: &corev1.SecurityContext{
+							AllowPrivilegeEscalation: pointer.BoolPtr(false),
+							Capabilities: &corev1.Capabilities{
+								Drop: []corev1.Capability{"ALL"},
+							},
+							RunAsNonRoot: pointer.BoolPtr(true),
+							SeccompProfile: &corev1.SeccompProfile{
+								Type: "RuntimeDefault",
+							},
+						},
+					},
+				},
+			},
+			resourceWant: nil,
+		},
+		{
+			name: "WithLimitRangeWithDefaultLimitForCPUAndMemory",
+			request: &corev1.PodSpec{
+				ActiveDeadlineSeconds: pointer.Int64Ptr(800),
+				RestartPolicy:         corev1.RestartPolicyOnFailure,
+				Containers: []corev1.Container{
+					{
+						Name:  "app",
+						Image: "openshift/hello-openshift",
+						Ports: []corev1.ContainerPort{
+							{
+								Name:          "app",
+								ContainerPort: 60100,
+							},
+						},
+						SecurityContext: &corev1.SecurityContext{
+							AllowPrivilegeEscalation: pointer.BoolPtr(false),
+							Capabilities: &corev1.Capabilities{
+								Drop: []corev1.Capability{"ALL"},
+							},
+							RunAsNonRoot: pointer.BoolPtr(true),
+							SeccompProfile: &corev1.SeccompProfile{
+								Type: "RuntimeDefault",
+							},
+						},
+					},
+				},
+			},
+			resourceWant: pointer.Int64Ptr(800),
+		},
 		{
 			name: "WithLimitRangeWithMaximumForCPU",
 			request: &corev1.PodSpec{
@@ -209,9 +260,7 @@ func TestClusterResourceOverrideAdmissionWithOptIn(t *testing.T) {
 					},
 				},
 			},
-			resourceWant: map[string]*int64{
-				"app": pointer.Int64Ptr(1100),
-			},
+			resourceWant: pointer.Int64Ptr(1100),
 		},
 	}
 
@@ -235,7 +284,7 @@ func TestClusterResourceOverrideAdmissionWithOptIn(t *testing.T) {
 	t.Log("waiting for webhook configuration to take effect")
 	current = helper.Wait(t, client.Operator, "cluster", helper.GetAvailableConditionFunc(current, changed))
 
-	f.MustHaveClusterResourceOverrideAdmissionConfiguration(t)
+	f.MustHaveRunOnceDurationOverrideConfiguration(t)
 	t.Log("webhook configuration has been set successfully")
 
 	for _, test := range tests {
@@ -249,22 +298,20 @@ func TestClusterResourceOverrideAdmissionWithOptIn(t *testing.T) {
 				podGot, disposer := helper.NewPod(t, client.Kubernetes, namespace, *test.request)
 				defer disposer.Dispose()
 
-				helper.MustMatchMemoryAndCPU(t, test.resourceWant, &podGot.Spec)
+				require.Equal(t, podGot.Spec.ActiveDeadlineSeconds, test.resourceWant)
 			}()
 		})
 	}
 }
 
-func TestClusterResourceOverrideAdmissionWithConfigurationChange(t *testing.T) {
+func TestRunOnceDurationOverrideWithConfigurationChange(t *testing.T) {
 	client := helper.NewClient(t, options.config)
 
 	f := &helper.PreCondition{Client: client.Kubernetes}
 	f.MustHaveAdmissionRegistrationV1(t)
 
 	before := appsv1.PodResourceOverrideSpec{
-		LimitCPUToMemoryPercent:     100,
-		CPURequestToLimitPercent:    10,
-		MemoryRequestToLimitPercent: 75,
+		ActiveDeadlineSeconds: 1200,
 	}
 	override := appsv1.PodResourceOverride{
 		Spec: before,
@@ -279,9 +326,7 @@ func TestClusterResourceOverrideAdmissionWithConfigurationChange(t *testing.T) {
 	require.Equal(t, override.Spec.Hash(), current.Status.Hash.Configuration)
 
 	after := appsv1.PodResourceOverrideSpec{
-		LimitCPUToMemoryPercent:     50,
-		CPURequestToLimitPercent:    50,
-		MemoryRequestToLimitPercent: 50,
+		ActiveDeadlineSeconds: 1200,
 	}
 	override = appsv1.PodResourceOverride{
 		Spec: after,
@@ -297,42 +342,51 @@ func TestClusterResourceOverrideAdmissionWithConfigurationChange(t *testing.T) {
 	ns, disposer := helper.NewNamespace(t, client.Kubernetes, "croe2e", true)
 	defer disposer.Dispose()
 
-	requirements := corev1.ResourceRequirements{
-		Limits: corev1.ResourceList{
-			corev1.ResourceMemory: resource.MustParse("1024Mi"),
-			corev1.ResourceCPU:    resource.MustParse("1000m"),
+	podSpec := corev1.PodSpec{
+		RestartPolicy: corev1.RestartPolicyNever,
+		Containers: []corev1.Container{
+			{
+				Name:  "app",
+				Image: "openshift/hello-openshift",
+				Ports: []corev1.ContainerPort{
+					{
+						Name:          "app",
+						ContainerPort: 60100,
+					},
+				},
+				Resources: corev1.ResourceRequirements{
+					Limits: corev1.ResourceList{
+						corev1.ResourceMemory: resource.MustParse("1024Mi"),
+						corev1.ResourceCPU:    resource.MustParse("1000m")},
+				},
+				SecurityContext: &corev1.SecurityContext{
+					AllowPrivilegeEscalation: pointer.BoolPtr(false),
+					Capabilities: &corev1.Capabilities{
+						Drop: []corev1.Capability{"ALL"},
+					},
+					RunAsNonRoot: pointer.BoolPtr(true),
+					SeccompProfile: &corev1.SeccompProfile{
+						Type: "RuntimeDefault",
+					},
+				},
+			},
 		},
 	}
 
-	resourceWant := map[string]corev1.ResourceRequirements{
-		"test": {
-			Limits: corev1.ResourceList{
-				corev1.ResourceMemory: resource.MustParse("1024Mi"),
-				corev1.ResourceCPU:    resource.MustParse("500m"),
-			},
-			Requests: corev1.ResourceList{
-				corev1.ResourceMemory: resource.MustParse("512Mi"),
-				corev1.ResourceCPU:    resource.MustParse("250m"),
-			},
-		},
-	}
-
-	podGot, disposer := helper.NewPodWithResourceRequirement(t, client.Kubernetes, ns.GetName(), "test", requirements)
+	podGot, disposer := helper.NewPod(t, client.Kubernetes, ns.GetName(), podSpec)
 	defer disposer.Dispose()
 
-	helper.MustMatchMemoryAndCPU(t, resourceWant, &podGot.Spec)
+	require.Equal(t, t, podGot.Spec.ActiveDeadlineSeconds, pointer.Int64Ptr(1100))
 }
 
-func TestClusterResourceOverrideAdmissionWithCertRotation(t *testing.T) {
+func TestRunOnceDurationOverrideWithCertRotation(t *testing.T) {
 	client := helper.NewClient(t, options.config)
 
 	f := &helper.PreCondition{Client: client.Kubernetes}
 	f.MustHaveAdmissionRegistrationV1(t)
 
 	configuration := appsv1.PodResourceOverrideSpec{
-		LimitCPUToMemoryPercent:     50,
-		CPURequestToLimitPercent:    50,
-		MemoryRequestToLimitPercent: 50,
+		ActiveDeadlineSeconds: 900,
 	}
 	override := appsv1.PodResourceOverride{
 		Spec: configuration,
@@ -359,42 +413,51 @@ func TestClusterResourceOverrideAdmissionWithCertRotation(t *testing.T) {
 	ns, disposer := helper.NewNamespace(t, client.Kubernetes, "croe2e", true)
 	defer disposer.Dispose()
 
-	requirements := corev1.ResourceRequirements{
-		Limits: corev1.ResourceList{
-			corev1.ResourceMemory: resource.MustParse("1024Mi"),
-			corev1.ResourceCPU:    resource.MustParse("1000m"),
+	podSpec := corev1.PodSpec{
+		RestartPolicy: corev1.RestartPolicyOnFailure,
+		Containers: []corev1.Container{
+			{
+				Name:  "app",
+				Image: "openshift/hello-openshift",
+				Ports: []corev1.ContainerPort{
+					{
+						Name:          "app",
+						ContainerPort: 60100,
+					},
+				},
+				Resources: corev1.ResourceRequirements{
+					Limits: corev1.ResourceList{
+						corev1.ResourceMemory: resource.MustParse("1024Mi"),
+						corev1.ResourceCPU:    resource.MustParse("1000m")},
+				},
+				SecurityContext: &corev1.SecurityContext{
+					AllowPrivilegeEscalation: pointer.BoolPtr(false),
+					Capabilities: &corev1.Capabilities{
+						Drop: []corev1.Capability{"ALL"},
+					},
+					RunAsNonRoot: pointer.BoolPtr(true),
+					SeccompProfile: &corev1.SeccompProfile{
+						Type: "RuntimeDefault",
+					},
+				},
+			},
 		},
 	}
 
-	resourceWant := map[string]corev1.ResourceRequirements{
-		"test": {
-			Limits: corev1.ResourceList{
-				corev1.ResourceMemory: resource.MustParse("1024Mi"),
-				corev1.ResourceCPU:    resource.MustParse("500m"),
-			},
-			Requests: corev1.ResourceList{
-				corev1.ResourceMemory: resource.MustParse("512Mi"),
-				corev1.ResourceCPU:    resource.MustParse("250m"),
-			},
-		},
-	}
-
-	podGot, disposer := helper.NewPodWithResourceRequirement(t, client.Kubernetes, ns.GetName(), "test", requirements)
+	podGot, disposer := helper.NewPod(t, client.Kubernetes, ns.GetName(), podSpec)
 	defer disposer.Dispose()
 
-	helper.MustMatchMemoryAndCPU(t, resourceWant, &podGot.Spec)
+	require.Equal(t, podGot.Spec.ActiveDeadlineSeconds, pointer.Int64Ptr(900))
 }
 
-func TestClusterResourceOverrideAdmissionWithNoOptIn(t *testing.T) {
+func TestRunOnceDurationOverrideWithNoOptIn(t *testing.T) {
 	client := helper.NewClient(t, options.config)
 
 	f := &helper.PreCondition{Client: client.Kubernetes}
 	f.MustHaveAdmissionRegistrationV1(t)
 
 	configuration := appsv1.PodResourceOverrideSpec{
-		LimitCPUToMemoryPercent:     200,
-		CPURequestToLimitPercent:    50,
-		MemoryRequestToLimitPercent: 50,
+		ActiveDeadlineSeconds: 750,
 	}
 	override := appsv1.PodResourceOverride{
 		Spec: configuration,
@@ -409,28 +472,98 @@ func TestClusterResourceOverrideAdmissionWithNoOptIn(t *testing.T) {
 	ns, disposer := helper.NewNamespace(t, client.Kubernetes, "croe2e", false)
 	defer disposer.Dispose()
 
-	requirements := corev1.ResourceRequirements{
-		Limits: corev1.ResourceList{
-			corev1.ResourceMemory: resource.MustParse("512Mi"),
-			corev1.ResourceCPU:    resource.MustParse("100m"),
+	podSpec := corev1.PodSpec{
+		RestartPolicy: corev1.RestartPolicyOnFailure,
+		Containers: []corev1.Container{
+			{
+				Name:  "app",
+				Image: "openshift/hello-openshift",
+				Ports: []corev1.ContainerPort{
+					{
+						Name:          "app",
+						ContainerPort: 60100,
+					},
+				},
+				Resources: corev1.ResourceRequirements{
+					Limits: corev1.ResourceList{
+						corev1.ResourceMemory: resource.MustParse("1024Mi"),
+						corev1.ResourceCPU:    resource.MustParse("1000m")},
+				},
+				SecurityContext: &corev1.SecurityContext{
+					AllowPrivilegeEscalation: pointer.BoolPtr(false),
+					Capabilities: &corev1.Capabilities{
+						Drop: []corev1.Capability{"ALL"},
+					},
+					RunAsNonRoot: pointer.BoolPtr(true),
+					SeccompProfile: &corev1.SeccompProfile{
+						Type: "RuntimeDefault",
+					},
+				},
+			},
 		},
 	}
 
-	resourceWant := map[string]corev1.ResourceRequirements{
-		"test": {
-			Limits: corev1.ResourceList{
-				corev1.ResourceMemory: resource.MustParse("512Mi"),
-				corev1.ResourceCPU:    resource.MustParse("100m"),
-			},
-			Requests: corev1.ResourceList{
-				corev1.ResourceMemory: resource.MustParse("512Mi"),
-				corev1.ResourceCPU:    resource.MustParse("100m"),
-			},
-		},
-	}
-
-	podGot, disposer := helper.NewPodWithResourceRequirement(t, client.Kubernetes, ns.GetName(), "test", requirements)
+	podGot, disposer := helper.NewPod(t, client.Kubernetes, ns.GetName(), podSpec)
 	defer disposer.Dispose()
 
-	helper.MustMatchMemoryAndCPU(t, resourceWant, &podGot.Spec)
+	require.Equal(t, podGot.Spec.ActiveDeadlineSeconds, pointer.Int64Ptr(750))
+}
+
+func TestRunOnceDurationOverrideWithNoOptInNoChange(t *testing.T) {
+	client := helper.NewClient(t, options.config)
+
+	f := &helper.PreCondition{Client: client.Kubernetes}
+	f.MustHaveAdmissionRegistrationV1(t)
+
+	configuration := appsv1.PodResourceOverrideSpec{
+		ActiveDeadlineSeconds: 750,
+	}
+	override := appsv1.PodResourceOverride{
+		Spec: configuration,
+	}
+
+	current, changed := helper.EnsureAdmissionWebhook(t, client.Operator, "cluster", override)
+	defer helper.RemoveAdmissionWebhook(t, client.Operator, current.GetName())
+
+	current = helper.Wait(t, client.Operator, "cluster", helper.GetAvailableConditionFunc(current, changed))
+
+	// make sure everything works after cert is regenerated
+	ns, disposer := helper.NewNamespace(t, client.Kubernetes, "croe2e", false)
+	defer disposer.Dispose()
+
+	podSpec := corev1.PodSpec{
+		RestartPolicy: corev1.RestartPolicyAlways,
+		Containers: []corev1.Container{
+			{
+				Name:  "app",
+				Image: "openshift/hello-openshift",
+				Ports: []corev1.ContainerPort{
+					{
+						Name:          "app",
+						ContainerPort: 60100,
+					},
+				},
+				Resources: corev1.ResourceRequirements{
+					Limits: corev1.ResourceList{
+						corev1.ResourceMemory: resource.MustParse("1024Mi"),
+						corev1.ResourceCPU:    resource.MustParse("1000m")},
+				},
+				SecurityContext: &corev1.SecurityContext{
+					AllowPrivilegeEscalation: pointer.BoolPtr(false),
+					Capabilities: &corev1.Capabilities{
+						Drop: []corev1.Capability{"ALL"},
+					},
+					RunAsNonRoot: pointer.BoolPtr(true),
+					SeccompProfile: &corev1.SeccompProfile{
+						Type: "RuntimeDefault",
+					},
+				},
+			},
+		},
+	}
+
+	podGot, disposer := helper.NewPod(t, client.Kubernetes, ns.GetName(), podSpec)
+	defer disposer.Dispose()
+
+	require.Equal(t, podGot.Spec.ActiveDeadlineSeconds, nil)
 }

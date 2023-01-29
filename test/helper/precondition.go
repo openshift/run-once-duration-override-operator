@@ -47,7 +47,7 @@ func (f *PreCondition) MustHaveAdmissionRegistrationV1(t *testing.T) {
 	require.NotNil(t, version, "admissionregistration.k8s.io/v1 API group version not found in /apis discovery document")
 }
 
-func (f *PreCondition) MustHaveClusterResourceOverrideAdmissionConfiguration(t *testing.T) {
+func (f *PreCondition) MustHaveRunOnceDurationOverrideConfiguration(t *testing.T) {
 	t.Logf("fetching MutatingWebhookConfigurations %s", webhookName)
 
 	configuration, err := f.Client.AdmissionregistrationV1().MutatingWebhookConfigurations().Get(context.TODO(), webhookName, metav1.GetOptions{})
