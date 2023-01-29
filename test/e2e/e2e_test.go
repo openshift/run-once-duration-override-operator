@@ -139,7 +139,7 @@ func TestRunOnceDurationWithOptIn(t *testing.T) {
 			resourceWant: pointer.Int64Ptr(1200),
 		},
 		{
-			name: "WithLimitRangeWithDefaultLimitForCPUAndMemory",
+			name: "WithActiveDeadlineSeconds",
 			request: &corev1.PodSpec{
 				ActiveDeadlineSeconds: pointer.Int64Ptr(800),
 				RestartPolicy:         corev1.RestartPolicyNever,
@@ -169,7 +169,7 @@ func TestRunOnceDurationWithOptIn(t *testing.T) {
 			resourceWant: pointer.Int64Ptr(800),
 		},
 		{
-			name: "WithLimitRangeWithDefaultLimitForCPUAndMemory",
+			name: "WithActiveDeadlineSeconds",
 			request: &corev1.PodSpec{
 				ActiveDeadlineSeconds: pointer.Int64Ptr(800),
 				RestartPolicy:         corev1.RestartPolicyAlways,
@@ -199,7 +199,7 @@ func TestRunOnceDurationWithOptIn(t *testing.T) {
 			resourceWant: nil,
 		},
 		{
-			name: "WithLimitRangeWithDefaultLimitForCPUAndMemory",
+			name: "WithActiveDeadlineSeconds",
 			request: &corev1.PodSpec{
 				ActiveDeadlineSeconds: pointer.Int64Ptr(800),
 				RestartPolicy:         corev1.RestartPolicyOnFailure,
@@ -229,7 +229,7 @@ func TestRunOnceDurationWithOptIn(t *testing.T) {
 			resourceWant: pointer.Int64Ptr(800),
 		},
 		{
-			name: "WithLimitRangeWithMaximumForCPU",
+			name: "WithActiveDeadlineSeconds",
 			request: &corev1.PodSpec{
 				ActiveDeadlineSeconds: pointer.Int64Ptr(1100),
 				Containers: []corev1.Container{
