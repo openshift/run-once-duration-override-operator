@@ -1,0 +1,14 @@
+updates:
+  - file: "stable/runoncedurationoverride-operator.clusterserviceversion.yaml" # relative to this file
+    update_list:
+      # replace metadata.name value
+      - search: "runoncedurationoverride-operator.v{MAJOR}.{MINOR}.0"
+        replace: "runoncedurationoverride-operator.v{FULL_VER}"
+      - search: "version: {MAJOR}.{MINOR}.0"
+        replace: "version: {FULL_VER}"
+      - search: 'olm.skipRange: ">=4.3.0 <{MAJOR}.{MINOR}.0"'
+        replace: 'olm.skipRange: ">=4.3.0 <{FULL_VER}"'
+  - file: "runoncedurationoverride-operator.package.yaml"
+    update_list:
+      - search: "currentCSV: runoncedurationoverride-operator.v4.13.0"
+        replace: "currentCSV: runoncedurationoverride-operator.{FULL_VER}"
