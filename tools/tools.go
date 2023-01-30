@@ -10,9 +10,8 @@ package tools
 import (
 	//_ "github.com/kevinburke/go-bindata/go-bindata"
 	//"github.com/securego/gosec/cmd/gosec"
-	//"k8s.io/code-generator"
-	//"sigs.k8s.io/controller-tools/cmd/controller-gen"
 
 	_ "github.com/openshift/library-go/alpha-build-machinery"
 	_ "k8s.io/code-generator"
+	_ "sigs.k8s.io/controller-tools/cmd/controller-gen"
 )
