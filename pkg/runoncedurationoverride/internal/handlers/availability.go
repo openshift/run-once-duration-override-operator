@@ -7,7 +7,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/apps/v1"
+	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	"github.com/openshift/run-once-duration-override-operator/pkg/deploy"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"

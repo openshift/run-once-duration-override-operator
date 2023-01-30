@@ -1,7 +1,7 @@
 package install
 
 import (
-	v1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/apps/v1"
+	v1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 )

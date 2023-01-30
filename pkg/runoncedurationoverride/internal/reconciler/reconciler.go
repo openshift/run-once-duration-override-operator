@@ -3,10 +3,10 @@ package reconciler
 import (
 	"fmt"
 
-	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/apps/v1"
+	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	dynamicclient "github.com/openshift/run-once-duration-override-operator/pkg/dynamic"
 	"github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
-	appsv1listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/apps/v1"
+	runoncedurationoverridev1listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/handlers"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -17,9 +17,9 @@ import (
 
 var (
 	RunOnceDurationOverrideGVK = schema.GroupVersionKind{
-		Group:   appsv1.GroupName,
-		Version: appsv1.GroupVersion,
-		Kind:    appsv1.RunOnceDurationOverrideKind,
+		Group:   runoncedurationoverridev1.GroupName,
+		Version: runoncedurationoverridev1.GroupVersion,
+		Kind:    runoncedurationoverridev1.RunOnceDurationOverrideKind,
 	}
 )
 
@@ -50,7 +50,7 @@ func NewReconciler(options *handlers.Options) *reconciler {
 
 type reconciler struct {
 	client         versioned.Interface
-	lister         appsv1listers.RunOnceDurationOverrideLister
+	lister         runoncedurationoverridev1listers.RunOnceDurationOverrideLister
 	handlers       HandlerChain
 	updater        *StatusUpdater
 	operandContext operatorruntime.OperandContext

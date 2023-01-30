@@ -40,7 +40,7 @@ rules:
 
   # to have the power to reconcile request(s)
   - apiGroups:
-    - operator.apps.openshift.io
+    - operator.openshift.io
     resources:
     - runoncedurationoverride
     - runoncedurationoverride/status
@@ -90,7 +90,7 @@ rules:
 
   # to grant the operand power to create admission reviews
   - apiGroups:
-    - apps.openshift.io
+    - operator.openshift.io
     resources:
     - runoncedurationoverride
     verbs:

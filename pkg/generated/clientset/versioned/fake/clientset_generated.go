@@ -20,8 +20,8 @@ package fake
 
 import (
 	clientset "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
-	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned/typed/apps/v1"
-	fakeappsv1 "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned/typed/apps/v1/fake"
+	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned/typed/runoncedurationoverride/v1"
+	fakerunoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned/typed/runoncedurationoverride/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -74,9 +74,12 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 	return c.tracker
 }
 
-var _ clientset.Interface = &Clientset{}
+var (
+	_ clientset.Interface = &Clientset{}
+	_ testing.FakeClient  = &Clientset{}
+)
 
-// AppsV1 retrieves the AppsV1Client
-func (c *Clientset) AppsV1() appsv1.AppsV1Interface {
-	return &fakeappsv1.FakeAppsV1{Fake: &c.Fake}
+// RunOnceDurationOverrideV1 retrieves the RunOnceDurationOverrideV1Client
+func (c *Clientset) RunOnceDurationOverrideV1() runoncedurationoverridev1.RunOnceDurationOverrideV1Interface {
+	return &fakerunoncedurationoverridev1.FakeRunOnceDurationOverrideV1{Fake: &c.Fake}
 }

@@ -1,3 +1,6 @@
+// Package v1 contains API Schema definitions for the runoncedurationoverride v1 API group
+// +k8s:deepcopy-gen=package,register
+// +groupName=operator.openshift.io
 package v1
 
 import (
@@ -8,7 +11,7 @@ import (
 
 const (
 	// GroupName
-	GroupName = "operator.apps.openshift.io"
+	GroupName = "operator.openshift.io"
 	// GroupVersion is the group version used in this package.
 	GroupVersion = "v1"
 )

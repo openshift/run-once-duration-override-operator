@@ -1,7 +1,7 @@
 package reconciler
 
 import (
-	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/apps/v1"
+	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/handlers"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"

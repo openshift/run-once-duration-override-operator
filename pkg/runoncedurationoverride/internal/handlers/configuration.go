@@ -9,8 +9,8 @@ import (
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/yaml"
 
-	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/apps/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/apis/reference"
+	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	"github.com/openshift/run-once-duration-override-operator/pkg/ensurer"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
@@ -61,7 +61,7 @@ func (c *configurationHandler) Handle(context *ReconcileRequestContext, original
 	}
 
 	equal := false
-	hash := original.Spec.Hash()
+	hash := original.Spec.RunOnceDurationOverrideConfig.Spec.Hash()
 	if hash == current.Status.Hash.Configuration {
 		equal = true
 	}
@@ -97,7 +97,7 @@ func (c *configurationHandler) Handle(context *ReconcileRequestContext, original
 }
 
 func (c *configurationHandler) NewConfiguration(context *ReconcileRequestContext, override *appsv1.RunOnceDurationOverride) (configuration *corev1.ConfigMap, err error) {
-	bytes, err := yaml.Marshal(override.Spec)
+	bytes, err := yaml.Marshal(override.Spec.RunOnceDurationOverrideConfig)
 	if err != nil {
 		return
 	}
@@ -111,7 +111,6 @@ func (c *configurationHandler) NewConfiguration(context *ReconcileRequestContext
 		configuration.Data = map[string]string{}
 	}
 	configuration.Data[c.asset.Values().ConfigurationKey] = string(bytes)
-
 	return
 }
 

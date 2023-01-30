@@ -9,8 +9,8 @@ import (
 	"k8s.io/klog"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/apps/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/apis/reference"
+	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	"github.com/openshift/run-once-duration-override-operator/pkg/cert"
 	"github.com/openshift/run-once-duration-override-operator/pkg/ensurer"

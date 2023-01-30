@@ -50,16 +50,36 @@ type RunOnceDurationOverrideCondition struct {
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
+// +k8s:openapi-gen=true
+// +kubebuilder:storageversion
+// +kubebuilder:subresource:status
+// +kubebuilder:resource:shortName=rodoo,scope=Cluster
 type RunOnceDurationOverride struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   RunOnceDurationOverrideSpec   `json:"spec,omitempty"`
+	// spec holds user settable values for configuration
+	// +required
+	Spec RunOnceDurationOverrideSpec `json:"spec,omitempty"`
+	// status holds observed values from the cluster. They may not be overridden.
+	// +optional
 	Status RunOnceDurationOverrideStatus `json:"status,omitempty"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type RunOnceDurationOverrideSpec struct {
+	RunOnceDurationOverrideConfig RunOnceDurationOverrideConfig `json:"runOnceDurationOverride"`
+}
+
+// RunOnceDurationOverrideConfig is the configuration for the admission controller which
+// overrides activeDeadlineSeconds for pods with restartPolicy set to Never or OnFailure.
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+type RunOnceDurationOverrideConfig struct {
+	metav1.TypeMeta `json:",inline"`
+	Spec            RunOnceDurationOverrideConfigSpec `json:"spec,omitempty"`
+}
+
+type RunOnceDurationOverrideConfigSpec struct {
 	// ActiveDeadlineSeconds (if > 0) overrides activeDeadlineSeconds field of pod;
 	// if pod's restartPolicy is set to Never or OnFailure.
 	ActiveDeadlineSeconds int64 `json:"activeDeadlineSeconds"`

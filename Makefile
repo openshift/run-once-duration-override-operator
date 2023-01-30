@@ -14,6 +14,11 @@ VERSION := 4.13
 OPERATOR_NAMESPACE 			:= runoncedurationoverride-operator
 OPERATOR_DEPLOYMENT_NAME 	:= runoncedurationoverride-operator
 
+CODEGEN_OUTPUT_PACKAGE :=github.com/openshift/run-once-duration-override-operator/pkg/generated
+CODEGEN_API_PACKAGE :=github.com/openshift/run-once-duration-override-operator/pkg/apis
+CODEGEN_GROUPS_VERSION :=runoncedurationoverride:v1
+CODEGEN_GO_HEADER_FILE := boilerplate.go.txt
+
 export OLD_OPERATOR_IMAGE_URL_IN_CSV 	= quay.io/openshift/runoncedurationoverride-rhel8-operator:$(VERSION)
 export OLD_OPERAND_IMAGE_URL_IN_CSV 	= quay.io/openshift/runoncedurationoverride-rhel8:$(VERSION)
 export CSV_FILE_PATH_IN_REGISTRY_IMAGE 	= /manifests/stable/runoncedurationoverride-operator.clusterserviceversion.yaml
@@ -28,6 +33,9 @@ export LOCAL_OPERATOR_REGISTRY_IMAGE
 include $(addprefix ./vendor/github.com/openshift/build-machinery-go/make/, \
 	golang.mk \
 	targets/openshift/images.mk \
+	targets/openshift/codegen.mk \
+	targets/openshift/deps.mk \
+	targets/openshift/crd-schema-gen.mk \
 )
 
 # build image for ci
@@ -116,25 +124,8 @@ bin/json2yaml: cmd/testutil/json2yaml/json2yaml.go
 	mkdir -p bin
 	go build $(GOGCFLAGS) -ldflags "$(LD_FLAGS)" -o bin/ "$(PKG)/cmd/testutil/json2yaml"
 
-# build operator registry image for ci locally (used for local e2e test only)
-# local e2e test is done exactly the same way as ci with the exception that
-# in ci the operator registry image is built by ci agent.
-# on the other hand, in local mode, we need to build the image.
-operator-registry-image-ci:
-	docker build --build-arg VERSION=$(VERSION) -t $(LOCAL_OPERATOR_REGISTRY_IMAGE) -f images/operator-registry/Dockerfile.registry.ci .
-	docker push $(LOCAL_OPERATOR_REGISTRY_IMAGE)
-
-# build and push the OLM manifests for this operator into an operator-registry image.
-# this builds an image with the generated database, (unlike image used for ci)
-operator-registry-image: MANIFESTS_DIR := "$(OUTPUT_DIR)/manifests"
-operator-registry-image: CSV_FILE := "$(MANIFESTS_DIR)/stable/runoncedurationoverride-operator.clusterserviceversion.yaml"
-operator-registry-image:
-	rm -rf $(MANIFESTS_DIR)
-	mkdir -p $(MANIFESTS_DIR)
-	cp -r manifests/* $(MANIFESTS_DIR)/
-
-	sed "s,$(OLD_OPERATOR_IMAGE_URL_IN_CSV),$(LOCAL_OPERATOR_IMAGE),g" -i "$(CSV_FILE)"
-	sed "s,$(OLD_OPERAND_IMAGE_URL_IN_CSV),$(LOCAL_OPERAND_IMAGE),g" -i "$(CSV_FILE)"
-
-	docker build --build-arg MANIFEST_LOCATION=$(MANIFESTS_DIR) -t $(LOCAL_OPERATOR_REGISTRY_IMAGE) -f images/operator-registry/Dockerfile.registry .
-	docker push $(LOCAL_OPERATOR_REGISTRY_IMAGE)
+regen-crd:
+	go build -o _output/tools/bin/controller-gen ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen
+	cp manifests/stable/runoncedurationoverride.crd.yaml manifests/stable/operator.openshift.io_runoncedurationoverrides.yaml
+	./_output/tools/bin/controller-gen crd paths=./pkg/apis/runoncedurationoverride/v1/... schemapatch:manifests=./manifests/stable
+	mv manifests/stable/operator.openshift.io_runoncedurationoverrides.yaml manifests/stable/runoncedurationoverride.crd.yaml

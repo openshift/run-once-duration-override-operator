@@ -22,11 +22,11 @@ func (in *RunOnceDurationOverride) IsTimeToRotateCert() bool {
 	return false
 }
 
-func (in *RunOnceDurationOverrideSpec) String() string {
+func (in *RunOnceDurationOverrideConfigSpec) String() string {
 	return fmt.Sprintf("ActiveDeadlineSeconds=%d", in.ActiveDeadlineSeconds)
 }
 
-func (in *RunOnceDurationOverrideSpec) Validate() error {
+func (in *RunOnceDurationOverrideConfigSpec) Validate() error {
 	if in.ActiveDeadlineSeconds < 0 {
 		return errors.New("invalid value for ActiveDeadlineSeconds, must be a positive value")
 	}
@@ -34,7 +34,7 @@ func (in *RunOnceDurationOverrideSpec) Validate() error {
 	return nil
 }
 
-func (in *RunOnceDurationOverrideSpec) Hash() string {
+func (in *RunOnceDurationOverrideConfigSpec) Hash() string {
 	value := fmt.Sprintf("%s", in)
 
 	writer := sha256.New()

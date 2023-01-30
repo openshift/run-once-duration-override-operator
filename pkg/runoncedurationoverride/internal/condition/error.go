@@ -4,7 +4,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/apps/v1"
+	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 )
 
 func NewInstallReadinessError(reason string, err error) error {
