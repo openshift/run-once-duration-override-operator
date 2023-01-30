@@ -11,7 +11,7 @@ import (
 	//_ "github.com/kevinburke/go-bindata/go-bindata"
 	//"github.com/securego/gosec/cmd/gosec"
 
-	_ "github.com/openshift/library-go/alpha-build-machinery"
+	_ "github.com/openshift/build-machinery-go"
 	_ "k8s.io/code-generator"
 	_ "sigs.k8s.io/controller-tools/cmd/controller-gen"
 )

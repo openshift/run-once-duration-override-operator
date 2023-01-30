@@ -25,7 +25,7 @@ export LOCAL_OPERAND_IMAGE
 export LOCAL_OPERATOR_REGISTRY_IMAGE
 
 # Include the library makefile
-include $(addprefix ./vendor/github.com/openshift/library-go/alpha-build-machinery/make/, \
+include $(addprefix ./vendor/github.com/openshift/build-machinery-go/make/, \
 	golang.mk \
 	targets/openshift/images.mk \
 )
