@@ -22,7 +22,7 @@ import (
 	"context"
 	"time"
 
-	v1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/apps/v1"
+	v1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	scheme "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -56,7 +56,7 @@ type runOnceDurationOverrides struct {
 }
 
 // newRunOnceDurationOverrides returns a RunOnceDurationOverrides
-func newRunOnceDurationOverrides(c *AppsV1Client) *runOnceDurationOverrides {
+func newRunOnceDurationOverrides(c *RunOnceDurationOverrideV1Client) *runOnceDurationOverrides {
 	return &runOnceDurationOverrides{
 		client: c.RESTClient(),
 	}

@@ -22,10 +22,10 @@ import (
 	"context"
 	time "time"
 
-	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/apps/v1"
+	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	versioned "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
 	internalinterfaces "github.com/openshift/run-once-duration-override-operator/pkg/generated/informers/externalversions/internalinterfaces"
-	v1 "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/apps/v1"
+	v1 "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -61,16 +61,16 @@ func NewFilteredRunOnceDurationOverrideInformer(client versioned.Interface, resy
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.AppsV1().RunOnceDurationOverrides().List(context.TODO(), options)
+				return client.RunOnceDurationOverrideV1().RunOnceDurationOverrides().List(context.TODO(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.AppsV1().RunOnceDurationOverrides().Watch(context.TODO(), options)
+				return client.RunOnceDurationOverrideV1().RunOnceDurationOverrides().Watch(context.TODO(), options)
 			},
 		},
-		&appsv1.RunOnceDurationOverride{},
+		&runoncedurationoverridev1.RunOnceDurationOverride{},
 		resyncPeriod,
 		indexers,
 	)
@@ -81,7 +81,7 @@ func (f *runOnceDurationOverrideInformer) defaultInformer(client versioned.Inter
 }
 
 func (f *runOnceDurationOverrideInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&appsv1.RunOnceDurationOverride{}, f.defaultInformer)
+	return f.factory.InformerFor(&runoncedurationoverridev1.RunOnceDurationOverride{}, f.defaultInformer)
 }
 
 func (f *runOnceDurationOverrideInformer) Lister() v1.RunOnceDurationOverrideLister {

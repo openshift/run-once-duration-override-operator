@@ -15,11 +15,11 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/apps/v1"
+	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	"github.com/openshift/run-once-duration-override-operator/pkg/controller"
-	appsv1listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/apps/v1"
-	listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/apps/v1"
+	listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
+	runoncedurationoverridev1listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/handlers"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/reconciler"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
@@ -48,11 +48,11 @@ func New(options *Options) (c controller.Interface, e operatorruntime.Enqueuer, 
 	client := options.Client.Operator
 	watcher := &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			return client.AppsV1().RunOnceDurationOverrides().List(context.TODO(), options)
+			return client.RunOnceDurationOverrideV1().RunOnceDurationOverrides().List(context.TODO(), options)
 		},
 
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return client.AppsV1().RunOnceDurationOverrides().Watch(context.TODO(), options)
+			return client.RunOnceDurationOverrideV1().RunOnceDurationOverrides().Watch(context.TODO(), options)
 		},
 	}
 
@@ -65,7 +65,7 @@ func New(options *Options) (c controller.Interface, e operatorruntime.Enqueuer, 
 	// Note that when we finally process the item from the workqueue, we might
 	// see a newer version of the RunOnceDurationOverride than the version which
 	// was responsible for triggering the update.
-	indexer, informer := cache.NewIndexerInformer(watcher, &appsv1.RunOnceDurationOverride{}, options.ResyncPeriod,
+	indexer, informer := cache.NewIndexerInformer(watcher, &runoncedurationoverridev1.RunOnceDurationOverride{}, options.ResyncPeriod,
 		controller.NewEventHandler(queue), cache.Indexers{})
 
 	lister := listers.NewRunOnceDurationOverrideLister(indexer)
@@ -106,7 +106,7 @@ type runOnceDurationOverrideController struct {
 	queue      workqueue.RateLimitingInterface
 	informer   cache.Controller
 	reconciler controllerreconciler.Reconciler
-	lister     appsv1listers.RunOnceDurationOverrideLister
+	lister     runoncedurationoverridev1listers.RunOnceDurationOverrideLister
 }
 
 func (c *runOnceDurationOverrideController) Name() string {

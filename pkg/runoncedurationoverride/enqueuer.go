@@ -2,19 +2,20 @@ package runoncedurationoverride
 
 import (
 	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/apps/v1"
-	appsv1listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/apps/v1"
+	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
+	runoncedurationoverridev1listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 )
 
 type enqueuer struct {
 	queue              workqueue.RateLimitingInterface
-	lister             appsv1listers.RunOnceDurationOverrideLister
+	lister             runoncedurationoverridev1listers.RunOnceDurationOverrideLister
 	ownerAnnotationKey string
 }
 
@@ -48,7 +49,7 @@ func (e *enqueuer) Enqueue(obj interface{}) error {
 func getOwnerName(ownerAnnotationKey string, object metav1.Object) string {
 	// We check for annotations and owner references
 	// If both exist, owner references takes precedence.
-	if ownerRef := metav1.GetControllerOf(object); ownerRef != nil && ownerRef.Kind == appsv1.RunOnceDurationOverrideKind {
+	if ownerRef := metav1.GetControllerOf(object); ownerRef != nil && ownerRef.Kind == runoncedurationoverridev1.RunOnceDurationOverrideKind {
 		return ownerRef.Name
 	}
 
