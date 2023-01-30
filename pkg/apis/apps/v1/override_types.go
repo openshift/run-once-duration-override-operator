@@ -60,7 +60,9 @@ type RunOnceDurationOverride struct {
 }
 
 type RunOnceDurationOverrideSpec struct {
-	PodResourceOverride PodResourceOverride `json:"podResourceOverride"`
+	// ActiveDeadlineSeconds (if > 0) overrides activeDeadlineSeconds field of pod;
+	// if pod's restartPolicy is set to Never or OnFailure.
+	ActiveDeadlineSeconds int64 `json:"activeDeadlineSeconds"`
 }
 
 type RunOnceDurationOverrideStatus struct {
@@ -111,21 +113,6 @@ type RunOnceDurationOverrideResources struct {
 	// APiServiceRef points to the APIService object related to the RunOnceDurationOverride
 	// admission webhook server.
 	MutatingWebhookConfigurationRef *corev1.ObjectReference `json:"mutatingWebhookConfigurationRef,omitempty"`
-}
-
-// PodResourceOverride is the configuration for the admission controller which
-// overrides user-provided container request/limit values.
-type PodResourceOverride struct {
-	metav1.TypeMeta `json:",inline"`
-	Spec            PodResourceOverrideSpec `json:"spec,omitempty"`
-}
-
-// PodResourceOverrideSpec is the configuration for the RunOnceDurationOverride
-// admission controller which overrides user-provided container request/limit values.
-type PodResourceOverrideSpec struct {
-	// ActiveDeadlineSeconds (if > 0) overrides activeDeadlineSeconds field of pod;
-	// if pod's restartPolicy is set to Never or OnFailure.
-	ActiveDeadlineSeconds int64 `json:"activeDeadlineSeconds"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

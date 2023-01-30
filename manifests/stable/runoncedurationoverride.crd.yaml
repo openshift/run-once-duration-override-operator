@@ -25,22 +25,11 @@ spec:
         type: object
         description: Allows cluster administrator to control activeDeadlineSeconds if RestartPolicy of pod is Never or OnFailure
         properties:
-          spec:
-            type: object
-            description: Spec for a RunOnceDurationOverride.
-            properties:
-              podResourceOverride:
-                type: object
-                description: Configuration for Pod resource overrides.
-                properties:
-                  spec:
-                    type: object
-                    description: Spec for Pod resource overrides.
-                    properties:
-                      activeDeadlineSeconds:
-                        type: integer
-                        description: (optional) If pod's RestartPolicy is Never or OnFailure, it override the activeDeadlineSeconds value of pod
-                        minimum: 1
+          activeDeadlineSeconds:
+            type: integer
+            description: (optional) If pod's RestartPolicy is Never or OnFailure, it override the activeDeadlineSeconds value of pod
+            minimum: 1
+
           status:
             type: object
             description: The status of the RunOnceDurationOverride

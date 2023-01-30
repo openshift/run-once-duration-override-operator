@@ -2,7 +2,7 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: "[\n  {\n    \"apiVersion\": \"operator.apps.openshift.io/v1\",\n    \"kind\": \"RunOnceDurationOverride\",\n    \"metadata\": {\n      \"name\": \"cluster\"\n    },\n    \"spec\": {\n      \"podResourceOverride\": {\n        \"spec\": {\n          \"activeDeadlineSeconds\": 3600\n        }\n      }\n    }\n  }\n]"
+    alm-examples: "[\n  {\n    \"apiVersion\": \"operator.apps.openshift.io/v1\",\n    \"kind\": \"RunOnceDurationOverride\",\n    \"metadata\": {\n      \"name\": \"cluster\"\n    },\n    \"spec\": {\n          \"activeDeadlineSeconds\": 3600\n        }\n    }\n]"
     capabilities: Seamless Upgrades
     categories: OpenShift Optional
     certifiedLevel: Primed

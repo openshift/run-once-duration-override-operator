@@ -16,7 +16,7 @@ type validationHandler struct {
 func (c *validationHandler) Handle(context *ReconcileRequestContext, original *appsv1.RunOnceDurationOverride) (current *appsv1.RunOnceDurationOverride, result controllerreconciler.Result, handleErr error) {
 	current = original
 
-	validationErr := original.Spec.PodResourceOverride.Spec.Validate()
+	validationErr := original.Spec.Validate()
 	if validationErr != nil {
 		handleErr = condition.NewInstallReadinessError(appsv1.InvalidParameters, validationErr)
 	}

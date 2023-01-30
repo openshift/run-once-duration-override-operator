@@ -22,11 +22,11 @@ func (in *RunOnceDurationOverride) IsTimeToRotateCert() bool {
 	return false
 }
 
-func (in *PodResourceOverrideSpec) String() string {
+func (in *RunOnceDurationOverrideSpec) String() string {
 	return fmt.Sprintf("ActiveDeadlineSeconds=%d", in.ActiveDeadlineSeconds)
 }
 
-func (in *PodResourceOverrideSpec) Validate() error {
+func (in *RunOnceDurationOverrideSpec) Validate() error {
 	if in.ActiveDeadlineSeconds < 0 {
 		return errors.New("invalid value for ActiveDeadlineSeconds, must be a positive value")
 	}
@@ -34,7 +34,7 @@ func (in *PodResourceOverrideSpec) Validate() error {
 	return nil
 }
 
-func (in *PodResourceOverrideSpec) Hash() string {
+func (in *RunOnceDurationOverrideSpec) Hash() string {
 	value := fmt.Sprintf("%s", in)
 
 	writer := sha256.New()

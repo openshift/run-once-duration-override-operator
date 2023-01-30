@@ -270,10 +270,10 @@ func TestRunOnceDurationWithOptIn(t *testing.T) {
 	f.MustHaveAdmissionRegistrationV1(t)
 
 	// ensure we have the webhook up and running with the desired config
-	configuration := appsv1.PodResourceOverrideSpec{
+	configuration := appsv1.RunOnceDurationOverrideSpec{
 		ActiveDeadlineSeconds: 200,
 	}
-	override := appsv1.PodResourceOverride{
+	override := appsv1.RunOnceDurationOverride{
 		Spec: configuration,
 	}
 
@@ -310,10 +310,10 @@ func TestRunOnceDurationOverrideWithConfigurationChange(t *testing.T) {
 	f := &helper.PreCondition{Client: client.Kubernetes}
 	f.MustHaveAdmissionRegistrationV1(t)
 
-	before := appsv1.PodResourceOverrideSpec{
+	before := appsv1.RunOnceDurationOverrideSpec{
 		ActiveDeadlineSeconds: 1200,
 	}
-	override := appsv1.PodResourceOverride{
+	override := appsv1.RunOnceDurationOverride{
 		Spec: before,
 	}
 
@@ -325,10 +325,10 @@ func TestRunOnceDurationOverrideWithConfigurationChange(t *testing.T) {
 	current = helper.Wait(t, client.Operator, "cluster", helper.GetAvailableConditionFunc(current, changed))
 	require.Equal(t, override.Spec.Hash(), current.Status.Hash.Configuration)
 
-	after := appsv1.PodResourceOverrideSpec{
+	after := appsv1.RunOnceDurationOverrideSpec{
 		ActiveDeadlineSeconds: 1200,
 	}
-	override = appsv1.PodResourceOverride{
+	override = appsv1.RunOnceDurationOverride{
 		Spec: after,
 	}
 
@@ -385,10 +385,10 @@ func TestRunOnceDurationOverrideWithCertRotation(t *testing.T) {
 	f := &helper.PreCondition{Client: client.Kubernetes}
 	f.MustHaveAdmissionRegistrationV1(t)
 
-	configuration := appsv1.PodResourceOverrideSpec{
+	configuration := appsv1.RunOnceDurationOverrideSpec{
 		ActiveDeadlineSeconds: 900,
 	}
-	override := appsv1.PodResourceOverride{
+	override := appsv1.RunOnceDurationOverride{
 		Spec: configuration,
 	}
 
@@ -456,10 +456,10 @@ func TestRunOnceDurationOverrideWithNoOptIn(t *testing.T) {
 	f := &helper.PreCondition{Client: client.Kubernetes}
 	f.MustHaveAdmissionRegistrationV1(t)
 
-	configuration := appsv1.PodResourceOverrideSpec{
+	configuration := appsv1.RunOnceDurationOverrideSpec{
 		ActiveDeadlineSeconds: 750,
 	}
-	override := appsv1.PodResourceOverride{
+	override := appsv1.RunOnceDurationOverride{
 		Spec: configuration,
 	}
 
@@ -515,10 +515,10 @@ func TestRunOnceDurationOverrideWithNoOptInNoChange(t *testing.T) {
 	f := &helper.PreCondition{Client: client.Kubernetes}
 	f.MustHaveAdmissionRegistrationV1(t)
 
-	configuration := appsv1.PodResourceOverrideSpec{
+	configuration := appsv1.RunOnceDurationOverrideSpec{
 		ActiveDeadlineSeconds: 750,
 	}
-	override := appsv1.PodResourceOverride{
+	override := appsv1.RunOnceDurationOverride{
 		Spec: configuration,
 	}
 

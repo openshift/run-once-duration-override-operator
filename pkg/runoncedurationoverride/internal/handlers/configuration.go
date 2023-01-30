@@ -61,7 +61,7 @@ func (c *configurationHandler) Handle(context *ReconcileRequestContext, original
 	}
 
 	equal := false
-	hash := original.Spec.PodResourceOverride.Spec.Hash()
+	hash := original.Spec.Hash()
 	if hash == current.Status.Hash.Configuration {
 		equal = true
 	}
@@ -97,7 +97,7 @@ func (c *configurationHandler) Handle(context *ReconcileRequestContext, original
 }
 
 func (c *configurationHandler) NewConfiguration(context *ReconcileRequestContext, override *appsv1.RunOnceDurationOverride) (configuration *corev1.ConfigMap, err error) {
-	bytes, err := yaml.Marshal(override.Spec.PodResourceOverride)
+	bytes, err := yaml.Marshal(override.Spec)
 	if err != nil {
 		return
 	}
@@ -115,10 +115,10 @@ func (c *configurationHandler) NewConfiguration(context *ReconcileRequestContext
 	return
 }
 
-func (c *configurationHandler) IsConfigurationEqual(current *corev1.ConfigMap, this *appsv1.PodResourceOverride) (equal bool, err error) {
+func (c *configurationHandler) IsConfigurationEqual(current *corev1.ConfigMap, this *appsv1.RunOnceDurationOverride) (equal bool, err error) {
 	observed := current.Data[c.asset.Values().ConfigurationKey]
 
-	other := &appsv1.PodResourceOverride{}
+	other := &appsv1.RunOnceDurationOverride{}
 	err = yaml.Unmarshal([]byte(observed), other)
 	if err != nil {
 		return

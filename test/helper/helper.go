@@ -50,16 +50,8 @@ func NewClient(t *testing.T, config *rest.Config) *Client {
 	}
 }
 
-func EnsureAdmissionWebhook(t *testing.T, client versioned.Interface, name string, override appsv1.PodResourceOverride) (current *appsv1.RunOnceDurationOverride, changed bool) {
+func EnsureAdmissionWebhook(t *testing.T, client versioned.Interface, name string, cluster appsv1.RunOnceDurationOverride) (current *appsv1.RunOnceDurationOverride, changed bool) {
 	changed = true
-	cluster := appsv1.RunOnceDurationOverride{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "cluster",
-		},
-		Spec: appsv1.RunOnceDurationOverrideSpec{
-			PodResourceOverride: override,
-		},
-	}
 
 	var err error
 	current, err = client.AppsV1().RunOnceDurationOverrides().Create(context.TODO(), &cluster, metav1.CreateOptions{})
@@ -81,7 +73,7 @@ func EnsureAdmissionWebhook(t *testing.T, client versioned.Interface, name strin
 		return
 	}
 
-	current.Spec.PodResourceOverride = *override.DeepCopy()
+	current.Spec = *cluster.Spec.DeepCopy()
 	current, err = client.AppsV1().RunOnceDurationOverrides().Update(context.TODO(), current, metav1.UpdateOptions{})
 	require.NoErrorf(t, err, "failed to update - %v", err)
 	require.NotNil(t, current)
