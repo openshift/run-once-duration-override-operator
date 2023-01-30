@@ -13,7 +13,7 @@ spec:
     kind: RunOnceDurationOverride
     listKind: RunOnceDurationOverrideList
     shortNames:
-    - rodo
+    - rodoo
   versions:
   - name: v1
     served: true
