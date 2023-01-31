@@ -136,14 +136,13 @@ func (s *rbac) New() []*RBACItem {
 							"watch",
 						},
 					},
-					// to give power to the operand to watch Namespace and LimitRange
+					// to give power to the operand to watch Namespace
 					{
 						APIGroups: []string{
 							"",
 						},
 						Resources: []string{
 							"namespaces",
-							"limitranges",
 						},
 						Verbs: []string{
 							"get",
@@ -151,7 +150,7 @@ func (s *rbac) New() []*RBACItem {
 							"watch",
 						},
 					},
-					// to give power to the operand to watch Namespace and LimitRange
+					// to give power to the operand to watch Namespace
 					{
 						APIGroups: []string{
 							"flowcontrol.apiserver.k8s.io",

@@ -155,7 +155,7 @@ func TestMain(m *testing.M) {
 
 		return true, nil
 	}); err != nil {
-		klog.Errorf("Unable to create SSO resources: %v", err)
+		klog.Errorf("Unable to create RODOO resources: %v", err)
 		os.Exit(1)
 	}
 

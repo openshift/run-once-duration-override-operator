@@ -107,12 +107,11 @@ rules:
       - list
       - watch
 
-  # to grant power to the operand to watch Namespace(s) and LimitRange(s)
+  # to grant power to the operand to watch Namespace(s)
   - apiGroups:
       - ""
     resources:
       - namespaces
-      - limitranges
     verbs:
       - get
       - list
