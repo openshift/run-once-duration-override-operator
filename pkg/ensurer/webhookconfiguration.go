@@ -1,9 +1,10 @@
 package ensurer
 
 import (
-	"github.com/openshift/run-once-duration-override-operator/pkg/dynamic"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/openshift/run-once-duration-override-operator/pkg/dynamic"
 )
 
 func NewMutatingWebhookConfigurationEnsurer(client dynamic.Ensurer) *MutatingWebhookConfigurationEnsurer {

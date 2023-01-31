@@ -2,14 +2,15 @@ package operator
 
 import (
 	"fmt"
-	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
-	"k8s.io/klog"
 	"net/http"
 	"time"
 
-	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride"
+	"k8s.io/klog"
+
 	"github.com/openshift/run-once-duration-override-operator/pkg/controller"
+	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runtime"
+	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 )
 
 const (

@@ -1,9 +1,10 @@
 package ensurer
 
 import (
-	"github.com/openshift/run-once-duration-override-operator/pkg/dynamic"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/openshift/run-once-duration-override-operator/pkg/dynamic"
 )
 
 func NewDaemonSetEnsurer(client dynamic.Ensurer) *DaemonSetEnsurer {

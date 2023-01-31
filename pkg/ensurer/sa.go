@@ -1,9 +1,10 @@
 package ensurer
 
 import (
-	"github.com/openshift/run-once-duration-override-operator/pkg/dynamic"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/openshift/run-once-duration-override-operator/pkg/dynamic"
 )
 
 type ServiceAccountEnsurer struct {
