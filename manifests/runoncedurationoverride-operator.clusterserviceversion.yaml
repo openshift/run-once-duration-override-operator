@@ -13,9 +13,13 @@ metadata:
             "name": "cluster"
           },
           "spec": {
-                "activeDeadlineSeconds": 3600
+            "runOnceDurationOverride": {
+              "spec": {
+                "activeDeadlineSeconds": 3600,
               }
+            }
           }
+        }
       ]
     certifiedLevel: "false"
     containerImage: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-operator-rhel-8:latest
@@ -34,7 +38,7 @@ spec:
       description: RunOnceDurationOverride is the schema for the runoncedurationoverrides API
       group: operator.openshift.io
       kind: RunOnceDurationOverride
-      name: runoncedurationoverride.operator.openshift.io
+      name: runoncedurationoverrides.operator.openshift.io
       version: v1
   description: ""
   displayName: Run Once Duration Override Operator
@@ -51,7 +55,7 @@ spec:
   maintainers:
   - email: support@redhat.com
     name: Red Hat
-  minKubeVersion: 1.26.1
+  minKubeVersion: 1.25.0
   labels:
     olm-owner-enterprise-app: run-once-duration-override-operator
     olm-status-descriptors: run-once-duration-override-operator.v1.0.0
