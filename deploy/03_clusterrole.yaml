@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: runoncedurationoverride-operator
+  name: run-once-duration-override-operator
 rules:
   # to have the power to create 'RoleBinding' that refs extension-apiserver-authentication-reader
   # in kube-system namespace.
@@ -15,7 +15,6 @@ rules:
       - update
       - patch
       - get
-
   # to have the power to read configmaps in the kube-system namespace
   - apiGroups:
       - ''
@@ -42,9 +41,9 @@ rules:
   - apiGroups:
       - operator.openshift.io
     resources:
-      - runoncedurationoverride
-      - runoncedurationoverride/status
-      - runoncedurationoverride/finalizers
+      - runoncedurationoverrides
+      - runoncedurationoverrides/status
+      - runoncedurationoverrides/finalizers
     verbs:
       - update
       - get
@@ -92,7 +91,7 @@ rules:
   - apiGroups:
       - operator.openshift.io
     resources:
-      - runoncedurationoverride
+      - runoncedurationoverrides
     verbs:
       - create
 
@@ -145,7 +144,7 @@ rules:
   - apiGroups:
       - admission.apps.openshift.io
     resources:
-      - runoncedurationoverride
+      - runoncedurationoverrides
     verbs:
       - create
       - get

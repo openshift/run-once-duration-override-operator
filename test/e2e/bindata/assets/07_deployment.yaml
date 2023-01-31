@@ -1,8 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: runoncedurationoverride-operator
-  name: runoncedurationoverride-operator
+  namespace: run-once-duration-override-operator
+  name: run-once-duration-override-operator
   labels:
     runoncedurationoverride.operator: "true"
 spec:
@@ -16,13 +16,13 @@ spec:
       labels:
         runoncedurationoverride.operator: "true"
     spec:
-      serviceAccountName: runoncedurationoverride-operator
+      serviceAccountName: run-once-duration-override-operator
       securityContext:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
       containers:
-        - name: runoncedurationoverride-operator
+        - name: run-once-duration-override-operator
           image: RUNONCEDURATIONOVERRIDE_OPERATOR_IMAGE
           imagePullPolicy: Always
           command:

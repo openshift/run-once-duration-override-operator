@@ -1,6 +1,0 @@
-# to be able to assign powers to the operator
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  namespace: runoncedurationoverride-operator
-  name: runoncedurationoverride-operator

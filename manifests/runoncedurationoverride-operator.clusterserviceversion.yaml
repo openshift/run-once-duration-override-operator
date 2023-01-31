@@ -151,7 +151,7 @@ spec:
         - apiGroups:
             - operator.openshift.io
           resources:
-            - runoncedurationoverride
+            - runoncedurationoverrides
           verbs:
             - create
         # default for an aggregated apiserver

@@ -1,8 +1,8 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: runoncedurationoverride-operator
-  namespace: runoncedurationoverride-operator
+  name: run-once-duration-override-operator
+  namespace: run-once-duration-override-operator
 rules:
   # to have the power to ensure RBAC for the operand
   - apiGroups:

@@ -49,4 +49,5 @@ generate-clients:
 
 clean:
 	$(RM) -rf ./run-once-duration-override-operator
+	$(RM) -rf ./_output
 .PHONY: clean

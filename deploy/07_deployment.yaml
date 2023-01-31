@@ -1,8 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: runoncedurationoverride-operator
-  name: runoncedurationoverride-operator
+  namespace: run-once-duration-override-operator
+  name: run-once-duration-override-operator
   labels:
     runoncedurationoverride.operator: "true"
 spec:
@@ -16,14 +16,14 @@ spec:
       labels:
         runoncedurationoverride.operator: "true"
     spec:
-      serviceAccountName: runoncedurationoverride-operator
+      serviceAccountName: run-once-duration-override-operator
       securityContext:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
       containers:
-        - name: runoncedurationoverride-operator
-          image: RUNONCEDURATIONOVERRIDE_OPERATOR_IMAGE
+        - name: run-once-duration-override-operator
+          image: registry.ci.openshift.org/ocp/4.13:run-once-duration-override-operator
           imagePullPolicy: Always
           command:
             - /usr/bin/run-once-duration-override-operator
@@ -41,7 +41,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: OPERAND_IMAGE
-              value: RUNONCEDURATIONOVERRIDE_OPERAND_IMAGE
+              value: registry.ci.openshift.org/ocp/4.13:run-once-duration-override-webhook
             - name: OPERAND_VERSION
               value: 1.0.0
           ports:

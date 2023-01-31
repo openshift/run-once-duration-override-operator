@@ -96,10 +96,11 @@ func (s *rbac) New() []*RBACItem {
 				Rules: []rbacv1.PolicyRule{
 					{
 						APIGroups: []string{
-							"apps.openshift.io",
+							"operator.openshift.io",
 						},
 						Resources: []string{
-							s.values.Name,
+							// Make it plural
+							s.values.Name + "s",
 						},
 						Verbs: []string{
 							"create",
