@@ -1,4 +1,0 @@
-packageName: runoncedurationoverride
-channels:
-  - name: stable
-    currentCSV: runoncedurationoverride-operator.v4.13.0
