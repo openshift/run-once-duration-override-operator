@@ -1,9 +1,10 @@
 package ensurer
 
 import (
-	"github.com/openshift/run-once-duration-override-operator/pkg/dynamic"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/openshift/run-once-duration-override-operator/pkg/dynamic"
 )
 
 type RoleEnsurer struct {
