@@ -65,7 +65,7 @@ func TestMain(m *testing.M) {
 			},
 		},
 		{
-			path: "assets/02_sa.yaml",
+			path: "assets/01_sa.yaml",
 			readerAndApply: func(objBytes []byte) error {
 				_, _, err := resourceapply.ApplyServiceAccount(ctx, kubeClient.CoreV1(), eventRecorder, resourceread.ReadServiceAccountV1OrDie(objBytes))
 				return err
@@ -109,6 +109,14 @@ func TestMain(m *testing.M) {
 				registry := strings.Split(os.Getenv("IMAGE_FORMAT"), "/")[0]
 
 				required.Spec.Template.Spec.Containers[0].Image = registry + "/" + os.Getenv("NAMESPACE") + "/pipeline:run-once-duration-override-operator"
+				// OPERAND_IMAGE env
+				for i, env := range required.Spec.Template.Spec.Containers[0].Env {
+					if env.Name == "OPERAND_IMAGE" {
+						required.Spec.Template.Spec.Containers[0].Env[i].Value = "registry.ci.openshift.org/ocp/4.13:run-once-duration-override-webhook"
+						break
+					}
+				}
+
 				_, _, err := resourceapply.ApplyDeployment(
 					ctx,
 					kubeClient.AppsV1(),

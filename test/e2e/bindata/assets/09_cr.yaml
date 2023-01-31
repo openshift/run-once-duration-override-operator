@@ -3,4 +3,6 @@ kind: RunOnceDurationOverride
 metadata:
   name: cluster
 spec:
-  activeDeadlineSeconds: 800
+  runOnceDurationOverride:
+    spec:
+      activeDeadlineSeconds: 800
