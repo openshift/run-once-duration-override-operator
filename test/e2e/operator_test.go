@@ -267,6 +267,7 @@ func TestRunOnceDurationOverriding(t *testing.T) {
 			Name:      "test-mutating-admission-pod",
 		},
 		Spec: corev1.PodSpec{
+			RestartPolicy: corev1.RestartPolicyOnFailure,
 			SecurityContext: &corev1.PodSecurityContext{
 				RunAsNonRoot: utilpointer.BoolPtr(true),
 				SeccompProfile: &corev1.SeccompProfile{
