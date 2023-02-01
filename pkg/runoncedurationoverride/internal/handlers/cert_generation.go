@@ -87,6 +87,16 @@ func (c *certGenerationHandler) Handle(context *ReconcileRequestContext, origina
 		desiredSecret := c.asset.ServiceServingSecret().New()
 		context.ControllerSetter().Set(desiredSecret, original)
 
+		ownerReference := metav1.OwnerReference{
+			APIVersion: "operator.openshift.io/v1",
+			Kind:       "RunOnceDurationOverride",
+			Name:       original.Name,
+			UID:        original.UID,
+		}
+		desiredSecret.OwnerReferences = []metav1.OwnerReference{
+			ownerReference,
+		}
+
 		if len(desiredSecret.Data) == 0 {
 			desiredSecret.Data = map[string][]byte{}
 		}

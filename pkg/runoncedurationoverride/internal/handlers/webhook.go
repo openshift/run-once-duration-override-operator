@@ -8,6 +8,7 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
 	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -48,6 +49,16 @@ func (w *webhookConfigurationHandler) Handle(context *ReconcileRequestContext, o
 		servingCertCA := context.GetBundle().ServingCertCA
 		for i := range desired.Webhooks {
 			desired.Webhooks[i].ClientConfig.CABundle = servingCertCA
+		}
+
+		ownerReference := metav1.OwnerReference{
+			APIVersion: "operator.openshift.io/v1",
+			Kind:       "RunOnceDurationOverride",
+			Name:       original.Name,
+			UID:        original.UID,
+		}
+		desired.OwnerReferences = []metav1.OwnerReference{
+			ownerReference,
 		}
 
 		webhook, err := w.dynamic.Ensure(desired)

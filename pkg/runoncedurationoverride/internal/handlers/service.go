@@ -10,6 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -33,6 +34,16 @@ func (s *serviceHandler) Handle(context *ReconcileRequestContext, original *apps
 
 	desired := s.asset.Service().New()
 	context.ControllerSetter().Set(desired, original)
+
+	ownerReference := metav1.OwnerReference{
+		APIVersion: "operator.openshift.io/v1",
+		Kind:       "RunOnceDurationOverride",
+		Name:       original.Name,
+		UID:        original.UID,
+	}
+	desired.OwnerReferences = []metav1.OwnerReference{
+		ownerReference,
+	}
 
 	name := s.asset.Service().Name()
 	object, err := s.lister.CoreV1ServiceLister().Services(context.WebhookNamespace()).Get(name)

@@ -45,6 +45,16 @@ func (a *apiServiceHandler) Handle(ctx *ReconcileRequestContext, original *appsv
 		object.Spec.CABundle = ctx.GetBundle().ServingCertCA
 		ctx.ControllerSetter().Set(object, original)
 
+		ownerReference := metav1.OwnerReference{
+			APIVersion: "operator.openshift.io/v1",
+			Kind:       "RunOnceDurationOverride",
+			Name:       original.Name,
+			UID:        original.UID,
+		}
+		object.OwnerReferences = []metav1.OwnerReference{
+			ownerReference,
+		}
+
 		apiservice, err := a.ensurer.Ensure(object)
 		if err != nil {
 			handleErr = condition.NewInstallReadinessError(appsv1.AdmissionWebhookNotAvailable, err)

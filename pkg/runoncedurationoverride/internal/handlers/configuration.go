@@ -4,6 +4,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -106,6 +107,16 @@ func (c *configurationHandler) NewConfiguration(context *ReconcileRequestContext
 
 	// Set owner reference.
 	context.ControllerSetter().Set(configuration, override)
+
+	ownerReference := metav1.OwnerReference{
+		APIVersion: "operator.openshift.io/v1",
+		Kind:       "RunOnceDurationOverride",
+		Name:       override.Name,
+		UID:        override.UID,
+	}
+	configuration.OwnerReferences = []metav1.OwnerReference{
+		ownerReference,
+	}
 
 	if len(configuration.Data) == 0 {
 		configuration.Data = map[string]string{}
