@@ -213,8 +213,8 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	// Wait until the secondary scheduler pod is running
-	if err := wait.PollImmediate(5*time.Second, 1*time.Minute, func() (bool, error) {
+	// Wait until the webhook pods are running
+	if err := wait.PollImmediate(5*time.Second, 3*time.Hour, func() (bool, error) {
 		klog.Infof("Listing pods...")
 		podItems, err := kubeClient.CoreV1().Pods("run-once-duration-override").List(ctx, metav1.ListOptions{})
 		if err != nil {
