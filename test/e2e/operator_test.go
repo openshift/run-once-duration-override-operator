@@ -316,6 +316,15 @@ func TestRunOnceDurationOverriding(t *testing.T) {
 		}
 		klog.Infof("Pod successfully assigned to a node: %v", pod.Spec.NodeName)
 
+		if pod.Spec.ActiveDeadlineSeconds == nil {
+			klog.Infof("pod %s ActiveDeadlineSeconds is nil", pod.Name)
+			return false, nil
+		}
+		if *pod.Spec.ActiveDeadlineSeconds != 800 {
+			klog.Infof("pod %s ActiveDeadlineSeconds is not 800 it is %d", pod.Name, pod.Spec.ActiveDeadlineSeconds)
+			return false, nil
+		}
+
 		if pod.Spec.ActiveDeadlineSeconds == nil || *pod.Spec.ActiveDeadlineSeconds != 800 {
 			klog.Infof("pod.Spec.ActiveDeadlineSeconds is not set to 800")
 			return false, nil
