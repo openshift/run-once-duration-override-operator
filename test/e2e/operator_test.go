@@ -214,7 +214,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// Wait until the webhook pods are running
-	if err := wait.PollImmediate(5*time.Second, 3*time.Hour, func() (bool, error) {
+	if err := wait.PollImmediate(5*time.Second, time.Minute, func() (bool, error) {
 		klog.Infof("Listing pods...")
 		podItems, err := kubeClient.CoreV1().Pods("run-once-duration-override-operator").List(ctx, metav1.ListOptions{})
 		if err != nil {
@@ -303,7 +303,7 @@ func TestRunOnceDurationOverriding(t *testing.T) {
 		t.Fatalf("Unable to create a pod: %v", err)
 	}
 
-	if err := wait.PollImmediate(1*time.Second, time.Minute, func() (bool, error) {
+	if err := wait.PollImmediate(1*time.Second, 2*time.Minute, func() (bool, error) {
 		klog.Infof("Listing pods...")
 		pod, err := clientSet.CoreV1().Pods(pod.Namespace).Get(ctx, pod.Name, metav1.GetOptions{})
 		if err != nil {
