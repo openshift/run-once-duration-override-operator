@@ -15,7 +15,7 @@ metadata:
           "spec": {
             "runOnceDurationOverride": {
               "spec": {
-                "activeDeadlineSeconds": 3600,
+                "activeDeadlineSeconds": 3600
               }
             }
           }
