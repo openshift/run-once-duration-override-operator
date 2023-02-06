@@ -66,7 +66,7 @@ func (d *daemonset) New() *appsv1.DaemonSet {
 								"/usr/bin/run-once-duration-override",
 							},
 							Args: []string{
-								"--secure-port=9400",
+								"--secure-port=9448",
 								"--bind-address=127.0.0.1",
 								"--tls-cert-file=/var/serving-cert/tls.crt",
 								"--tls-private-key-file=/var/serving-cert/tls.key",
@@ -80,8 +80,8 @@ func (d *daemonset) New() *appsv1.DaemonSet {
 							},
 							Ports: []corev1.ContainerPort{
 								{
-									ContainerPort: 9400,
-									HostPort:      9400,
+									ContainerPort: 9448,
+									HostPort:      9448,
 									Protocol:      corev1.ProtocolTCP,
 								},
 							},
