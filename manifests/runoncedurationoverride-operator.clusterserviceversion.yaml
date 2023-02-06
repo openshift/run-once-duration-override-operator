@@ -201,7 +201,7 @@ spec:
             - hostnetwork-v2
         # to grant power to the operand to allow anonymous access to the admission server
         - apiGroups:
-            - admission.apps.openshift.io
+            - admission.runoncedurationoverride.openshift.io
           resources:
             - runoncedurationoverrides
           verbs:

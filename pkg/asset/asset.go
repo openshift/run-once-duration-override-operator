@@ -14,7 +14,7 @@ func New(context runtime.OperandContext) *Asset {
 		ServiceAccountName:             context.WebhookName(),
 		OperandImage:                   context.OperandImage(),
 		OperandVersion:                 context.OperandVersion(),
-		AdmissionAPIGroup:              "admission.apps.openshift.io",
+		AdmissionAPIGroup:              "admission.runoncedurationoverride.openshift.io",
 		AdmissionAPIVersion:            "v1",
 		AdmissionAPIResource:           "runoncedurationoverrides",
 		OwnerLabelKey:                  "operator.apps.openshift.io/runoncedurationoverride",
