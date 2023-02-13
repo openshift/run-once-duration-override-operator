@@ -4,3 +4,4 @@ approvers:
 reviewers:
 - ardaguclu
 - ingvagabund
+component: "run-once-duration-override"
