@@ -3,18 +3,19 @@ package operator
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
 	"k8s.io/apiserver/pkg/server"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
-	"os"
 
 	"github.com/openshift/run-once-duration-override-operator/pkg/operator"
 )
 
 const (
 	OperatorName          = "runoncedurationoverride"
-	OperandImageEnvName   = "OPERAND_IMAGE"
+	OperandImageEnvName   = "RELATED_IMAGE_OPERAND_IMAGE"
 	OperandVersionEnvName = "OPERAND_VERSION"
 )
 

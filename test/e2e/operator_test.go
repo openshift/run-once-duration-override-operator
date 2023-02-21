@@ -108,9 +108,9 @@ func TestMain(m *testing.M) {
 				registry := strings.Split(os.Getenv("RELEASE_IMAGE_LATEST"), "/")[0]
 
 				required.Spec.Template.Spec.Containers[0].Image = registry + "/" + os.Getenv("NAMESPACE") + "/pipeline:run-once-duration-override-operator"
-				// OPERAND_IMAGE env
+				// RELATED_IMAGE_OPERAND_IMAGE env
 				for i, env := range required.Spec.Template.Spec.Containers[0].Env {
-					if env.Name == "OPERAND_IMAGE" {
+					if env.Name == "RELATED_IMAGE_OPERAND_IMAGE" {
 						required.Spec.Template.Spec.Containers[0].Env[i].Value = "registry.ci.openshift.org/ocp/4.13:run-once-duration-override-webhook"
 						break
 					}
