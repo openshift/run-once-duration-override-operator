@@ -18,7 +18,7 @@ This operator manages OpenShift `RunOnceDurationOverride` Admission Webhook Serv
 
 1. Update the image spec under `.spec.template.spec.containers[0].image` field in the `deploy/07_deployment.yaml` Deployment to point to the newly built image
 
-1. Update the `OPERAND_IMAGE` env value under `.spec.template.spec.containers[0].envs` field in the `deploy/07_deployment.yaml` to point to the admission webhook image
+1. Update the `RELATED_IMAGE_OPERAND_IMAGE` env value under `.spec.template.spec.containers[0].envs` field in the `deploy/07_deployment.yaml` to point to the admission webhook image
 
 1. Update the `.spec.runOnceDurationOverride.spec.activeDeadlineSeconds` under `deploy/08_cr.yaml` as needed
 
@@ -61,7 +61,7 @@ This process refers to building the operator in a way that it can be installed l
 
  1. Update the `.spec.install.spec.deployments[0].spec.template.spec.containers[0].image` field in the RODOO CSV under `manifests/runoncedurationoverride-operator.clusterserviceversion.yaml` to point to the newly built image.
 
- 1. Update the `OPERAND_IMAGE` env value under `.spec.install.spec.deployments[0].spec.template.spec.containers[0].envs` field in the RODOO CSV under `manifests/runoncedurationoverride-operator.clusterserviceversion.yaml` to point to the admission webhook image.
+ 1. Update the `RELATED_IMAGE_OPERAND_IMAGE` env value under `.spec.install.spec.deployments[0].spec.template.spec.containers[0].envs` field in the RODOO CSV under `manifests/runoncedurationoverride-operator.clusterserviceversion.yaml` to point to the admission webhook image.
 
 
  1. build and push the metadata image to a registry (e.g. https://quay.io):

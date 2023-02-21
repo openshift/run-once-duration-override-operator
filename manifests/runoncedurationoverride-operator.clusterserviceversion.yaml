@@ -292,7 +292,7 @@ spec:
                       valueFrom:
                         fieldRef:
                           fieldPath: metadata.namespace
-                    - name: OPERAND_IMAGE
+                    - name: RELATED_IMAGE_OPERAND_IMAGE
                       value: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel-8:latest
                     - name: OPERAND_VERSION
                       value: 1.0.0
