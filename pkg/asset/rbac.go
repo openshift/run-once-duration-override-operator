@@ -42,6 +42,71 @@ func (s *rbac) New() []*RBACItem {
 	)
 
 	return []*RBACItem{
+		// operands metrics
+		{
+			Resource: "roles",
+			Object: &rbacv1.Role{
+				TypeMeta: metav1.TypeMeta{
+					Kind: "Role",
+					APIVersion: "rbac.authorization.k8s.io/v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "prometheus-k8s",
+					Namespace: s.values.Namespace,
+					Annotations: map[string]string{
+						"include.release.openshift.io/self-managed-high-availability": "true",
+						"include.release.openshift.io/single-node-developer": "true",
+					},
+				},
+				Rules: []rbacv1.PolicyRule{
+					{
+						APIGroups: []string{
+							"",
+						},
+						Resources: []string{
+							"services",
+							"endpoints",
+							"pods",
+						},
+						Verbs: []string{
+							"get",
+							"list",
+							"watch",
+						},
+					},
+				},
+			},
+		},
+		{
+			Resource: "rolebindings",
+			Object: &rbacv1.RoleBinding{
+				TypeMeta: metav1.TypeMeta{
+					Kind: "RoleBinding",
+					APIVersion: "rbac.authorization.k8s.io/v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "prometheus-k8s",
+					Namespace: s.values.Namespace,
+					Annotations: map[string]string{
+						"include.release.openshift.io/self-managed-high-availability": "true",
+						"include.release.openshift.io/single-node-developer": "true",
+					},
+				},
+				RoleRef: rbacv1.RoleRef{
+					APIGroup: "rbac.authorization.k8s.io",
+					Kind: "Role",
+					Name: "prometheus-k8s",
+				},
+				Subjects: []rbacv1.Subject{
+					{
+						Kind: "ServiceAccount",
+						Name: "prometheus-k8s",
+						Namespace: "openshift-monitoring",
+					},
+				},
+			},
+		},
+
 		// service account
 		{
 			Resource: "serviceaccounts",
