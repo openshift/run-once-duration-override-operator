@@ -1,6 +1,7 @@
 package reconciler
 
 import (
+	"context"
 	"fmt"
 
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
@@ -34,6 +35,7 @@ func NewReconciler(options *handlers.Options) *reconciler {
 		handlers.NewDeploymentReadyHandler(options),
 		handlers.NewWebhookConfigurationHandlerHandler(options),
 		handlers.NewAvailabilityHandler(options),
+		handlers.NewServiceMonitorHandler(options),
 	}
 
 	return &reconciler{
@@ -57,7 +59,7 @@ type reconciler struct {
 	dynamic        dynamicclient.Ensurer
 }
 
-func (r *reconciler) Reconcile(request controllerreconciler.Request) (result controllerreconciler.Result, err error) {
+func (r *reconciler) Reconcile(ctx context.Context, request controllerreconciler.Request) (result controllerreconciler.Result, err error) {
 	klog.V(4).Infof("key=%s new request for reconcile", request.Name)
 
 	result = controllerreconciler.Result{}

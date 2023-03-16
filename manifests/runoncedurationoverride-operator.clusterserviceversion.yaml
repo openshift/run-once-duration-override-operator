@@ -73,12 +73,20 @@ spec:
     spec:
       clusterPermissions:
       - rules:
+        # to have the power to expose metrics of the operand
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - servicemonitors
+          verbs:
+          - "*"
         # to have the power to create 'RoleBinding' that refs extension-apiserver-authentication-reader
         # in kube-system namespace.
         # to give the operand power to read the config for terminating authentication.
         - apiGroups:
             - rbac.authorization.k8s.io
           resources:
+            - roles
             - rolebindings
           verbs:
             - create
@@ -210,6 +218,13 @@ spec:
         serviceAccountName: run-once-duration-override-operator
       permissions:
       - rules:
+        # to have the power to expose metrics of the operand
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - servicemonitors
+          verbs:
+          - "*"
         # to have the power to ensure RBAC for the operand
         - apiGroups:
             - rbac.authorization.k8s.io

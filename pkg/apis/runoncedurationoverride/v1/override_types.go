@@ -118,6 +118,10 @@ type RunOnceDurationOverrideResources struct {
 	// so that service-ca operator can issue a signed serving certificate/key pair.
 	ServiceRef *corev1.ObjectReference `json:"serviceRef,omitempty"`
 
+	// ServiceMonitor points to the ServiceMonitor object that exposes metrics for the RunOnceDurationOverride
+	// webhook admission server.
+	ServiceMonitorRef *corev1.ObjectReference `json:"serviceMonitorRef,omitempty"`
+
 	// ServiceCertSecretRef points to the Secret object which is created by the
 	// service-ca operator and contains the signed serving certificate/key pair.
 	ServiceCertSecretRef *corev1.ObjectReference `json:"serviceCertSecretRef,omitempty"`

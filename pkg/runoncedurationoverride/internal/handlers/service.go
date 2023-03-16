@@ -66,6 +66,27 @@ func (s *serviceHandler) Handle(context *ReconcileRequestContext, original *apps
 	klog.V(2).Infof("key=%s resource=%T/%s resource-version=%s setting object reference", original.Name, object, object.Name, newRef.ResourceVersion)
 
 	current.Status.Resources.ServiceRef = newRef
+
+	desiredMetrics := s.asset.MetricsService().New()
+	context.ControllerSetter().Set(desiredMetrics, original)
+	metricsName := s.asset.Service().Name()
+	objectMetrics, err := s.lister.CoreV1ServiceLister().Services(context.WebhookNamespace()).Get(metricsName)
+	if err != nil {
+		if !k8serrors.IsNotFound(err) {
+			handleErr = condition.NewInstallReadinessError(appsv1.CertNotAvailable, err)
+			return
+		}
+
+		service, err := s.dynamic.Ensure(desiredMetrics)
+		if err != nil {
+			handleErr = condition.NewInstallReadinessError(appsv1.CertNotAvailable, err)
+			return
+		}
+
+		objectMetrics = service
+		klog.V(2).Infof("key=%s resource=%T/%s successfully created", original.Name, objectMetrics, objectMetrics.Name)
+	}
+
 	return
 }
 

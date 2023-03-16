@@ -1,6 +1,7 @@
 package secondarywatch
 
 import (
+	listerscvmonv1 "github.com/prometheus-operator/prometheus-operator/pkg/client/listers/monitoring/v1"
 	admissionregistrationv1 "k8s.io/client-go/listers/admissionregistration/v1"
 	listersappsv1 "k8s.io/client-go/listers/apps/v1"
 	listerscorev1 "k8s.io/client-go/listers/core/v1"
@@ -16,6 +17,7 @@ type Lister struct {
 	secret         listerscorev1.SecretLister
 	serviceaccount listerscorev1.ServiceAccountLister
 	webhook        admissionregistrationv1.MutatingWebhookConfigurationLister
+	servicemonitor listerscvmonv1.ServiceMonitorLister
 }
 
 func (l *Lister) CoreV1ConfigMapLister() listerscorev1.ConfigMapLister {
@@ -40,4 +42,8 @@ func (l *Lister) AppsV1DaemonSetLister() listersappsv1.DaemonSetLister {
 
 func (l *Lister) AdmissionRegistrationV1MutatingWebhookConfigurationLister() admissionregistrationv1.MutatingWebhookConfigurationLister {
 	return l.webhook
+}
+
+func (l *Lister) ServiceMonitorV1Lister() listerscvmonv1.ServiceMonitorLister {
+	return l.servicemonitor
 }
