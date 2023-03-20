@@ -24,7 +24,7 @@ CODEGEN_GROUPS_VERSION :=runoncedurationoverride:v1
 CODEGEN_GO_HEADER_FILE := boilerplate.go.txt
 
 # build image for ci
-$(call build-image,runoncedurationoverride-operator,$(CI_IMAGE_REGISTRY)/ocp/4.13:run-once-duration-override-operator,./images/ci/Dockerfile,.)
+$(call build-image,runoncedurationoverride-operator,$(CI_IMAGE_REGISTRY)/ocp/4.14:run-once-duration-override-operator,./images/ci/Dockerfile,.)
 
 $(call verify-golang-versions,Dockerfile.rhel7)
 

@@ -111,7 +111,7 @@ func TestMain(m *testing.M) {
 				// RELATED_IMAGE_OPERAND_IMAGE env
 				for i, env := range required.Spec.Template.Spec.Containers[0].Env {
 					if env.Name == "RELATED_IMAGE_OPERAND_IMAGE" {
-						required.Spec.Template.Spec.Containers[0].Env[i].Value = "registry.ci.openshift.org/ocp/4.13:run-once-duration-override-webhook"
+						required.Spec.Template.Spec.Containers[0].Env[i].Value = "registry.ci.openshift.org/ocp/4.14:run-once-duration-override-webhook"
 						break
 					}
 				}
@@ -316,8 +316,13 @@ func TestRunOnceDurationOverriding(t *testing.T) {
 		}
 		klog.Infof("Pod successfully assigned to a node: %v", pod.Spec.NodeName)
 
-		if pod.Spec.ActiveDeadlineSeconds == nil || *pod.Spec.ActiveDeadlineSeconds != 800 {
-			klog.Infof("pod.Spec.ActiveDeadlineSeconds is not set to 800")
+		if pod.Spec.ActiveDeadlineSeconds == nil {
+			klog.Infof("pod.Spec.ActiveDeadlineSeconds is not set")
+			return false, nil
+		}
+
+		if *pod.Spec.ActiveDeadlineSeconds != 800 {
+			klog.Infof("pod.Spec.ActiveDeadlineSeconds is set to %d not 800", *pod.Spec.ActiveDeadlineSeconds)
 			return false, nil
 		}
 
