@@ -23,7 +23,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: run-once-duration-override-operator
-          image: registry.ci.openshift.org/ocp/4.13:run-once-duration-override-operator
+          image: registry.ci.openshift.org/ocp/4.14:run-once-duration-override-operator
           imagePullPolicy: Always
           command:
             - /usr/bin/run-once-duration-override-operator
@@ -41,7 +41,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: RELATED_IMAGE_OPERAND_IMAGE
-              value: registry.ci.openshift.org/ocp/4.13:run-once-duration-override-webhook
+              value: registry.ci.openshift.org/ocp/4.14:run-once-duration-override-webhook
             - name: OPERAND_VERSION
               value: 1.0.0
           ports:
