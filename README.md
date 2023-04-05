@@ -90,9 +90,9 @@ This process refers to building the operator in a way that it can be installed l
       image: quay.io/<<QUAY_USER>>/run-once-duration-override-operator-index:<<IMAGE_TAG>>
     ```
 
- 1. create `run-once-duration-override-operator` namespace:
+ 1. create `openshift-run-once-duration-override-operator` namespace:
     ```
-    $ oc create ns run-once-duration-override-operator
+    $ oc create ns openshift-run-once-duration-override-operator
     ```
 
  1. open the console Operators -> OperatorHub, search for  `Run Once Duration Override Operator` and install the operator
