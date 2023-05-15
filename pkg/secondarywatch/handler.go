@@ -2,7 +2,7 @@ package secondarywatch
 
 import (
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 )
