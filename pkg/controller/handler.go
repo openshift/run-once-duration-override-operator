@@ -23,7 +23,7 @@ type EventHandler struct {
 	queue workqueue.RateLimitingInterface
 }
 
-func (e EventHandler) OnAdd(obj interface{}) {
+func (e EventHandler) OnAdd(obj interface{}, isInInitialList bool) {
 	key, err := cache.MetaNamespaceKeyFunc(obj)
 
 	if err != nil {
@@ -37,7 +37,7 @@ func (e EventHandler) OnAdd(obj interface{}) {
 // OnUpdate creates UpdateEvent and calls Update on EventHandler
 func (e EventHandler) OnUpdate(oldObj, newObj interface{}) {
 	// We don't distinguish between an add and update.
-	e.OnAdd(newObj)
+	e.OnAdd(newObj, false)
 }
 
 func (e EventHandler) OnDelete(obj interface{}) {

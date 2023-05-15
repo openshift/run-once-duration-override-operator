@@ -20,7 +20,7 @@ type resourceEventHandler struct {
 	enqueuer runtime.Enqueuer
 }
 
-func (r *resourceEventHandler) OnAdd(obj interface{}) {
+func (r *resourceEventHandler) OnAdd(obj interface{}, isInInitialList bool) {
 	metaObj, err := runtime.GetMetaObject(obj)
 	if err != nil {
 		klog.Errorf("[secondarywatch] OnAdd: invalid object, type=%T", obj)
