@@ -216,7 +216,7 @@ func TestMain(m *testing.M) {
 	// Wait until the webhook pods are running
 	if err := wait.PollImmediate(5*time.Second, time.Minute, func() (bool, error) {
 		klog.Infof("Listing pods...")
-		podItems, err := kubeClient.CoreV1().Pods("run-once-duration-override").List(ctx, metav1.ListOptions{})
+		podItems, err := kubeClient.CoreV1().Pods("run-once-duration-override-operator").List(ctx, metav1.ListOptions{})
 		if err != nil {
 			klog.Errorf("Unable to list pods: %v", err)
 			return false, nil
