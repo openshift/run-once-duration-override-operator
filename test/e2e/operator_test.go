@@ -166,7 +166,7 @@ func TestMain(m *testing.M) {
 	}
 
 	var runOnceDurationoverridePod *corev1.Pod
-	// Wait until the run once duration override pod is running
+	// Wait until the run once duration override operator pod is running
 	if err := wait.PollImmediate(5*time.Second, 1*time.Minute, func() (bool, error) {
 		klog.Infof("Listing pods...")
 		podItems, err := kubeClient.CoreV1().Pods("run-once-duration-override-operator").List(ctx, metav1.ListOptions{})
@@ -241,6 +241,27 @@ func TestMain(m *testing.M) {
 		return true, nil
 	}); err != nil {
 		klog.Errorf("Unable to wait for all webhook pods running: %v", err)
+		os.Exit(1)
+	}
+
+	// Wait until the webhook pods are running
+	if err := wait.PollImmediate(5*time.Second, 2*time.Minute, func() (bool, error) {
+		klog.Infof("Listing pods...")
+		mutatingWebhooks, err := kubeClient.AdmissionregistrationV1().MutatingWebhookConfigurations().List(ctx, metav1.ListOptions{})
+		if err != nil {
+			klog.Errorf("Unable to list mutatingwebhookconfigurations: %v", err)
+			return false, nil
+		}
+
+		for _, mutatingWebhook := range mutatingWebhooks.Items {
+			if strings.HasPrefix(mutatingWebhook.Name, "runoncedurationoverrides") {
+				return true, nil
+			}
+		}
+
+		return false, nil
+	}); err != nil {
+		klog.Errorf("Unable to wait for mutatingwebhookconfigurations: %v", err)
 		os.Exit(1)
 	}
 

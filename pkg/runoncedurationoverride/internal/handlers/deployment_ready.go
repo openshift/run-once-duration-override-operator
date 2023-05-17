@@ -3,7 +3,7 @@ package handlers
 import (
 	"fmt"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"

@@ -8,7 +8,7 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
 	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
