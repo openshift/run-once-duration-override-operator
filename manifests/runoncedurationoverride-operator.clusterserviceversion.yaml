@@ -23,7 +23,7 @@ metadata:
       ]
     certifiedLevel: "false"
     containerImage: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-operator-rhel-8:latest
-    createdAt: 2023/01/31
+    createdAt: 2023/07/31
     olm.skipRange: ">=0.0.0 <1.0.1"
     description: An operator to manage the OpenShift RunOnceDurationOverride Mutating Admission Webhook Server
     repository: https://github.com/openshift/run-once-duration-override-operator
@@ -55,7 +55,7 @@ spec:
   maintainers:
   - email: support@redhat.com
     name: Red Hat
-  minKubeVersion: 1.27.0
+  minKubeVersion: 1.26.0
   labels:
     olm-owner-enterprise-app: run-once-duration-override-operator
     olm-status-descriptors: run-once-duration-override-operator.v1.0.1
