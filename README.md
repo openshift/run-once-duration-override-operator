@@ -3,6 +3,13 @@ This operator manages OpenShift `RunOnceDurationOverride` Admission Webhook Serv
 
 `RunOnceDurationOverride` Admission Webhook Server is located at [run-once-duration-override](https://github.com/openshift/run-once-duration-override).
 
+## Releases
+
+| rodoo version | ocp version |
+| ------------- | ----------- |
+| 1.0.0         | 4.13, 4.14  |
+| 1.0.1         | 4.13, 4.14  |
+
 ## Deploy the Operator
 
 ### Quick Development
