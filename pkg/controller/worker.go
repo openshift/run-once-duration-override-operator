@@ -59,7 +59,7 @@ func processNextWorkItem(shutdownCtx context.Context, controller Interface) bool
 
 	// Run the syncHandler, passing it the namespace/name string of the
 	// Foo resource to be synced.
-	result, err := controller.Reconciler().Reconcile(request)
+	result, err := controller.Reconciler().Reconcile(shutdownCtx, request)
 	if err != nil {
 		// Put the item back on the workqueue to handle any transient errors.
 		controller.Queue().AddRateLimited(request)
