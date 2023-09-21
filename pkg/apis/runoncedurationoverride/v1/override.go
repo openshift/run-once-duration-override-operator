@@ -38,6 +38,9 @@ func (in *RunOnceDurationOverrideConfigSpec) Hash() string {
 	value := fmt.Sprintf("%s", in)
 
 	writer := sha256.New()
-	writer.Write([]byte(value))
+	_, err := writer.Write([]byte(value))
+	if err != nil {
+		return ""
+	}
 	return hex.EncodeToString(writer.Sum(nil))
 }

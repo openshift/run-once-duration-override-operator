@@ -27,6 +27,7 @@ const (
 func GetClientCA(client kubernetes.Interface) (clientCA []byte, err error) {
 	if client == nil {
 		err = errors.New("no client specified")
+		return
 	}
 
 	configmap, getErr := client.CoreV1().ConfigMaps(authConfigNamespace).Get(context.TODO(), authConfigName, metav1.GetOptions{})
