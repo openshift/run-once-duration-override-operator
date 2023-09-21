@@ -119,6 +119,6 @@ func (b *Builder) WithCondition(desired *appsv1.RunOnceDurationOverrideCondition
 
 func (b *Builder) init() {
 	if b.status == nil {
-		b.status.Conditions = []appsv1.RunOnceDurationOverrideCondition{}
+		b.status = &appsv1.RunOnceDurationOverrideStatus{Conditions: []appsv1.RunOnceDurationOverrideCondition{}}
 	}
 }

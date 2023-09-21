@@ -17,10 +17,16 @@ func main() {
 		defer r.Close()
 	}
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(r)
+	_, err = buf.ReadFrom(r)
+	if err != nil {
+		panic(err)
+	}
 	yamlPayload, err := yaml.JSONToYAML(buf.Bytes())
 	if err != nil {
 		panic(err)
 	}
-	os.Stdout.Write(yamlPayload[:])
+	_, err = os.Stdout.Write(yamlPayload[:])
+	if err != nil {
+		panic(err)
+	}
 }

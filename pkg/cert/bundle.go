@@ -40,19 +40,31 @@ func (b *Bundle) Validate() error {
 func (b *Bundle) Hash() string {
 	writer := sha256.New()
 
-	writer.Write(b.ServiceKey)
+	_, err := writer.Write(b.ServiceKey)
+	if err != nil {
+		return ""
+	}
 	h1 := writer.Sum(nil)
 
 	writer.Reset()
-	writer.Write(b.ServiceCert)
+	_, err = writer.Write(b.ServiceCert)
+	if err != nil {
+		return ""
+	}
 	h2 := writer.Sum(h1)
 
 	writer.Reset()
-	writer.Write(b.ServingCertCA)
+	_, err = writer.Write(b.ServingCertCA)
+	if err != nil {
+		return ""
+	}
 	h := writer.Sum(h2)
 
 	writer.Reset()
-	writer.Write(h)
+	_, err = writer.Write(h)
+	if err != nil {
+		return ""
+	}
 
 	return hex.EncodeToString(writer.Sum(nil))
 }

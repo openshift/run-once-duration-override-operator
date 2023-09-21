@@ -67,6 +67,7 @@ func (c *client) Ensure(resource string, object runtime.Object) (current *unstru
 	bytes, patchErr := PatchWithUnstructured(original, modified, object)
 	if patchErr != nil {
 		err = fmt.Errorf("failed to generate patch %s - %s", kind, patchErr.Error())
+		return
 	}
 
 	current, err = client.Patch(context.TODO(), modified.GetName(), types.StrategicMergePatchType, bytes, metav1.PatchOptions{})

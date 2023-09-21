@@ -43,14 +43,38 @@ func New(options *Options) (lister *Lister, startFunc StarterFunc) {
 	startFunc = func(enqueuer runtime.Enqueuer, shutdown context.Context) error {
 		handler := newResourceEventHandler(enqueuer)
 
-		deployment.Informer().AddEventHandler(handler)
-		daemonset.Informer().AddEventHandler(handler)
-		pod.Informer().AddEventHandler(handler)
-		configmap.Informer().AddEventHandler(handler)
-		service.Informer().AddEventHandler(handler)
-		secret.Informer().AddEventHandler(handler)
-		serviceaccount.Informer().AddEventHandler(handler)
-		webhook.Informer().AddEventHandler(handler)
+		_, err := deployment.Informer().AddEventHandler(handler)
+		if err != nil {
+			return err
+		}
+		_, err = daemonset.Informer().AddEventHandler(handler)
+		if err != nil {
+			return err
+		}
+		_, err = pod.Informer().AddEventHandler(handler)
+		if err != nil {
+			return err
+		}
+		_, err = configmap.Informer().AddEventHandler(handler)
+		if err != nil {
+			return err
+		}
+		_, err = service.Informer().AddEventHandler(handler)
+		if err != nil {
+			return err
+		}
+		_, err = secret.Informer().AddEventHandler(handler)
+		if err != nil {
+			return err
+		}
+		_, err = serviceaccount.Informer().AddEventHandler(handler)
+		if err != nil {
+			return err
+		}
+		_, err = webhook.Informer().AddEventHandler(handler)
+		if err != nil {
+			return err
+		}
 
 		factory.Start(shutdown.Done())
 		status := factory.WaitForCacheSync(shutdown.Done())
