@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	k8sappsv1 "k8s.io/api/apps/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -65,6 +66,9 @@ func (c *daemonSetHandler) Handle(context *ReconcileRequestContext, original *ap
 		ensure = true
 	case accessor.GetAnnotations()[values.ServingCertHashAnnotationKey] != current.Status.Hash.ServingCert:
 		klog.V(2).Infof("key=%s resource=%T/%s serving cert hash mismatch", original.Name, object, accessor.GetName())
+		ensure = true
+	case values.OperandImage != object.(*k8sappsv1.DaemonSet).Spec.Template.Spec.Containers[0].Image:
+		klog.V(2).Infof("key=%s resource=%T/%s container image mismatch", original.Name, object, accessor.GetName())
 		ensure = true
 	}
 
