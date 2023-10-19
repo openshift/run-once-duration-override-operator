@@ -71,6 +71,7 @@ func (d *daemonset) New() *appsv1.DaemonSet {
 								"--tls-cert-file=/var/serving-cert/tls.crt",
 								"--tls-private-key-file=/var/serving-cert/tls.key",
 								"--v=3",
+								"--feature-gates=UnauthenticatedHTTP2DOSMitigation=true",
 							},
 							Env: []corev1.EnvVar{
 								{
