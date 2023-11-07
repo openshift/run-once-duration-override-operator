@@ -5,10 +5,11 @@ This operator manages OpenShift `RunOnceDurationOverride` Admission Webhook Serv
 
 ## Releases
 
-| rodoo version | ocp version |
-| ------------- | ----------- |
-| 1.0.0         | 4.13, 4.14  |
-| 1.0.1         | 4.13, 4.14  |
+| rodoo version | ocp version | k8s version | golang |
+| ------------- | ----------- | ----------- | ------ |
+| 1.0.0         | 4.13, 4.14  | 1.26        | 1.20   |
+| 1.0.1         | 4.13, 4.14  | 1.26        | 1.20   |
+| 1.1.0         | 4.15, 4.16  | 1.28        | 1.20   |
 
 ## Deploy the Operator
 
