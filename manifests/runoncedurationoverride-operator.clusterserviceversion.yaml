@@ -1,7 +1,7 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
-  name: runoncedurationoverrideoperator.v1.0.1
+  name: runoncedurationoverrideoperator.v1.1.0
   namespace: run-once-duration-override-operator
   annotations:
     alm-examples: |
@@ -23,8 +23,8 @@ metadata:
       ]
     certifiedLevel: "false"
     containerImage: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-operator-rhel-8:latest
-    createdAt: 2023/07/31
-    olm.skipRange: ">=0.0.0 <1.0.1"
+    createdAt: 2023/11/07
+    olm.skipRange: ">=1.0.0 <1.1.0"
     description: An operator to manage the OpenShift RunOnceDurationOverride Mutating Admission Webhook Server
     repository: https://github.com/openshift/run-once-duration-override-operator
     support: Red Hat, Inc.
@@ -32,7 +32,7 @@ metadata:
     categories: OpenShift Optional
     operators.openshift.io/valid-subscription: '["OpenShift Container Platform", "OpenShift Platform Plus"]'
 spec:
-  replaces: runoncedurationoverrideoperator.v1.0.0
+  replaces: runoncedurationoverrideoperator.v1.0.1
   customresourcedefinitions:
     owned:
     - displayName: Run Once Duration Override
@@ -47,7 +47,7 @@ spec:
   provider:
     name: Red Hat, Inc.
   maturity: beta
-  version: 1.0.1
+  version: 1.1.0
   links:
   - name: Source Code
     url: https://github.com/openshift/run-once-duration-override
@@ -56,10 +56,10 @@ spec:
   maintainers:
   - email: support@redhat.com
     name: Red Hat
-  minKubeVersion: 1.26.0
+  minKubeVersion: 1.28.0
   labels:
     olm-owner-enterprise-app: run-once-duration-override-operator
-    olm-status-descriptors: run-once-duration-override-operator.v1.0.1
+    olm-status-descriptors: run-once-duration-override-operator.v1.1.0
   installModes:
   - supported: true
     type: OwnNamespace
@@ -296,7 +296,7 @@ spec:
                     - name: RELATED_IMAGE_OPERAND_IMAGE
                       value: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel-8:latest
                     - name: OPERAND_VERSION
-                      value: 1.0.1
+                      value: 1.1.0
                   ports:
                     - containerPort: 8080
                   readinessProbe:
