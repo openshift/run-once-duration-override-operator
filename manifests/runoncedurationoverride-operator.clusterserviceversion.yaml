@@ -22,7 +22,7 @@ metadata:
         }
       ]
     certifiedLevel: "false"
-    containerImage: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-operator-rhel-8:latest
+    containerImage: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel9-operator:latest
     createdAt: 2023/11/07
     olm.skipRange: ">=1.0.0 <1.1.0"
     description: An operator to manage the OpenShift RunOnceDurationOverride Mutating Admission Webhook Server
@@ -276,7 +276,7 @@ spec:
                     capabilities:
                       drop:
                       - ALL
-                  image: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-operator-rhel-8:latest
+                  image: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel9-operator:latest
                   command:
                     - /usr/bin/run-once-duration-override-operator
                   args:
