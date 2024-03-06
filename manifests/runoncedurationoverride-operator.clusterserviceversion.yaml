@@ -32,8 +32,8 @@ metadata:
     features.operators.openshift.io/token-auth-azure: "false"
     features.operators.openshift.io/token-auth-gcp: "false"
     features.operators.openshift.io/cnf: "false"
-    features.operators.openshift.io/cni	: "false"
-    features.operators.openshift.io/csi: "false"    
+    features.operators.openshift.io/cni: "false"
+    features.operators.openshift.io/csi: "false"
     olm.skipRange: ">=1.0.0 <1.1.1"
     description: An operator to manage the OpenShift RunOnceDurationOverride Mutating Admission Webhook Server
     repository: https://github.com/openshift/run-once-duration-override-operator
