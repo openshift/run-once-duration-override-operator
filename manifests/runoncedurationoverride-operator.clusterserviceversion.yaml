@@ -1,7 +1,7 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
-  name: runoncedurationoverrideoperator.v1.1.0
+  name: runoncedurationoverrideoperator.v1.1.1
   namespace: run-once-duration-override-operator
   annotations:
     alm-examples: |
@@ -24,7 +24,7 @@ metadata:
     certifiedLevel: "false"
     containerImage: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel9-operator:latest
     createdAt: 2023/11/07
-    olm.skipRange: ">=1.0.0 <1.1.0"
+    olm.skipRange: ">=1.0.0 <1.1.1"
     description: An operator to manage the OpenShift RunOnceDurationOverride Mutating Admission Webhook Server
     repository: https://github.com/openshift/run-once-duration-override-operator
     support: Red Hat, Inc.
@@ -32,7 +32,7 @@ metadata:
     categories: OpenShift Optional
     operators.openshift.io/valid-subscription: '["OpenShift Container Platform", "OpenShift Platform Plus"]'
 spec:
-  replaces: runoncedurationoverrideoperator.v1.0.1
+  replaces: runoncedurationoverrideoperator.v1.1.0
   customresourcedefinitions:
     owned:
     - displayName: Run Once Duration Override
@@ -47,7 +47,7 @@ spec:
   provider:
     name: Red Hat, Inc.
   maturity: beta
-  version: 1.1.0
+  version: 1.1.1
   links:
   - name: Source Code
     url: https://github.com/openshift/run-once-duration-override
@@ -59,7 +59,7 @@ spec:
   minKubeVersion: 1.28.0
   labels:
     olm-owner-enterprise-app: run-once-duration-override-operator
-    olm-status-descriptors: run-once-duration-override-operator.v1.1.0
+    olm-status-descriptors: run-once-duration-override-operator.v1.1.1
   installModes:
   - supported: true
     type: OwnNamespace
@@ -296,7 +296,7 @@ spec:
                     - name: RELATED_IMAGE_OPERAND_IMAGE
                       value: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel-8:latest
                     - name: OPERAND_VERSION
-                      value: 1.1.0
+                      value: 1.1.1
                   ports:
                     - containerPort: 8080
                   readinessProbe:

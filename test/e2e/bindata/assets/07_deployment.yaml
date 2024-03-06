@@ -43,7 +43,7 @@ spec:
             - name: RELATED_IMAGE_OPERAND_IMAGE
               value: RUNONCEDURATIONOVERRIDE_OPERAND_IMAGE
             - name: OPERAND_VERSION
-              value: 1.0.0
+              value: 1.1.1
           ports:
             - containerPort: 8080
           readinessProbe:
