@@ -87,6 +87,7 @@ func (d *daemonset) New() *appsv1.DaemonSet {
 							},
 							SecurityContext: &corev1.SecurityContext{
 								AllowPrivilegeEscalation: pointer.BoolPtr(false),
+								ReadOnlyRootFilesystem:   pointer.BoolPtr(true),
 								Capabilities: &corev1.Capabilities{
 									Drop: []corev1.Capability{"ALL"},
 								},
