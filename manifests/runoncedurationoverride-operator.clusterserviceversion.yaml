@@ -23,8 +23,8 @@ metadata:
       ]
     certifiedLevel: "false"
     containerImage: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel9-operator:latest
-    createdAt: 2023/11/07
-    features.operators.openshift.io/disconnected: "false"
+    createdAt: 2024/07/01
+    features.operators.openshift.io/disconnected: "true"
     features.operators.openshift.io/fips-compliant: "true"
     features.operators.openshift.io/proxy-aware: "false"
     features.operators.openshift.io/tls-profiles: "false"
