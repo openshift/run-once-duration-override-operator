@@ -283,7 +283,7 @@ spec:
                 - name: run-once-duration-override-operator
                   securityContext:
                     allowPrivilegeEscalation: false
-                    readOnlyRootFilesystem': true
+                    readOnlyRootFilesystem: true
                     capabilities:
                       drop:
                       - ALL
