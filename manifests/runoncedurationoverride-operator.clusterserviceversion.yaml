@@ -319,4 +319,10 @@ spec:
                       path: /healthz
                       port: 8080
                     initialDelaySeconds: 5
+                  volumeMounts:
+                  - name: tmp
+                    mountPath: "/tmp"
               serviceAccountName: run-once-duration-override-operator
+              volumes:
+              - name: tmp
+                emptyDir: {}

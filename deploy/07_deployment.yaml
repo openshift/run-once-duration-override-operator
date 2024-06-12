@@ -21,6 +21,9 @@ spec:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
+      volumes:
+      - name: tmp
+        emptyDir: {}
       containers:
         - name: run-once-duration-override-operator
           securityContext:
@@ -66,3 +69,6 @@ spec:
             capabilities:
               drop:
               - ALL
+          volumeMounts:
+          - name: tmp
+            mountPath: "/tmp"
