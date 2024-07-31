@@ -34,7 +34,7 @@ metadata:
     features.operators.openshift.io/cnf: "false"
     features.operators.openshift.io/cni: "false"
     features.operators.openshift.io/csi: "false"
-    olm.skipRange: ">=1.1.1 <1.2.0"
+    olm.skipRange: ">=1.1.0 <1.2.0"
     description: An operator to manage the OpenShift RunOnceDurationOverride Mutating Admission Webhook Server
     repository: https://github.com/openshift/run-once-duration-override-operator
     support: Red Hat, Inc.
@@ -42,7 +42,17 @@ metadata:
     categories: OpenShift Optional
     operators.openshift.io/valid-subscription: '["OpenShift Container Platform", "OpenShift Platform Plus"]'
 spec:
-  replaces: runoncedurationoverrideoperator.v1.1.1
+  replaces: runoncedurationoverrideoperator.v1.1.0
+  # buffering up to 6 1.1.z releases to allow to include these in all supported bundle index images
+  # The buffer len 6 should be sufficient for normal cadance. Including CVE releases.
+  # The buffer can be extened later as needed.
+  skips:
+  - runoncedurationoverrideoperator.v1.1.1
+  - runoncedurationoverrideoperator.v1.1.2
+  - runoncedurationoverrideoperator.v1.1.3
+  - runoncedurationoverrideoperator.v1.1.4
+  - runoncedurationoverrideoperator.v1.1.5
+  - runoncedurationoverrideoperator.v1.1.6
   customresourcedefinitions:
     owned:
     - displayName: Run Once Duration Override
