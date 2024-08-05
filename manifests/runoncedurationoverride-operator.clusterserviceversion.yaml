@@ -47,6 +47,13 @@ spec:
   # The buffer len 6 should be sufficient for normal cadance. Including CVE releases.
   # The buffer can be extened later as needed.
   skips:
+  - runoncedurationoverrideoperator.v1.0.0
+  - runoncedurationoverrideoperator.v1.0.1
+  - runoncedurationoverrideoperator.v1.0.2
+  - runoncedurationoverrideoperator.v1.0.3
+  - runoncedurationoverrideoperator.v1.0.4
+  - runoncedurationoverrideoperator.v1.0.5
+  - runoncedurationoverrideoperator.v1.0.6
   - runoncedurationoverrideoperator.v1.1.1
   - runoncedurationoverrideoperator.v1.1.2
   - runoncedurationoverrideoperator.v1.1.3
