@@ -15,6 +15,7 @@ import (
 	k8sclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
+	clocktesting "k8s.io/utils/clock/testing"
 	utilpointer "k8s.io/utils/pointer"
 
 	"github.com/openshift/library-go/pkg/operator/events"
@@ -47,7 +48,7 @@ func TestMain(m *testing.M) {
 	apiExtClient := getApiExtensionKubeClient()
 	runOnceDurationOverrideClient := getRunOnceDurationOverrideClient()
 
-	eventRecorder := events.NewKubeRecorder(kubeClient.CoreV1().Events("default"), "test-e2e", &corev1.ObjectReference{})
+	eventRecorder := events.NewKubeRecorder(kubeClient.CoreV1().Events("default"), "test-e2e", &corev1.ObjectReference{}, clocktesting.NewFakePassiveClock(time.Now()))
 
 	ctx, cancelFnc := context.WithCancel(context.TODO())
 	defer cancelFnc()
