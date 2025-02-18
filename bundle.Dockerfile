@@ -1,4 +1,4 @@
-FROM brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.22 as builder
+FROM brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23 as builder
 WORKDIR /go/src/github.com/openshift/run-once-duration-override-operator
 COPY . .
 
@@ -43,7 +43,7 @@ LABEL io.k8s.display-name="run-once-duration-override-operator based on RHEL 9"
 LABEL io.k8s.description="Run Once Duration Override mutating admission webhook support for OpenShift based on RHEL 9"
 LABEL io.openshift.tags="openshift,run-once-duration-override-operator"
 LABEL com.redhat.delivery.operator.bundle=true
-LABEL com.redhat.openshift.versions="v4.17"
+LABEL com.redhat.openshift.versions="v4.19"
 LABEL com.redhat.delivery.appregistry=true
 LABEL maintainer="AOS workloads team, <aos-workloads-staff@redhat.com>"
 
