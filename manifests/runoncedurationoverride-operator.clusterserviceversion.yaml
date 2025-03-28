@@ -1,7 +1,7 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
-  name: runoncedurationoverrideoperator.v1.2.0
+  name: runoncedurationoverrideoperator.v1.2.1
   namespace: run-once-duration-override-operator
   annotations:
     alm-examples: |
@@ -23,7 +23,7 @@ metadata:
       ]
     certifiedLevel: "false"
     containerImage: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel9-operator:latest
-    createdAt: 2024/10/01
+    createdAt: 2025/03/28
     features.operators.openshift.io/disconnected: "true"
     features.operators.openshift.io/fips-compliant: "true"
     features.operators.openshift.io/proxy-aware: "false"
@@ -34,7 +34,7 @@ metadata:
     features.operators.openshift.io/cnf: "false"
     features.operators.openshift.io/cni: "false"
     features.operators.openshift.io/csi: "false"
-    olm.skipRange: ">=1.1.0 <1.2.0"
+    olm.skipRange: ">=1.1.0 <1.2.1"
     description: An operator to manage the OpenShift RunOnceDurationOverride Mutating Admission Webhook Server
     repository: https://github.com/openshift/run-once-duration-override-operator
     support: Red Hat, Inc.
@@ -63,6 +63,7 @@ spec:
   - runoncedurationoverrideoperator.v1.1.4
   - runoncedurationoverrideoperator.v1.1.5
   - runoncedurationoverrideoperator.v1.1.6
+  - runoncedurationoverrideoperator.v1.2.0
   customresourcedefinitions:
     owned:
     - displayName: Run Once Duration Override
@@ -77,7 +78,7 @@ spec:
   provider:
     name: Red Hat, Inc.
   maturity: beta
-  version: 1.2.0
+  version: 1.2.1
   links:
   - name: Source Code
     url: https://github.com/openshift/run-once-duration-override
@@ -89,7 +90,7 @@ spec:
   minKubeVersion: 1.30.0
   labels:
     olm-owner-enterprise-app: run-once-duration-override-operator
-    olm-status-descriptors: run-once-duration-override-operator.v1.2.0
+    olm-status-descriptors: run-once-duration-override-operator.v1.2.1
   installModes:
   - supported: true
     type: OwnNamespace
@@ -327,7 +328,7 @@ spec:
                     - name: RELATED_IMAGE_OPERAND_IMAGE
                       value: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel-9:latest
                     - name: OPERAND_VERSION
-                      value: 1.2.0
+                      value: 1.2.1
                   ports:
                     - containerPort: 8080
                   readinessProbe:
