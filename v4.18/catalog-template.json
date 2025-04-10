@@ -95,7 +95,7 @@
         },
         {
             "schema": "olm.bundle",
-            "image": "registry.stage.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:bb076968011bf2c23b3c9927e349d34878296a6ea01c64885136396c952011f2"
+            "image": "registry.stage.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:8cf6ec361bc2b5c467875dc5e4420d031db1655c7be913e992cb23a70dbd014b"
         }
     ]
 }
