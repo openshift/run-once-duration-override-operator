@@ -925,7 +925,7 @@
     "schema": "olm.bundle",
     "name": "runoncedurationoverrideoperator.v1.2.1",
     "package": "run-once-duration-override-operator",
-    "image": "registry.stage.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:75066a651c950ae906bf44fd69391965719556a9640c0cba9f0d3c7da65f8fa5",
+    "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:75066a651c950ae906bf44fd69391965719556a9640c0cba9f0d3c7da65f8fa5",
     "properties": [
         {
             "type": "olm.gvk",
@@ -1039,7 +1039,7 @@
         },
         {
             "name": "",
-            "image": "registry.stage.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:75066a651c950ae906bf44fd69391965719556a9640c0cba9f0d3c7da65f8fa5"
+            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:75066a651c950ae906bf44fd69391965719556a9640c0cba9f0d3c7da65f8fa5"
         }
     ]
 }
