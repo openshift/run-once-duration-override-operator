@@ -5,8 +5,8 @@ COPY . .
 RUN mkdir licenses
 COPY ./LICENSE licenses/.
 
-ARG OPERATOR_IMAGE=registry.stage.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9-operator@sha256:d298e2013332783d7e8b76fc0d6ef7d5565b9e18fea30e1fd61d9c2ef85df5af
-ARG OPERAND_IMAGE=registry.stage.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9@sha256:d298e2013332783d7e8b76fc0d6ef7d5565b9e18fea30e1fd61d9c2ef85df5af
+ARG OPERATOR_IMAGE=registry.stage.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9-operator@sha256:9af294f23f90fa7a1fdaaa20f33a81740f9d9564940b4bc130e38571951340c9
+ARG OPERAND_IMAGE=registry.stage.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9@sha256:ba6a4fee09abb1f0b43fa32e5a25dba3c7e8195ad8b696f9bef2305e99e74c77
 ARG REPLACED_OPERATOR_IMG=registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel9-operator:latest
 ARG REPLACED_OPERAND_IMG=registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel-9:latest
 
