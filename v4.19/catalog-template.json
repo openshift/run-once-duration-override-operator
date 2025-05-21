@@ -42,7 +42,12 @@
                 {
                     "name": "runoncedurationoverrideoperator.v1.2.1",
                     "replaces": "runoncedurationoverrideoperator.v1.1.0",
-                    "skipRange": "\u003e=1.1.0 \u003c1.2.1",
+                    "skipRange": "\u003e=1.1.0 \u003c1.2.1"
+                },
+                {
+                    "name": "runoncedurationoverrideoperator.v1.3.0",
+                    "replaces": "runoncedurationoverrideoperator.v1.2.0",
+                    "skipRange": "\u003e=1.2.0 \u003c1.3.0",
                     "skips": [
                         "runoncedurationoverrideoperator.v1.0.0",
                         "runoncedurationoverrideoperator.v1.0.1",
@@ -57,7 +62,13 @@
                         "runoncedurationoverrideoperator.v1.1.4",
                         "runoncedurationoverrideoperator.v1.1.5",
                         "runoncedurationoverrideoperator.v1.1.6",
-                        "runoncedurationoverrideoperator.v1.2.0"
+                        "runoncedurationoverrideoperator.v1.2.0",
+                        "runoncedurationoverrideoperator.v1.2.1",
+                        "runoncedurationoverrideoperator.v1.2.2",
+                        "runoncedurationoverrideoperator.v1.2.3",
+                        "runoncedurationoverrideoperator.v1.2.4",
+                        "runoncedurationoverrideoperator.v1.2.5",
+                        "runoncedurationoverrideoperator.v1.2.6"
                     ]
                 }
             ],
@@ -96,6 +107,10 @@
         {
             "schema": "olm.bundle",
             "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:75066a651c950ae906bf44fd69391965719556a9640c0cba9f0d3c7da65f8fa5"
+        },
+        {
+            "schema": "olm.bundle",
+            "image": "registry.stage.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:97800aad05a5bd3c08e93ed39cf88b0d54c453163c8e7478e4ce6c0b283498b3"
         }
     ]
 }
