@@ -3,7 +3,7 @@ module github.com/openshift/run-once-duration-override-operator
 go 1.20
 
 require (
-	github.com/openshift/build-machinery-go v0.0.0-20230306181456-d321ffa04533
+	github.com/openshift/build-machinery-go 1b6d00b8c37c
 	github.com/openshift/library-go v0.0.0-20230508110756-9b7abe2c9cbf
 	github.com/spf13/cobra v1.6.1
 	google.golang.org/protobuf v1.33.0 // indirect; to improve error handling
