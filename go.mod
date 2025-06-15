@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/openshift/build-machinery-go v0.0.0-20230306181456-d321ffa04533
-	github.com/openshift/library-go v0.0.0-20230508110756-9b7abe2c9cbf
+	github.com/openshift/library-go ccdcf648dd95
 	github.com/spf13/cobra v1.6.1
 	google.golang.org/protobuf v1.33.0 // indirect; to improve error handling
 	k8s.io/api v0.27.6
