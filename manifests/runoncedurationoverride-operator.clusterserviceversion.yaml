@@ -77,6 +77,11 @@ spec:
     name: Red Hat, Inc.
   maturity: beta
   version: 1.3.0
+  relatedImages:
+  - name: run-once-duration-override-operand
+    image: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel-9:latest
+  - name: run-once-duration-override-operator
+    image: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel9-operator:latest
   links:
   - name: Source Code
     url: https://github.com/openshift/run-once-duration-override
