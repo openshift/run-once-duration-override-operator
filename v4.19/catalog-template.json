@@ -115,11 +115,11 @@
         },
         {
             "schema": "olm.bundle",
-            "image": "registry.stage.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:8ff7f1c707b40448a719137f37f6a3e09860812f7f07c3e61b7f73d1216399dc"
+            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:8ff7f1c707b40448a719137f37f6a3e09860812f7f07c3e61b7f73d1216399dc"
         },
         {
             "schema": "olm.bundle",
-            "image": "registry.stage.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:ce41352944affe81a33a2456521406fdd792f43b700dafcdc7565a0c7f23db42"
+            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:ce41352944affe81a33a2456521406fdd792f43b700dafcdc7565a0c7f23db42"
         }
     ]
 }
