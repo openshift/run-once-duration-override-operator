@@ -1172,16 +1172,16 @@
     ],
     "relatedImages": [
         {
+            "name": "",
+            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:8ff7f1c707b40448a719137f37f6a3e09860812f7f07c3e61b7f73d1216399dc"
+        },
+        {
             "name": "run-once-duration-override-operator",
             "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9-operator@sha256:bd1c357e4dc6a598f86a8d988212b804dd9a7fa7d864c59ea58394540211ff90"
         },
         {
             "name": "run-once-duration-override-operand",
             "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9@sha256:42f73634df2c06216fac7b3742b2ac21ef5f12ee98d8694c06f7c9073773acd0"
-        },
-        {
-            "name": "",
-            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:8ff7f1c707b40448a719137f37f6a3e09860812f7f07c3e61b7f73d1216399dc"
         }
     ]
 }
@@ -1189,7 +1189,7 @@
     "schema": "olm.bundle",
     "name": "runoncedurationoverrideoperator.v1.3.0",
     "package": "run-once-duration-override-operator",
-    "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:0bd1b1b43629acc15f64863b3cd972dd25cf0114f79f9fd00cf86008f742b835",
+    "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:1fd96befffa2475efa28bf83a7beff4f1df5343644b8a203feb44ff03657280b",
     "properties": [
         {
             "type": "olm.gvk",
@@ -1214,7 +1214,7 @@
                     "capabilities": "Basic Install",
                     "categories": "OpenShift Optional",
                     "certifiedLevel": "false",
-                    "containerImage": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9-operator@sha256:e1097da4a3c2c7e0f695c8b7649b2dc50efb6c0cd5e4a6d10e1829749e20bb44",
+                    "containerImage": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9-operator@sha256:d54aaaa7b052285b620ebedc42769d9d9ad43c8b640463d4a54e15ab9c8dbfbe",
                     "createdAt": "2025/05/14",
                     "description": "An operator to manage the OpenShift RunOnceDurationOverride Mutating Admission Webhook Server",
                     "features.operators.openshift.io/cnf": "false",
@@ -1296,11 +1296,11 @@
     "relatedImages": [
         {
             "name": "",
-            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:0bd1b1b43629acc15f64863b3cd972dd25cf0114f79f9fd00cf86008f742b835"
+            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:1fd96befffa2475efa28bf83a7beff4f1df5343644b8a203feb44ff03657280b"
         },
         {
             "name": "run-once-duration-override-operator",
-            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9-operator@sha256:e1097da4a3c2c7e0f695c8b7649b2dc50efb6c0cd5e4a6d10e1829749e20bb44"
+            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9-operator@sha256:d54aaaa7b052285b620ebedc42769d9d9ad43c8b640463d4a54e15ab9c8dbfbe"
         },
         {
             "name": "run-once-duration-override-operand",
