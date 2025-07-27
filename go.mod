@@ -1,6 +1,8 @@
 module github.com/openshift/run-once-duration-override-operator
 
-go 1.21
+go 1.22
+
+toolchain go1.24.4
 
 require (
 	github.com/openshift/build-machinery-go v0.0.0-20231128094528-1e9b1b0595c8
@@ -20,7 +22,7 @@ require (
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	sigs.k8s.io/controller-runtime v0.16.2
 	sigs.k8s.io/controller-tools v0.13.0
-	sigs.k8s.io/yaml v1.3.0
+	sigs.k8s.io/yaml v1.6.0
 )
 
 require (
@@ -89,6 +91,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.25.0 // indirect
+	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	golang.org/x/crypto v0.21.0 // indirect
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
 	golang.org/x/mod v0.12.0 // indirect
