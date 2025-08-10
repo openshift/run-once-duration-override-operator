@@ -5,7 +5,7 @@ go 1.23.0
 toolchain go1.23.4
 
 require (
-	github.com/openshift/build-machinery-go v0.0.0-20250414185254-3ce8e800ceda
+	github.com/openshift/build-machinery-go v0.0.0-20250806130835-622c0378eb0d
 	github.com/openshift/library-go v0.0.0-20250512121900-863508cf7a27
 	github.com/spf13/cobra v1.8.1
 	k8s.io/api v0.32.2
