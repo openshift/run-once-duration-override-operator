@@ -2,7 +2,7 @@ module github.com/openshift/run-once-duration-override-operator
 
 go 1.22.0
 
-toolchain go1.22.1
+toolchain go1.25.0
 
 require (
 	github.com/openshift/build-machinery-go v0.0.0-20240910153727-5725581bdf8f
