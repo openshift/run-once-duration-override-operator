@@ -1,8 +1,8 @@
 module github.com/openshift/run-once-duration-override-operator
 
-go 1.22.0
+go 1.23
 
-toolchain go1.22.1
+toolchain go1.24.6
 
 require (
 	github.com/openshift/build-machinery-go v0.0.0-20240910153727-5725581bdf8f
@@ -32,7 +32,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coreos/go-semver v0.3.1 // indirect
-	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
+	github.com/coreos/go-systemd/v22 v22.6.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
