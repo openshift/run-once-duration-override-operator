@@ -304,14 +304,15 @@ go.etcd.io/etcd/api/v3/membershippb
 go.etcd.io/etcd/api/v3/mvccpb
 go.etcd.io/etcd/api/v3/v3rpc/rpctypes
 go.etcd.io/etcd/api/v3/version
-# go.etcd.io/etcd/client/pkg/v3 v3.5.10
-## explicit; go 1.20
+# go.etcd.io/etcd/client/pkg/v3 v3.6.4
+## explicit; go 1.23.0
 go.etcd.io/etcd/client/pkg/v3/fileutil
 go.etcd.io/etcd/client/pkg/v3/logutil
 go.etcd.io/etcd/client/pkg/v3/systemd
 go.etcd.io/etcd/client/pkg/v3/tlsutil
 go.etcd.io/etcd/client/pkg/v3/transport
 go.etcd.io/etcd/client/pkg/v3/types
+go.etcd.io/etcd/client/pkg/v3/verify
 # go.etcd.io/etcd/client/v3 v3.5.10
 ## explicit; go 1.20
 go.etcd.io/etcd/client/v3
@@ -374,7 +375,7 @@ go.opentelemetry.io/proto/otlp/trace/v1
 # go.uber.org/multierr v1.11.0
 ## explicit; go 1.19
 go.uber.org/multierr
-# go.uber.org/zap v1.25.0
+# go.uber.org/zap v1.27.0
 ## explicit; go 1.19
 go.uber.org/zap
 go.uber.org/zap/buffer
@@ -383,6 +384,7 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/internal/pool
+go.uber.org/zap/internal/stacktrace
 go.uber.org/zap/zapcore
 go.uber.org/zap/zapgrpc
 # golang.org/x/crypto v0.21.0
@@ -415,8 +417,8 @@ golang.org/x/oauth2/internal
 # golang.org/x/sync v0.3.0
 ## explicit; go 1.17
 golang.org/x/sync/singleflight
-# golang.org/x/sys v0.18.0
-## explicit; go 1.18
+# golang.org/x/sys v0.31.0
+## explicit; go 1.23.0
 golang.org/x/sys/execabs
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
