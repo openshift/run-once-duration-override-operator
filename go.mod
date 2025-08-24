@@ -1,6 +1,8 @@
 module github.com/openshift/run-once-duration-override-operator
 
-go 1.21
+go 1.23.0
+
+toolchain go1.24.6
 
 require (
 	github.com/openshift/build-machinery-go v0.0.0-20231128094528-1e9b1b0595c8
@@ -97,7 +99,7 @@ require (
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/term v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	golang.org/x/time v0.3.0 // indirect
+	golang.org/x/time v0.12.0 // indirect
 	golang.org/x/tools v0.12.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230803162519-f966b187b2e5 // indirect
