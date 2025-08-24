@@ -1,13 +1,15 @@
 module github.com/openshift/run-once-duration-override-operator
 
-go 1.21
+go 1.22.0
+
+toolchain go1.24.6
 
 require (
 	github.com/openshift/build-machinery-go v0.0.0-20231128094528-1e9b1b0595c8
 	github.com/openshift/library-go v0.0.0-20240116081341-964bcb3f545c
 	github.com/spf13/cobra v1.7.0
 	golang.org/x/net v0.23.0 // indirect
-	google.golang.org/protobuf v1.33.0 // indirect; to improve error handling
+	google.golang.org/protobuf v1.36.6 // indirect; to improve error handling
 	k8s.io/api v0.29.0
 	k8s.io/apiextensions-apiserver v0.29.0
 	k8s.io/apimachinery v0.29.0
@@ -70,7 +72,7 @@ require (
 	github.com/openshift/api v0.0.0-20231218131639-7a5aa77cc72d // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.16.0 // indirect
-	github.com/prometheus/client_model v0.4.0 // indirect
+	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.10.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
