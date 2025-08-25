@@ -5,8 +5,8 @@ COPY . .
 RUN mkdir licenses
 COPY ./LICENSE licenses/.
 
-ARG OPERATOR_IMAGE=registry.stage.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9-operator@sha256:9af294f23f90fa7a1fdaaa20f33a81740f9d9564940b4bc130e38571951340c9
-ARG OPERAND_IMAGE=registry.stage.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9@sha256:ba6a4fee09abb1f0b43fa32e5a25dba3c7e8195ad8b696f9bef2305e99e74c77
+ARG OPERATOR_IMAGE=registry.stage.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9-operator@sha256:461c4f8680e7841ad3aee423a09a0da98a2c5a4ce5970c9217b125c00326c59c
+ARG OPERAND_IMAGE=registry.stage.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9@sha256:584cdb7fe64dd5249ebb60d4f0b1748999700bfcc4e4da69a9ffc883b6fd0baf
 ARG REPLACED_OPERATOR_IMG=registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel9-operator:latest
 ARG REPLACED_OPERAND_IMG=registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel-9:latest
 
@@ -33,8 +33,8 @@ LABEL com.redhat.component="run-once-duration-override-operator-bundle-container
 LABEL description="Run Once Duration Override mutating admission webhook support for OpenShift based on RHEL 9"
 LABEL distribution-scope="public"
 LABEL name="run-once-duration-override-operator-metadata-rhel-9"
-LABEL release="1.3.0"
-LABEL version="1.3.0"
+LABEL release="1.3.1"
+LABEL version="1.3.1"
 LABEL url="https://github.com/openshift/run-once-duration-override-operator"
 LABEL vendor="Red Hat, Inc."
 LABEL summary="Run Once Duration Override mutating admission webhook support for OpenShift"
