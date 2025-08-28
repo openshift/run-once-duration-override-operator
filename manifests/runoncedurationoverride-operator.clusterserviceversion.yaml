@@ -41,6 +41,7 @@ metadata:
     capabilities: Basic Install
     categories: OpenShift Optional
     operators.openshift.io/valid-subscription: '["OpenShift Container Platform", "OpenShift Platform Plus"]'
+    operatorframework.io/suggested-namespace: "openshift-run-once-duration-override-operator"
 spec:
   replaces: runoncedurationoverrideoperator.v1.2.0
   # buffering up to 6 1.1.z releases to allow to include these in all supported bundle index images
