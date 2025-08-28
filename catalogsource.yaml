@@ -1,0 +1,10 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: run-once-duration-override-operator
+  namespace: openshift-marketplace
+spec:
+  sourceType: grpc
+  image: <IMAGE>
+  displayName: RODOO
+  publisher: Red Hat
