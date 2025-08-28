@@ -52,30 +52,36 @@
                 {
                     "name": "runoncedurationoverrideoperator.v1.3.0",
                     "replaces": "runoncedurationoverrideoperator.v1.2.0",
-                    "skipRange": "\u003e=1.2.0 \u003c1.3.0",
-                    "skips": [
-                        "runoncedurationoverrideoperator.v1.0.0",
-                        "runoncedurationoverrideoperator.v1.0.1",
-                        "runoncedurationoverrideoperator.v1.0.2",
-                        "runoncedurationoverrideoperator.v1.0.3",
-                        "runoncedurationoverrideoperator.v1.0.4",
-                        "runoncedurationoverrideoperator.v1.0.5",
-                        "runoncedurationoverrideoperator.v1.0.6",
-                        "runoncedurationoverrideoperator.v1.1.1",
-                        "runoncedurationoverrideoperator.v1.1.2",
-                        "runoncedurationoverrideoperator.v1.1.3",
-                        "runoncedurationoverrideoperator.v1.1.4",
-                        "runoncedurationoverrideoperator.v1.1.5",
-                        "runoncedurationoverrideoperator.v1.1.6",
-                        "runoncedurationoverrideoperator.v1.2.0",
-                        "runoncedurationoverrideoperator.v1.2.1",
-                        "runoncedurationoverrideoperator.v1.2.2",
-                        "runoncedurationoverrideoperator.v1.2.3",
-                        "runoncedurationoverrideoperator.v1.2.4",
-                        "runoncedurationoverrideoperator.v1.2.5",
-                        "runoncedurationoverrideoperator.v1.2.6"
-                    ]
-                }
+                    "skipRange": "\u003e=1.2.0 \u003c1.3.0"
+                  },
+                  {
+                      "name": "runoncedurationoverrideoperator.v1.3.1",
+                      "replaces": "runoncedurationoverrideoperator.v1.2.0",
+                      "skipRange": "\u003e=1.2.0 \u003c1.3.1",
+                      "skips": [
+                          "runoncedurationoverrideoperator.v1.0.0",
+                          "runoncedurationoverrideoperator.v1.0.1",
+                          "runoncedurationoverrideoperator.v1.0.2",
+                          "runoncedurationoverrideoperator.v1.0.3",
+                          "runoncedurationoverrideoperator.v1.0.4",
+                          "runoncedurationoverrideoperator.v1.0.5",
+                          "runoncedurationoverrideoperator.v1.0.6",
+                          "runoncedurationoverrideoperator.v1.1.1",
+                          "runoncedurationoverrideoperator.v1.1.2",
+                          "runoncedurationoverrideoperator.v1.1.3",
+                          "runoncedurationoverrideoperator.v1.1.4",
+                          "runoncedurationoverrideoperator.v1.1.5",
+                          "runoncedurationoverrideoperator.v1.1.6",
+                          "runoncedurationoverrideoperator.v1.2.0",
+                          "runoncedurationoverrideoperator.v1.2.1",
+                          "runoncedurationoverrideoperator.v1.2.2",
+                          "runoncedurationoverrideoperator.v1.2.3",
+                          "runoncedurationoverrideoperator.v1.2.4",
+                          "runoncedurationoverrideoperator.v1.2.5",
+                          "runoncedurationoverrideoperator.v1.2.6",
+                          "runoncedurationoverrideoperator.v1.3.0"
+                      ]
+                  }
             ],
             "name": "stable",
             "package": "run-once-duration-override-operator",
@@ -120,6 +126,10 @@
         {
             "schema": "olm.bundle",
             "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:1fd96befffa2475efa28bf83a7beff4f1df5343644b8a203feb44ff03657280b"
+        },
+        {
+            "schema": "olm.bundle",
+            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:86240847ef7347d204b684275573e53ab8035ff745bb7788722a85474588a723"
         }
     ]
 }

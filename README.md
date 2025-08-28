@@ -1,4 +1,4 @@
-# README 
+# README
 
 ## FBC catalog rendering
 
@@ -13,7 +13,7 @@ $ opm alpha convert-template basic ./catalog-migrate/run-once-duration-override-
 To update the catalog
 
 ```
-$ cd v4.19
+$ cd v4.20
 $ export REGISTRY_AUTH_FILE=...
 $ opm alpha render-template basic catalog-template.json --migrate-level bundle-object-to-csv-metadata > catalog/run-once-duration-override-operator/catalog.json
 ```
