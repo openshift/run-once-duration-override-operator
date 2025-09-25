@@ -8,9 +8,9 @@ metadata:
     pipelinesascode.tekton.dev/cancel-in-progress: "false"
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "push"
-      && target_branch == "release-4.20"
+      && target_branch == "main"
       && (
-      ".tekton/run-once-duration-override-operator-4-20-push.yaml".pathChanged()
+      ".tekton/run-once-duration-override-operator-main-push.yaml".pathChanged()
       || "cmd/***".pathChanged()
       || "deploy/***".pathChanged()
       || "pkg/***".pathChanged()
@@ -22,10 +22,10 @@ metadata:
       )
   creationTimestamp: null
   labels:
-    appstudio.openshift.io/application: run-once-duration-override-operator-4-20
-    appstudio.openshift.io/component: run-once-duration-override-operator-4-20
+    appstudio.openshift.io/application: run-once-duration-override-operator-main
+    appstudio.openshift.io/component: run-once-duration-override-operator-main
     pipelines.appstudio.openshift.io/type: build
-  name: run-once-duration-override-operator-4-20-on-push
+  name: run-once-duration-override-operator-main-on-push
   namespace: rodoo-workloads-tenant
 spec:
   params:
@@ -34,7 +34,7 @@ spec:
   - name: revision
     value: '{{revision}}'
   - name: output-image
-    value: quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-20:{{revision}}
+    value: quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-main:{{revision}}
   - name: dockerfile
     value: Dockerfile
   pipelineSpec:
@@ -626,7 +626,7 @@ spec:
     - name: netrc
       optional: true
   taskRunTemplate:
-    serviceAccountName: build-pipeline-run-once-duration-override-operator-4-20
+    serviceAccountName: build-pipeline-run-once-duration-override-operator-main
   workspaces:
   - name: git-auth
     secret:
