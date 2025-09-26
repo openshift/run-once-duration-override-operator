@@ -22,7 +22,7 @@ metadata:
         }
       ]
     certifiedLevel: "false"
-    containerImage: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-operator-rhel-8:latest
+    containerImage: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel9-operator:latest
     createdAt: 2024/07/16
     features.operators.openshift.io/disconnected: "false"
     features.operators.openshift.io/fips-compliant: "true"
@@ -294,7 +294,7 @@ spec:
                     capabilities:
                       drop:
                       - ALL
-                  image: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-operator-rhel-8:latest
+                  image: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel9-operator:latest
                   command:
                     - /usr/bin/run-once-duration-override-operator
                   args:
@@ -312,7 +312,7 @@ spec:
                         fieldRef:
                           fieldPath: metadata.namespace
                     - name: RELATED_IMAGE_OPERAND_IMAGE
-                      value: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel-8:latest
+                      value: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel-9:latest
                     - name: OPERAND_VERSION
                       value: 1.0.2
                   ports:
