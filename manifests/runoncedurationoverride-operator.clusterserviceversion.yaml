@@ -1,7 +1,7 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
-  name: runoncedurationoverrideoperator.v1.0.2
+  name: runoncedurationoverrideoperator.v1.0.3
   namespace: run-once-duration-override-operator
   annotations:
     alm-examples: |
@@ -23,7 +23,7 @@ metadata:
       ]
     certifiedLevel: "false"
     containerImage: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel9-operator:latest
-    createdAt: 2024/07/16
+    createdAt: 2025/10/09
     features.operators.openshift.io/disconnected: "false"
     features.operators.openshift.io/fips-compliant: "true"
     features.operators.openshift.io/proxy-aware: "false"
@@ -34,7 +34,7 @@ metadata:
     features.operators.openshift.io/cnf: "false"
     features.operators.openshift.io/cni: "false"
     features.operators.openshift.io/csi: "false"
-    olm.skipRange: ">=0.0.0 <1.0.2"
+    olm.skipRange: ">=0.0.0 <1.0.3"
     description: An operator to manage the OpenShift RunOnceDurationOverride Mutating Admission Webhook Server
     repository: https://github.com/openshift/run-once-duration-override-operator
     support: Red Hat, Inc.
@@ -45,7 +45,10 @@ metadata:
     operatorframework.io/suggested-namespace: "openshift-run-once-duration-override-operator"
     console.openshift.io/operator-monitoring-default: "true"
 spec:
-  replaces: runoncedurationoverrideoperator.v1.0.1
+  replaces: runoncedurationoverrideoperator.v1.0.0
+  skips:
+  - runoncedurationoverrideoperator.v1.0.1
+  - runoncedurationoverrideoperator.v1.0.2
   customresourcedefinitions:
     owned:
     - displayName: Run Once Duration Override
@@ -60,7 +63,7 @@ spec:
   provider:
     name: Red Hat, Inc.
   maturity: beta
-  version: 1.0.2
+  version: 1.0.3
   relatedImages:
   - name: run-once-duration-override-operand
     image: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel-9:latest
@@ -77,7 +80,7 @@ spec:
   minKubeVersion: 1.26.0
   labels:
     olm-owner-enterprise-app: run-once-duration-override-operator
-    olm-status-descriptors: run-once-duration-override-operator.v1.0.2
+    olm-status-descriptors: run-once-duration-override-operator.v1.0.3
   installModes:
   - supported: true
     type: OwnNamespace
@@ -314,7 +317,7 @@ spec:
                     - name: RELATED_IMAGE_OPERAND_IMAGE
                       value: registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel-9:latest
                     - name: OPERAND_VERSION
-                      value: 1.0.2
+                      value: 1.0.3
                   ports:
                     - containerPort: 8080
                   readinessProbe:

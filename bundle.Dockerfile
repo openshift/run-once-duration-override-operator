@@ -33,6 +33,7 @@ LABEL com.redhat.component="run-once-duration-override-operator-bundle-container
 LABEL description="Run Once Duration Override mutating admission webhook support for OpenShift based on RHEL 9"
 LABEL distribution-scope="public"
 LABEL name="run-once-duration-override-operator-metadata-rhel-9"
+LABEL cpe="cpe:/a:redhat:run_once_duration_override_operator:1.0::el9"
 LABEL release="1.0.3"
 LABEL version="1.0.3"
 LABEL url="https://github.com/openshift/run-once-duration-override-operator"

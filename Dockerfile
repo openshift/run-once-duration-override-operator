@@ -12,6 +12,7 @@ LABEL io.k8s.display-name="Run Once Duration Override Operator based on RHEL 9" 
       io.k8s.description="This is a component of OpenShift and manages the Run Once Duration Override mutating admission webhook based on RHEL 9" \
       com.redhat.component="run-once-duration-override-operator-container" \
       name="run-once-duration-override-rhel9-operator" \
+      cpe="cpe:/a:redhat:run_once_duration_override_operator:1.0::el9" \
       summary="run-once-duration-override-operator" \
       io.openshift.expose-services="" \
       io.openshift.tags="openshift,run-once-duration-override-operator" \
