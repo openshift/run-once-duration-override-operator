@@ -47,7 +47,12 @@
                   {
                       "name": "runoncedurationoverrideoperator.v1.2.2",
                       "replaces": "runoncedurationoverrideoperator.v1.1.0",
-                      "skipRange": "\u003e=1.1.0 \u003c1.2.2",
+                      "skipRange": "\u003e=1.1.0 \u003c1.2.2"
+                  },
+                  {
+                      "name": "runoncedurationoverrideoperator.v1.2.3",
+                      "replaces": "runoncedurationoverrideoperator.v1.1.0",
+                      "skipRange": "\u003e=1.1.0 \u003c1.2.3",
                       "skips": [
                           "runoncedurationoverrideoperator.v1.0.0",
                           "runoncedurationoverrideoperator.v1.0.1",
@@ -63,7 +68,8 @@
                           "runoncedurationoverrideoperator.v1.1.5",
                           "runoncedurationoverrideoperator.v1.1.6",
                           "runoncedurationoverrideoperator.v1.2.0",
-                          "runoncedurationoverrideoperator.v1.2.1"
+                          "runoncedurationoverrideoperator.v1.2.1",
+                          "runoncedurationoverrideoperator.v1.2.2"
                       ]
                   }
             ],
@@ -106,6 +112,10 @@
         {
             "schema": "olm.bundle",
             "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:8ff7f1c707b40448a719137f37f6a3e09860812f7f07c3e61b7f73d1216399dc"
+        },
+        {
+            "schema": "olm.bundle",
+            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:ad4a176cbd498ab2785ccf99a4081ae74c1a0f69dc144d6975d751037f5aa6a6"
         }
     ]
 }

@@ -6,20 +6,26 @@ metadata:
 spec:
   imageDigestMirrors:
     - mirrors:
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-bundle-4-17
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-bundle-4-18
       source: registry.stage.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle
     - mirrors:
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-bundle-4-17
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-bundle-4-18
       source: registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle
     - mirrors:
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-17
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-18
       source: registry.stage.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9-operator
     - mirrors:
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-17
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-18
       source: registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9-operator
     - mirrors:
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-17
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-18
       source: registry.stage.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9
     - mirrors:
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-17
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-18
       source: registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9
