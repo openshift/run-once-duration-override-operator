@@ -1,11 +1,11 @@
-# README 
+# README
 
 ## FBC catalog rendering
 
 To initiliaze catalog-template.json
 
 ```sh
-$ opm migrate registry.redhat.io/redhat/redhat-operator-index:v4.17 ./catalog-migrate
+$ opm migrate registry.redhat.io/redhat/redhat-operator-index:v4.18 ./catalog-migrate
 $ mkdir -p v4.18/catalog/run-once-duration-override-operator
 $ opm alpha convert-template basic ./catalog-migrate/run-once-duration-override-operator/catalog.json > v4.18/catalog-template.json
 ```
