@@ -9,6 +9,19 @@
         {
             "entries": [
                 {
+                    "name": "runoncedurationoverrideoperator.v1.0.0",
+                    "skipRange": "\u003e=0.0.0 \u003c1.0.0"
+                },
+                {
+                    "name": "runoncedurationoverrideoperator.v1.0.1",
+                    "replaces": "runoncedurationoverrideoperator.v1.0.0",
+                    "skipRange": "\u003e=0.0.0 \u003c1.0.1"
+                },
+                {
+                    "name": "runoncedurationoverrideoperator.v1.0.2",
+                    "skipRange": "\u003e=0.0.0 \u003c1.0.2"
+                },
+                {
                     "name": "runoncedurationoverrideoperator.v1.1.0",
                     "replaces": "runoncedurationoverrideoperator.v1.0.1",
                     "skipRange": "\u003e=1.0.0 \u003c1.1.0"
@@ -68,6 +81,18 @@
             "name": "stable",
             "package": "run-once-duration-override-operator",
             "schema": "olm.channel"
+        },
+        {
+            "schema": "olm.bundle",
+            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:49f474250adfc7057dc84de25d50ecf6b990f3dcf9874eddfd42477493d50e6c"
+        },
+        {
+            "schema": "olm.bundle",
+            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:5e2f382d233fab6817da02d17459b3e6e8c16f0be58270221b66d87ce3d09cc6"
+        },
+        {
+            "schema": "olm.bundle",
+            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:e07406af6f08e311925f92bb4d68e8f5266dba1bb80b5a4fc108c8948644efef"
         },
         {
             "schema": "olm.bundle",
