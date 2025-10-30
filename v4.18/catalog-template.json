@@ -9,6 +9,19 @@
         {
             "entries": [
                 {
+                    "name": "runoncedurationoverrideoperator.v1.0.0",
+                    "skipRange": "\u003e=0.0.0 \u003c1.0.0"
+                },
+                {
+                    "name": "runoncedurationoverrideoperator.v1.0.1",
+                    "replaces": "runoncedurationoverrideoperator.v1.0.0",
+                    "skipRange": "\u003e=0.0.0 \u003c1.0.1"
+                },
+                {
+                    "name": "runoncedurationoverrideoperator.v1.0.2",
+                    "skipRange": "\u003e=0.0.0 \u003c1.0.2"
+                },
+                {
                     "name": "runoncedurationoverrideoperator.v1.1.0",
                     "replaces": "runoncedurationoverrideoperator.v1.0.1",
                     "skipRange": "\u003e=1.0.0 \u003c1.1.0"
