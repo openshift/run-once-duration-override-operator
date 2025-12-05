@@ -17,3 +17,7 @@ _output
 
 # GoLand
 .idea/
+
+# OTE test binaries
+/run-once-duration-override-operator-tests-ext
+/run-once-duration-override-operator-tests-ext.gz
