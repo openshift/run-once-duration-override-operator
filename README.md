@@ -3,6 +3,39 @@ This operator manages OpenShift `RunOnceDurationOverride` Admission Webhook Serv
 
 `RunOnceDurationOverride` Admission Webhook Server is located at [run-once-duration-override](https://github.com/openshift/run-once-duration-override).
 
+## Tests
+
+This repository is compatible with the [OpenShift Tests Extension (OTE)](https://github.com/openshift-eng/openshift-tests-extension) framework.
+
+### Building the test binary
+
+```bash
+make build
+```
+
+### Running test suites and tests
+
+```bash
+# Run a specific test suite or test
+./run-once-duration-override-operator-tests-ext run-suite openshift/run-once-duration-override-operator/all
+./run-once-duration-override-operator-tests-ext run-test "test-name"
+
+# Run with JUnit output
+./run-once-duration-override-operator-tests-ext run-suite openshift/run-once-duration-override-operator/all --junit-path "${ARTIFACT_DIR}/junit.xml"
+```
+
+### Listing available tests and suites
+
+```bash
+# List all test suites
+./run-once-duration-override-operator-tests-ext list suites
+
+# List tests in a suite
+./run-once-duration-override-operator-tests-ext list tests --suite=openshift/run-once-duration-override-operator/all
+```
+
+For more information about the OTE framework, see the [openshift-tests-extension documentation](https://github.com/openshift-eng/openshift-tests-extension).
+
 ## Releases
 
 | rodoo version | ocp version | k8s version | golang |
