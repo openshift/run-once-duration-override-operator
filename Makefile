@@ -47,8 +47,3 @@ generate: update-codegen-crds generate-clients
 generate-clients:
 	bash ./vendor/k8s.io/code-generator/generate-groups.sh all github.com/openshift/run-once-duration-override-operator/pkg/generated github.com/openshift/run-once-duration-override-operator/pkg/apis runoncedurationoverride:v1
 .PHONY: generate-clients
-
-clean:
-	$(RM) -rf ./run-once-duration-override-operator
-	$(RM) -rf ./_output
-.PHONY: clean
