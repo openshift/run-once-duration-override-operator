@@ -70,6 +70,7 @@
                 "runoncedurationoverrideoperator.v1.0.4",
                 "runoncedurationoverrideoperator.v1.0.5",
                 "runoncedurationoverrideoperator.v1.0.6",
+                "runoncedurationoverrideoperator.v1.1.0",
                 "runoncedurationoverrideoperator.v1.1.1",
                 "runoncedurationoverrideoperator.v1.1.2",
                 "runoncedurationoverrideoperator.v1.1.3",
@@ -1556,16 +1557,16 @@
     ],
     "relatedImages": [
         {
+            "name": "",
+            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:783c2df43ece311bcbaaf30f33c081608e996a0f651895ec0509bb73a6a1f590"
+        },
+        {
             "name": "run-once-duration-override-operator",
             "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9-operator@sha256:4971f8befc2eecff1cfb0a9be7040594203e8e1170aee03d61765bd5b2cd4787"
         },
         {
             "name": "run-once-duration-override-operand",
             "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9@sha256:c3b17e2ff30eab6e64e8fec59da37f05ec65d91d8d76086a9510372b20eb78d6"
-        },
-        {
-            "name": "",
-            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:783c2df43ece311bcbaaf30f33c081608e996a0f651895ec0509bb73a6a1f590"
         }
     ]
 }
