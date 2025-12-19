@@ -4,16 +4,17 @@ metadata:
   annotations:
     build.appstudio.openshift.io/repo: https://github.com/openshift/run-once-duration-override-operator?rev={{revision}}
     build.appstudio.redhat.com/commit_sha: '{{revision}}'
+    build.appstudio.redhat.com/pull_request_number: '{{pull_request_number}}'
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
-    pipelinesascode.tekton.dev/cancel-in-progress: "false"
+    pipelinesascode.tekton.dev/cancel-in-progress: "true"
     pipelinesascode.tekton.dev/max-keep-runs: "3"
-    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch == "main" && ( ".tekton/run-once-duration-override-operator-main-push.yaml".pathChanged() || "cmd/***".pathChanged() || "deploy/***".pathChanged() || "pkg/***".pathChanged() || "vendor/***".pathChanged() || "Dockerfile".pathChanged() || "go.mod".pathChanged() || "go.sum".pathChanged() || "Makefile".pathChanged() )
+    pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch == "release-4.21" && ( ".tekton/run-once-duration-override-operator-4-21-pull-request.yaml".pathChanged() || "cmd/***".pathChanged() || "deploy/***".pathChanged() || "pkg/***".pathChanged() || "vendor/***".pathChanged() || "Dockerfile".pathChanged() || "go.mod".pathChanged() || "go.sum".pathChanged() || "Makefile".pathChanged() )
   creationTimestamp:
   labels:
-    appstudio.openshift.io/application: run-once-duration-override-operator-main
-    appstudio.openshift.io/component: run-once-duration-override-operator-main
+    appstudio.openshift.io/application: run-once-duration-override-operator-4-21
+    appstudio.openshift.io/component: run-once-duration-override-operator-4-21
     pipelines.appstudio.openshift.io/type: build
-  name: run-once-duration-override-operator-main-on-push
+  name: run-once-duration-override-operator-4-21-on-pull-request
   namespace: rodoo-workloads-tenant
 spec:
   params:
@@ -22,7 +23,9 @@ spec:
   - name: revision
     value: '{{revision}}'
   - name: output-image
-    value: quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-main:{{revision}}
+    value: quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-21:on-pr-{{revision}}
+  - name: image-expires-after
+    value: 5d
   - name: dockerfile
     value: Dockerfile
   pipelineSpec:
@@ -622,7 +625,7 @@ spec:
     - name: netrc
       optional: true
   taskRunTemplate:
-    serviceAccountName: build-pipeline-run-once-duration-override-operator-main
+    serviceAccountName: build-pipeline-run-once-duration-override-operator-4-21
   workspaces:
   - name: git-auth
     secret:
