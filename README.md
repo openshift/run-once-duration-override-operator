@@ -5,16 +5,16 @@
 To initiliaze catalog-template.json
 
 ```sh
-$ opm migrate registry.redhat.io/redhat/redhat-operator-index:v4.20 ./catalog-migrate
-$ mkdir -p v4.20/catalog/run-once-duration-override-operator
-$ opm alpha convert-template basic -o yaml ./catalog-migrate/run-once-duration-override-operator/catalog.json > v4.20/catalog-template.yaml
+$ opm migrate registry.redhat.io/redhat/redhat-operator-index:v4.21 ./catalog-migrate
+$ mkdir -p v4.21/catalog/run-once-duration-override-operator
+$ opm alpha convert-template basic -o yaml ./catalog-migrate/run-once-duration-override-operator/catalog.json > v4.21/catalog-template.yaml
 ```
 
 To update the catalog
 
 ```
 $ export REGISTRY_AUTH_FILE=...
-$ opm alpha render-template basic v4.20/catalog-template.yaml --migrate-level bundle-object-to-csv-metadata > v4.20/catalog/run-once-duration-override-operator/catalog.json
+$ opm alpha render-template basic v4.21/catalog-template.yaml --migrate-level bundle-object-to-csv-metadata > v4.21/catalog/run-once-duration-override-operator/catalog.json
 ```
 
 ## Releases
@@ -27,3 +27,4 @@ $ opm alpha render-template basic v4.20/catalog-template.yaml --migrate-level bu
 | 1.2.3         | ad4a176cbd498ab2785ccf99a4081ae74c1a0f69dc144d6975d751037f5aa6a6 |
 | 1.3.0         | 1fd96befffa2475efa28bf83a7beff4f1df5343644b8a203feb44ff03657280b |
 | 1.3.1         | 783c2df43ece311bcbaaf30f33c081608e996a0f651895ec0509bb73a6a1f590 |
+| 1.4.0         | 2fe253a0849165dbad72079978b89ce11d7e31b97d2dc66a9bb1d7ed7e50d142 |

@@ -7,13 +7,13 @@ metadata:
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/cancel-in-progress: 'false'
     pipelinesascode.tekton.dev/max-keep-runs: '3'
-    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch == "fbc-4.20"
+    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch == "fbc-4.21"
   creationTimestamp:
   labels:
-    appstudio.openshift.io/application: runoncedurationoverrideoperator-fbc-4-20
-    appstudio.openshift.io/component: run-once-duration-override-operator-fbc-4-20
+    appstudio.openshift.io/application: runoncedurationoverrideoperator-fbc-4-21
+    appstudio.openshift.io/component: run-once-duration-override-operator-fbc-4-21
     pipelines.appstudio.openshift.io/type: build
-  name: run-once-duration-override-operator-fbc-4-20-on-push
+  name: run-once-duration-override-operator-fbc-4-21-on-push
   namespace: rodoo-workloads-tenant
 spec:
   params:
@@ -22,7 +22,7 @@ spec:
   - name: revision
     value: '{{revision}}'
   - name: output-image
-    value: quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-fbc-4-20:{{revision}}
+    value: quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-fbc-4-21:{{revision}}
   - name: build-platforms
     value:
     - linux/x86_64
@@ -32,7 +32,7 @@ spec:
   - name: dockerfile
     value: catalog.Dockerfile
   - name: path-context
-    value: v4.20
+    value: v4.21
   pipelineSpec:
     description: |
       This pipeline is ideal for building and verifying [file-based catalogs](https://konflux-ci.dev/docs/end-to-end/building-olm/#building-the-file-based-catalog).
@@ -411,7 +411,7 @@ spec:
     - name: netrc
       optional: true
   taskRunTemplate:
-    serviceAccountName: build-pipeline-run-once-duration-override-operator-fbc-4-20
+    serviceAccountName: build-pipeline-run-once-duration-override-operator-fbc-4-21
   workspaces:
   - name: git-auth
     secret:
