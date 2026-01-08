@@ -10,28 +10,26 @@ This repository is compatible with the [OpenShift Tests Extension (OTE)](https:/
 ### Building the test binary
 
 ```bash
-make build
+make build-tests-ext
+```
+
+### Listing available test suites
+
+```bash
+make list-suites
 ```
 
 ### Running test suites and tests
 
 ```bash
-# Run a specific test suite or test
-./run-once-duration-override-operator-tests-ext run-suite openshift/run-once-duration-override-operator/all
-./run-once-duration-override-operator-tests-ext run-test "test-name"
+# Run a specific test suite
+./_output/bin/run-once-duration-override-operator-tests-ext run-suite openshift/run-once-duration-override-operator/all
+
+# Run a specific test
+./_output/bin/run-once-duration-override-operator-tests-ext run-test "test-name"
 
 # Run with JUnit output
-./run-once-duration-override-operator-tests-ext run-suite openshift/run-once-duration-override-operator/all --junit-path "${ARTIFACT_DIR}/junit.xml"
-```
-
-### Listing available tests and suites
-
-```bash
-# List all test suites
-./run-once-duration-override-operator-tests-ext list suites
-
-# List tests in a suite
-./run-once-duration-override-operator-tests-ext list tests --suite=openshift/run-once-duration-override-operator/all
+./_output/bin/run-once-duration-override-operator-tests-ext run-suite openshift/run-once-duration-override-operator/all --junit-path "${ARTIFACT_DIR}/junit.xml"
 ```
 
 For more information about the OTE framework, see the [openshift-tests-extension documentation](https://github.com/openshift-eng/openshift-tests-extension).

@@ -35,6 +35,16 @@ test-e2e: GO_TEST_FLAGS :=-v -timeout=3h
 test-e2e: test-unit
 .PHONY: test-e2e
 
+# Build the OTE (OpenShift Tests Extension) binary
+.PHONY: build-tests-ext
+build-tests-ext:
+	go build -o _output/bin/run-once-duration-override-operator-tests-ext ./cmd/run-once-duration-override-operator-tests-ext
+
+# List all test suites available in the OTE framework
+.PHONY: list-suites
+list-suites: build-tests-ext
+	./_output/bin/run-once-duration-override-operator-tests-ext list-suites
+
 regen-crd:
 	go build -o _output/tools/bin/controller-gen ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen
 	cp manifests/stable/runoncedurationoverride.crd.yaml manifests/stable/operator.openshift.io_runoncedurationoverrides.yaml
