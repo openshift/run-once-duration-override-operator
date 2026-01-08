@@ -58,12 +58,12 @@ func prepareOperatorTestsRegistry() (*oteextension.Registry, error) {
 
 	// Define test suites for organized test execution
 	extension.AddSuite(oteextension.Suite{
-		Name:        "openshift/run-once-duration-override-operator/conformance/serial",
+		Name:        "openshift/run-once-duration-override-operator/operator/serial",
 		Parallelism: 1,
 	})
 
 	extension.AddSuite(oteextension.Suite{
-		Name: "openshift/run-once-duration-override-operator/conformance/parallel",
+		Name: "openshift/run-once-duration-override-operator/operator/parallel",
 		Qualifiers: []string{
 			`!(name.contains("[Serial]"))`,
 		},

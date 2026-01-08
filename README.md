@@ -22,8 +22,14 @@ make list-suites
 ### Running test suites and tests
 
 ```bash
-# Run a specific test suite
+# Run all tests
 ./_output/bin/run-once-duration-override-operator-tests-ext run-suite openshift/run-once-duration-override-operator/all
+
+# Run tests serially (one at a time)
+./_output/bin/run-once-duration-override-operator-tests-ext run-suite openshift/run-once-duration-override-operator/operator/serial
+
+# Run tests in parallel (excludes tests marked with [Serial])
+./_output/bin/run-once-duration-override-operator-tests-ext run-suite openshift/run-once-duration-override-operator/operator/parallel
 
 # Run a specific test
 ./_output/bin/run-once-duration-override-operator-tests-ext run-test "test-name"
