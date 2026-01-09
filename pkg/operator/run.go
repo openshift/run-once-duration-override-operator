@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"k8s.io/client-go/informers"
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/run-once-duration-override-operator/pkg/controller"
@@ -54,12 +55,15 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 
 	context := runtime.NewOperandContext(config.Name, config.Namespace, DefaultCR, config.OperandImage, config.OperandVersion)
 
+	// create informer factory for secondary resources
+	kubeInformerFactory := informers.NewSharedInformerFactoryWithOptions(
+		clients.Kubernetes,
+		DefaultResyncPeriodSecondaryResource,
+		informers.WithNamespace(config.Namespace),
+	)
+
 	// create lister(s) for secondary resources
-	lister, starter := secondarywatch.New(&secondarywatch.Options{
-		Client:       clients,
-		ResyncPeriod: DefaultResyncPeriodSecondaryResource,
-		Namespace:    config.Namespace,
-	})
+	lister, starter := secondarywatch.New(kubeInformerFactory)
 
 	// start the controllers
 	c, enqueuer, err := runoncedurationoverride.New(&runoncedurationoverride.Options{
@@ -78,6 +82,17 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 	if err := starter.Start(enqueuer, config.ShutdownContext); err != nil {
 		errorCh <- fmt.Errorf("failed to start watch on secondary resources - %s", err.Error())
 		return
+	}
+
+	// start informer factory for secondary resources
+	kubeInformerFactory.Start(config.ShutdownContext.Done())
+
+	// wait for informer caches to sync
+	for _, synced := range kubeInformerFactory.WaitForCacheSync(config.ShutdownContext.Done()) {
+		if !synced {
+			errorCh <- fmt.Errorf("failed to wait for informer caches to sync")
+			return
+		}
 	}
 
 	runner := controller.NewRunner()

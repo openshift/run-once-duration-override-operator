@@ -2,20 +2,10 @@ package secondarywatch
 
 import (
 	"context"
-	"fmt"
-	"reflect"
-
-	"time"
 
 	"github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 	"k8s.io/client-go/informers"
 )
-
-type Options struct {
-	Client       *runtime.Client
-	ResyncPeriod time.Duration
-	Namespace    string
-}
 
 // StarterFunc refers to a function that can be called to start watch on secondary resources.
 type StarterFunc func(enqueuer runtime.Enqueuer, shutdown context.Context) error
@@ -27,9 +17,7 @@ func (s StarterFunc) Start(enqueuer runtime.Enqueuer, shutdown context.Context) 
 // New sets up watch on secondary resources.
 // The function returns lister(s) that can be used to query secondary resources
 // and a StarterFunc that can be called to start the watch.
-func New(options *Options) (lister *Lister, startFunc StarterFunc) {
-	option := informers.WithNamespace(options.Namespace)
-	factory := informers.NewSharedInformerFactoryWithOptions(options.Client.Kubernetes, options.ResyncPeriod, option)
+func New(factory informers.SharedInformerFactory) (lister *Lister, startFunc StarterFunc) {
 
 	deployment := factory.Apps().V1().Deployments()
 	daemonset := factory.Apps().V1().DaemonSets()
@@ -76,12 +64,6 @@ func New(options *Options) (lister *Lister, startFunc StarterFunc) {
 			return err
 		}
 
-		factory.Start(shutdown.Done())
-		status := factory.WaitForCacheSync(shutdown.Done())
-		if names := check(status); len(names) > 0 {
-			return fmt.Errorf("WaitForCacheSync did not successfully complete resources=%s", names)
-		}
-
 		return nil
 	}
 
@@ -97,16 +79,4 @@ func New(options *Options) (lister *Lister, startFunc StarterFunc) {
 	}
 
 	return
-}
-
-func check(status map[reflect.Type]bool) []string {
-	names := make([]string, 0)
-
-	for objType, synced := range status {
-		if !synced {
-			names = append(names, objType.Name())
-		}
-	}
-
-	return names
 }
