@@ -28,8 +28,8 @@ type Interface interface {
 	Reconciler() reconcile.Reconciler
 }
 
-// Runner sets up a controller.
-type Runner interface {
+// runner sets up a controller.
+type runner interface {
 	// Run initializes the given controller and starts it. It waits until the shutdown
 	// context is done.
 	// The function should return on any error during initialization.

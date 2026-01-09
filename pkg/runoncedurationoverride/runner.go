@@ -10,26 +10,26 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 )
 
-// NewRunner returns a new instance of Runner.
-func NewRunner() Runner {
-	return &runner{
+// NewRunner returns a new instance of runner.
+func NewRunner() runner {
+	return &runnerImpl{
 		worker: Work,
 		done:   make(chan struct{}, 0),
 	}
 }
 
-type runner struct {
+type runnerImpl struct {
 	done   chan struct{}
 	worker WorkerFunc
 }
 
-func (r *runner) Run(parent context.Context, controller Interface, errorCh chan<- error) {
+func (r *runnerImpl) Run(parent context.Context, controller Interface, errorCh chan<- error) {
 	defer func() {
 		close(r.done)
 	}()
 
 	if parent == nil || controller == nil {
-		errorCh <- errors.New("invalid input to Runner.Run")
+		errorCh <- errors.New("invalid input to runner.Run")
 		return
 	}
 
@@ -59,6 +59,6 @@ func (r *runner) Run(parent context.Context, controller Interface, errorCh chan<
 	klog.V(1).Infof("[controller] name=%s shutting down queue", controller.Name())
 }
 
-func (r *runner) Done() <-chan struct{} {
+func (r *runnerImpl) Done() <-chan struct{} {
 	return r.done
 }
