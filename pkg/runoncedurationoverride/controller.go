@@ -65,7 +65,7 @@ func New(options *Options) (c Interface, e operatorruntime.Enqueuer, err error) 
 	// see a newer version of the RunOnceDurationOverride than the version which
 	// was responsible for triggering the update.
 	indexer, informer := cache.NewIndexerInformer(watcher, &runoncedurationoverridev1.RunOnceDurationOverride{}, options.ResyncPeriod,
-		NewEventHandler(queue), cache.Indexers{})
+		newEventHandler(queue), cache.Indexers{})
 
 	lister := listers.NewRunOnceDurationOverrideLister(indexer)
 
