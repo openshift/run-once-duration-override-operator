@@ -8,7 +8,6 @@ import (
 	"k8s.io/client-go/informers"
 	"k8s.io/klog/v2"
 
-	"github.com/openshift/run-once-duration-override-operator/pkg/controller"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
@@ -95,7 +94,7 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 		}
 	}
 
-	runner := controller.NewRunner()
+	runner := runoncedurationoverride.NewRunner()
 	runnerErrorCh := make(chan error, 0)
 	go runner.Run(config.ShutdownContext, c, runnerErrorCh)
 	if err := <-runnerErrorCh; err != nil {
