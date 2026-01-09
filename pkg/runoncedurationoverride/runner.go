@@ -13,14 +13,14 @@ import (
 // NewRunner returns a new instance of runner.
 func NewRunner() runner {
 	return &runnerImpl{
-		worker: Work,
+		worker: work,
 		done:   make(chan struct{}, 0),
 	}
 }
 
 type runnerImpl struct {
 	done   chan struct{}
-	worker WorkerFunc
+	worker workerFunc
 }
 
 func (r *runnerImpl) Run(parent context.Context, controller Interface, errorCh chan<- error) {
@@ -46,7 +46,7 @@ func (r *runnerImpl) Run(parent context.Context, controller Interface, errorCh c
 	}
 
 	for i := 0; i < controller.WorkerCount(); i++ {
-		go r.worker.Work(parent, controller)
+		go r.worker.work(parent, controller)
 	}
 
 	klog.V(1).Infof("[controller] name=%s started %d worker(s)", controller.Name(), controller.WorkerCount())

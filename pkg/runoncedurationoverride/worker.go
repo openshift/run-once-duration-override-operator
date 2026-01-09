@@ -10,15 +10,15 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 )
 
-type WorkerFunc func(shutdown context.Context, controller Interface)
+type workerFunc func(shutdown context.Context, controller Interface)
 
-func (w WorkerFunc) Work(shutdown context.Context, controller Interface) {
+func (w workerFunc) work(shutdown context.Context, controller Interface) {
 	w(shutdown, controller)
 }
 
-// Work represents a worker function that pulls item(s) off of the underlying
+// work represents a worker function that pulls item(s) off of the underlying
 // work queue and invokes the reconciler function associated with the controller.
-func Work(shutdown context.Context, controller Interface) {
+func work(shutdown context.Context, controller Interface) {
 	klog.V(1).Infof("[controller] name=%s starting to process work item(s)", controller.Name())
 
 	for processNextWorkItem(shutdown, controller) {
