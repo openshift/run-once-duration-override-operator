@@ -13,11 +13,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/informers"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
+	kubetesting "k8s.io/client-go/testing"
+	"k8s.io/utils/clock"
 
+	"github.com/openshift/library-go/pkg/operator/events"
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/dynamic"
 	fakeclientset "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned/fake"
@@ -28,6 +32,8 @@ import (
 	apiregistrationv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	fakeaggregator "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/fake"
 )
+
+var daemonSetGVR = schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "daemonsets"}
 
 func TestConfig_Validate(t *testing.T) {
 	tests := []struct {
@@ -158,6 +164,47 @@ func setupTestOperator(t *testing.T) *testOperatorSetup {
 	}
 
 	fakeKubeClient := kubefake.NewSimpleClientset()
+
+	setDaemonSetReady := func(ds *appsv1.DaemonSet) {
+		ds.Status.ObservedGeneration = ds.Generation
+		ds.Status.DesiredNumberScheduled = 1
+		ds.Status.CurrentNumberScheduled = 1
+		ds.Status.NumberAvailable = 1
+		ds.Status.UpdatedNumberScheduled = 1
+		ds.Status.NumberUnavailable = 0
+	}
+
+	// Add reactor to automatically update DaemonSet status after create/update
+	fakeKubeClient.PrependReactor("create", "daemonsets", func(action kubetesting.Action) (handled bool, ret runtime.Object, err error) {
+		createAction := action.(kubetesting.CreateAction)
+		ds := createAction.GetObject().(*appsv1.DaemonSet).DeepCopy()
+
+		err = fakeKubeClient.Tracker().Create(daemonSetGVR, ds, ds.Namespace)
+		if err != nil {
+			return true, nil, err
+		}
+
+		setDaemonSetReady(ds)
+		err = fakeKubeClient.Tracker().Update(daemonSetGVR, ds, ds.Namespace)
+
+		return true, ds, err
+	})
+
+	fakeKubeClient.PrependReactor("update", "daemonsets", func(action kubetesting.Action) (handled bool, ret runtime.Object, err error) {
+		updateAction := action.(kubetesting.UpdateAction)
+		ds := updateAction.GetObject().(*appsv1.DaemonSet).DeepCopy()
+
+		err = fakeKubeClient.Tracker().Update(daemonSetGVR, ds, ds.Namespace)
+		if err != nil {
+			return true, nil, err
+		}
+
+		setDaemonSetReady(ds)
+		err = fakeKubeClient.Tracker().Update(daemonSetGVR, ds, ds.Namespace)
+
+		return true, ds, err
+	})
+
 	fakeOperatorClient := fakeclientset.NewSimpleClientset(rodoo)
 	fakeAggregatorClient := fakeaggregator.NewSimpleClientset()
 
@@ -224,12 +271,16 @@ func setupTestOperator(t *testing.T) *testOperatorSetup {
 		APIRegistration: fakeAggregatorClient,
 	}
 
+	// create recorder for tests
+	recorder := events.NewLoggingEventRecorder(operatorName, clock.RealClock{})
+
 	c, enqueuer, err := runoncedurationoverride.New(&runoncedurationoverride.Options{
 		ResyncPeriod:   DefaultResyncPeriodPrimaryResource,
 		Workers:        DefaultWorkerCount,
 		RuntimeContext: runtimeContext,
 		Client:         mockClient,
 		Lister:         lister,
+		Recorder:       recorder,
 	})
 	if err != nil {
 		t.Fatalf("failed to create controller: %v", err)
@@ -548,46 +599,6 @@ func (t *testDynamicEnsurer) Ensure(resource string, object runtime.Object) (*me
 			if err != nil {
 				return nil, err
 			}
-		}
-
-		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)
-		if err != nil {
-			return nil, err
-		}
-		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
-
-	case *appsv1.DaemonSet:
-		var existing *appsv1.DaemonSet
-		var err error
-		existing, err = t.kubeClient.AppsV1().DaemonSets(obj.Namespace).Get(context.Background(), obj.Name, metav1.GetOptions{})
-		if err != nil && !k8serrors.IsNotFound(err) {
-			return nil, err
-		}
-
-		var result *appsv1.DaemonSet
-		if k8serrors.IsNotFound(err) {
-			result, err = t.kubeClient.AppsV1().DaemonSets(obj.Namespace).Create(context.Background(), obj, metav1.CreateOptions{})
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			obj.ResourceVersion = existing.ResourceVersion
-			result, err = t.kubeClient.AppsV1().DaemonSets(obj.Namespace).Update(context.Background(), obj, metav1.UpdateOptions{})
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		// Update DaemonSet status to make it appear ready for the test
-		result.Status.ObservedGeneration = result.Generation
-		result.Status.DesiredNumberScheduled = 1
-		result.Status.CurrentNumberScheduled = 1
-		result.Status.NumberAvailable = 1
-		result.Status.UpdatedNumberScheduled = 1
-		result.Status.NumberUnavailable = 0
-		result, err = t.kubeClient.AppsV1().DaemonSets(obj.Namespace).UpdateStatus(context.Background(), result, metav1.UpdateOptions{})
-		if err != nil {
-			return nil, err
 		}
 
 		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)

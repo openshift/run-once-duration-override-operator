@@ -7,7 +7,9 @@ import (
 
 	"k8s.io/client-go/informers"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/clock"
 
+	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
@@ -64,6 +66,9 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 	// create lister(s) for secondary resources
 	lister, starter := secondarywatch.New(kubeInformerFactory)
 
+	// create recorder for resource apply operations
+	recorder := events.NewLoggingEventRecorder(config.Name, clock.RealClock{})
+
 	// start the controllers
 	c, enqueuer, err := runoncedurationoverride.New(&runoncedurationoverride.Options{
 		ResyncPeriod:   DefaultResyncPeriodPrimaryResource,
@@ -71,6 +76,7 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 		RuntimeContext: context,
 		Client:         clients,
 		Lister:         lister,
+		Recorder:       recorder,
 	})
 	if err != nil {
 		errorCh <- fmt.Errorf("failed to create controller - %s", err.Error())

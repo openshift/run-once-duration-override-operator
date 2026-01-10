@@ -3,6 +3,8 @@ package v1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	operatorsv1 "github.com/openshift/api/operator/v1"
 )
 
 const (
@@ -96,6 +98,10 @@ type RunOnceDurationOverrideStatus struct {
 	// CertsRotateAt is the time the serving certs will be rotated at.
 	// +optional
 	CertsRotateAt metav1.Time `json:"certsRotateAt,omitempty"`
+
+	// Generations tracks the resource generations for managed resources.
+	// +optional
+	Generations []operatorsv1.GenerationStatus `json:"generations,omitempty"`
 }
 
 type RunOnceDurationOverrideResourceHash struct {
