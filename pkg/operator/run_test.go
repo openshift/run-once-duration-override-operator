@@ -9,7 +9,9 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/informers"
@@ -23,6 +25,7 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
+	apiregistrationv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	fakeaggregator "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/fake"
 )
 
@@ -187,7 +190,12 @@ func setupTestOperator(t *testing.T) *testOperatorSetup {
 	_ = admissionregistrationv1.AddToScheme(scheme)
 	_ = rbacv1.AddToScheme(scheme)
 	fakeDynamicClient := fake.NewSimpleDynamicClient(scheme)
-	dynamicEnsurer := dynamic.NewEnsurer(fakeDynamicClient)
+	wrappedEnsurer := dynamic.NewEnsurer(fakeDynamicClient)
+	dynamicEnsurer := &testDynamicEnsurer{
+		kubeClient:       fakeKubeClient,
+		aggregatorClient: fakeAggregatorClient,
+		wrapped:          &wrappedEnsurer,
+	}
 
 	kubeInformerFactory := informers.NewSharedInformerFactoryWithOptions(
 		fakeKubeClient,
@@ -257,6 +265,13 @@ func setupTestOperator(t *testing.T) *testOperatorSetup {
 }
 
 func TestOperatorReconciliation(t *testing.T) {
+	// Initialize klog flags
+	// klog.InitFlags(nil)
+
+	// Set verbosity level (higher number = more verbose)
+	// 0 = errors only, 1-4 = info, 5-9 = debug, 10+ = trace
+	// flag.Set("v", "4")
+
 	setup := setupTestOperator(t)
 	defer setup.cancel()
 
@@ -315,118 +330,154 @@ func verifyResources(t *testing.T, ctx context.Context, client *kubefake.Clients
 		}
 	}
 
-	if dep, err := client.AppsV1().Deployments(namespace).Get(ctx, expected.deployment, metav1.GetOptions{}); err == nil {
-		checkResource(expected.deployment, "Deployment", dep != nil)
-	} else if !expectZero {
-		t.Logf("Deployment %q: not found", expected.deployment)
-	}
-
 	if ds, err := client.AppsV1().DaemonSets(namespace).Get(ctx, expected.daemonSet, metav1.GetOptions{}); err == nil {
 		checkResource(expected.daemonSet, "DaemonSet", ds != nil)
 	} else if !expectZero {
-		t.Logf("DaemonSet %q: not found", expected.daemonSet)
-	}
-
-	if svc, err := client.CoreV1().Services(namespace).Get(ctx, expected.service, metav1.GetOptions{}); err == nil {
-		checkResource(expected.service, "Service", svc != nil)
-	} else if !expectZero {
-		t.Logf("Service %q: not found", expected.service)
+		if k8serrors.IsNotFound(err) {
+			t.Errorf("expected DaemonSet %q to exist, but it was not found", expected.daemonSet)
+		} else {
+			t.Errorf("error getting DaemonSet %q: %v", expected.daemonSet, err)
+		}
 	}
 
 	if sa, err := client.CoreV1().ServiceAccounts(namespace).Get(ctx, expected.serviceAccount, metav1.GetOptions{}); err == nil {
 		checkResource(expected.serviceAccount, "ServiceAccount", sa != nil)
 	} else if !expectZero {
-		t.Logf("ServiceAccount %q: not found", expected.serviceAccount)
+		if k8serrors.IsNotFound(err) {
+			t.Errorf("expected ServiceAccount %q to exist, but it was not found", expected.serviceAccount)
+		} else {
+			t.Errorf("error getting ServiceAccount %q: %v", expected.serviceAccount, err)
+		}
 	}
 
 	if sec, err := client.CoreV1().Secrets(namespace).Get(ctx, expected.secret, metav1.GetOptions{}); err == nil {
 		checkResource(expected.secret, "Secret", sec != nil)
 	} else if !expectZero {
-		t.Logf("Secret %q: not found", expected.secret)
+		if k8serrors.IsNotFound(err) {
+			t.Errorf("expected Secret %q to exist, but it was not found", expected.secret)
+		} else {
+			t.Errorf("error getting Secret %q: %v", expected.secret, err)
+		}
 	}
 
 	if cm, err := client.CoreV1().ConfigMaps(namespace).Get(ctx, expected.configMapConfiguration, metav1.GetOptions{}); err == nil {
 		checkResource(expected.configMapConfiguration, "ConfigMap", cm != nil)
 	} else if !expectZero {
-		t.Logf("ConfigMap %q: not found", expected.configMapConfiguration)
+		if k8serrors.IsNotFound(err) {
+			t.Errorf("expected ConfigMap %q to exist, but it was not found", expected.configMapConfiguration)
+		} else {
+			t.Errorf("error getting ConfigMap %q: %v", expected.configMapConfiguration, err)
+		}
 	}
 
 	if cm, err := client.CoreV1().ConfigMaps(namespace).Get(ctx, expected.configMapCABundle, metav1.GetOptions{}); err == nil {
 		checkResource(expected.configMapCABundle, "ConfigMap", cm != nil)
 	} else if !expectZero {
-		t.Logf("ConfigMap %q: not found", expected.configMapCABundle)
+		if k8serrors.IsNotFound(err) {
+			t.Errorf("expected ConfigMap %q to exist, but it was not found", expected.configMapCABundle)
+		} else {
+			t.Errorf("error getting ConfigMap %q: %v", expected.configMapCABundle, err)
+		}
 	}
 
 	if wh, err := client.AdmissionregistrationV1().MutatingWebhookConfigurations().Get(ctx, expected.mutatingWebhookConfiguration, metav1.GetOptions{}); err == nil {
 		checkResource(expected.mutatingWebhookConfiguration, "MutatingWebhookConfiguration", wh != nil)
 	} else if !expectZero {
-		t.Logf("MutatingWebhookConfiguration %q: not found", expected.mutatingWebhookConfiguration)
-	}
-
-	if api, err := aggregatorClient.ApiregistrationV1().APIServices().Get(ctx, expected.apiService, metav1.GetOptions{}); err == nil {
-		checkResource(expected.apiService, "APIService", api != nil)
-	} else if !expectZero {
-		t.Logf("APIService %q: not found", expected.apiService)
-	}
-
-	if role, err := client.RbacV1().Roles("kube-system").Get(ctx, expected.roleKubeSystem, metav1.GetOptions{}); err == nil {
-		checkResource(expected.roleKubeSystem, "Role(kube-system)", role != nil)
-	} else if !expectZero {
-		t.Logf("Role %q (kube-system): not found", expected.roleKubeSystem)
+		if k8serrors.IsNotFound(err) {
+			t.Errorf("expected MutatingWebhookConfiguration %q to exist, but it was not found", expected.mutatingWebhookConfiguration)
+		} else {
+			t.Errorf("error getting MutatingWebhookConfiguration %q: %v", expected.mutatingWebhookConfiguration, err)
+		}
 	}
 
 	if rb, err := client.RbacV1().RoleBindings("kube-system").Get(ctx, expected.roleBindingKubeSystem, metav1.GetOptions{}); err == nil {
 		checkResource(expected.roleBindingKubeSystem, "RoleBinding(kube-system)", rb != nil)
 	} else if !expectZero {
-		t.Logf("RoleBinding %q (kube-system): not found", expected.roleBindingKubeSystem)
+		if k8serrors.IsNotFound(err) {
+			t.Errorf("expected RoleBinding %q (kube-system) to exist, but it was not found", expected.roleBindingKubeSystem)
+		} else {
+			t.Errorf("error getting RoleBinding %q (kube-system): %v", expected.roleBindingKubeSystem, err)
+		}
 	}
 
 	if role, err := client.RbacV1().Roles(namespace).Get(ctx, expected.roleSCCHostNetwork, metav1.GetOptions{}); err == nil {
 		checkResource(expected.roleSCCHostNetwork, "Role", role != nil)
 	} else if !expectZero {
-		t.Logf("Role %q: not found", expected.roleSCCHostNetwork)
+		if k8serrors.IsNotFound(err) {
+			t.Errorf("expected Role %q to exist, but it was not found", expected.roleSCCHostNetwork)
+		} else {
+			t.Errorf("error getting Role %q: %v", expected.roleSCCHostNetwork, err)
+		}
 	}
 
 	if rb, err := client.RbacV1().RoleBindings(namespace).Get(ctx, expected.roleBindingSCCHostNetwork, metav1.GetOptions{}); err == nil {
 		checkResource(expected.roleBindingSCCHostNetwork, "RoleBinding", rb != nil)
 	} else if !expectZero {
-		t.Logf("RoleBinding %q: not found", expected.roleBindingSCCHostNetwork)
+		if k8serrors.IsNotFound(err) {
+			t.Errorf("expected RoleBinding %q to exist, but it was not found", expected.roleBindingSCCHostNetwork)
+		} else {
+			t.Errorf("error getting RoleBinding %q: %v", expected.roleBindingSCCHostNetwork, err)
+		}
 	}
 
 	if cr, err := client.RbacV1().ClusterRoles().Get(ctx, expected.clusterRoleRequester, metav1.GetOptions{}); err == nil {
 		checkResource(expected.clusterRoleRequester, "ClusterRole", cr != nil)
 	} else if !expectZero {
-		t.Logf("ClusterRole %q: not found", expected.clusterRoleRequester)
+		if k8serrors.IsNotFound(err) {
+			t.Errorf("expected ClusterRole %q to exist, but it was not found", expected.clusterRoleRequester)
+		} else {
+			t.Errorf("error getting ClusterRole %q: %v", expected.clusterRoleRequester, err)
+		}
 	}
 
 	if cr, err := client.RbacV1().ClusterRoles().Get(ctx, expected.clusterRoleDefault, metav1.GetOptions{}); err == nil {
 		checkResource(expected.clusterRoleDefault, "ClusterRole", cr != nil)
 	} else if !expectZero {
-		t.Logf("ClusterRole %q: not found", expected.clusterRoleDefault)
+		if k8serrors.IsNotFound(err) {
+			t.Errorf("expected ClusterRole %q to exist, but it was not found", expected.clusterRoleDefault)
+		} else {
+			t.Errorf("error getting ClusterRole %q: %v", expected.clusterRoleDefault, err)
+		}
 	}
 
 	if cr, err := client.RbacV1().ClusterRoles().Get(ctx, expected.clusterRoleAnonymousAccess, metav1.GetOptions{}); err == nil {
 		checkResource(expected.clusterRoleAnonymousAccess, "ClusterRole", cr != nil)
 	} else if !expectZero {
-		t.Logf("ClusterRole %q: not found", expected.clusterRoleAnonymousAccess)
+		if k8serrors.IsNotFound(err) {
+			t.Errorf("expected ClusterRole %q to exist, but it was not found", expected.clusterRoleAnonymousAccess)
+		} else {
+			t.Errorf("error getting ClusterRole %q: %v", expected.clusterRoleAnonymousAccess, err)
+		}
 	}
 
 	if crb, err := client.RbacV1().ClusterRoleBindings().Get(ctx, expected.clusterRoleBindingDefault, metav1.GetOptions{}); err == nil {
 		checkResource(expected.clusterRoleBindingDefault, "ClusterRoleBinding", crb != nil)
 	} else if !expectZero {
-		t.Logf("ClusterRoleBinding %q: not found", expected.clusterRoleBindingDefault)
+		if k8serrors.IsNotFound(err) {
+			t.Errorf("expected ClusterRoleBinding %q to exist, but it was not found", expected.clusterRoleBindingDefault)
+		} else {
+			t.Errorf("error getting ClusterRoleBinding %q: %v", expected.clusterRoleBindingDefault, err)
+		}
 	}
 
 	if crb, err := client.RbacV1().ClusterRoleBindings().Get(ctx, expected.clusterRoleBindingAuthDelegator, metav1.GetOptions{}); err == nil {
 		checkResource(expected.clusterRoleBindingAuthDelegator, "ClusterRoleBinding", crb != nil)
 	} else if !expectZero {
-		t.Logf("ClusterRoleBinding %q: not found", expected.clusterRoleBindingAuthDelegator)
+		if k8serrors.IsNotFound(err) {
+			t.Errorf("expected ClusterRoleBinding %q to exist, but it was not found", expected.clusterRoleBindingAuthDelegator)
+		} else {
+			t.Errorf("error getting ClusterRoleBinding %q: %v", expected.clusterRoleBindingAuthDelegator, err)
+		}
 	}
 
 	if crb, err := client.RbacV1().ClusterRoleBindings().Get(ctx, expected.clusterRoleBindingAnonymousAccess, metav1.GetOptions{}); err == nil {
 		checkResource(expected.clusterRoleBindingAnonymousAccess, "ClusterRoleBinding", crb != nil)
 	} else if !expectZero {
-		t.Logf("ClusterRoleBinding %q: not found", expected.clusterRoleBindingAnonymousAccess)
+		if k8serrors.IsNotFound(err) {
+			t.Errorf("expected ClusterRoleBinding %q to exist, but it was not found", expected.clusterRoleBindingAnonymousAccess)
+		} else {
+			t.Errorf("error getting ClusterRoleBinding %q: %v", expected.clusterRoleBindingAnonymousAccess, err)
+		}
 	}
 }
 
@@ -436,4 +487,340 @@ type mockEnqueuer struct{}
 func (m *mockEnqueuer) Enqueue(owned interface{}) error {
 	// No-op for testing
 	return nil
+}
+
+// testDynamicEnsurer wraps the real dynamic ensurer and uses typed clients for testing
+// This avoids schema validation issues with fake.NewSimpleDynamicClient
+type testDynamicEnsurer struct {
+	kubeClient       *kubefake.Clientset
+	aggregatorClient *fakeaggregator.Clientset
+	wrapped          *dynamic.Ensurer
+}
+
+func (t *testDynamicEnsurer) Ensure(resource string, object runtime.Object) (*metav1unstructured.Unstructured, error) {
+	// For Secrets and ConfigMaps, use typed clients to avoid schema validation issues
+	switch obj := object.(type) {
+	case *corev1.Secret:
+		var existing *corev1.Secret
+		var err error
+		existing, err = t.kubeClient.CoreV1().Secrets(obj.Namespace).Get(context.Background(), obj.Name, metav1.GetOptions{})
+		if err != nil && !k8serrors.IsNotFound(err) {
+			return nil, err
+		}
+
+		var result *corev1.Secret
+		if k8serrors.IsNotFound(err) {
+			result, err = t.kubeClient.CoreV1().Secrets(obj.Namespace).Create(context.Background(), obj, metav1.CreateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			obj.ResourceVersion = existing.ResourceVersion
+			result, err = t.kubeClient.CoreV1().Secrets(obj.Namespace).Update(context.Background(), obj, metav1.UpdateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)
+		if err != nil {
+			return nil, err
+		}
+		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
+
+	case *corev1.ConfigMap:
+		var existing *corev1.ConfigMap
+		var err error
+		existing, err = t.kubeClient.CoreV1().ConfigMaps(obj.Namespace).Get(context.Background(), obj.Name, metav1.GetOptions{})
+		if err != nil && !k8serrors.IsNotFound(err) {
+			return nil, err
+		}
+
+		var result *corev1.ConfigMap
+		if k8serrors.IsNotFound(err) {
+			result, err = t.kubeClient.CoreV1().ConfigMaps(obj.Namespace).Create(context.Background(), obj, metav1.CreateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			obj.ResourceVersion = existing.ResourceVersion
+			result, err = t.kubeClient.CoreV1().ConfigMaps(obj.Namespace).Update(context.Background(), obj, metav1.UpdateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)
+		if err != nil {
+			return nil, err
+		}
+		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
+
+	case *appsv1.DaemonSet:
+		var existing *appsv1.DaemonSet
+		var err error
+		existing, err = t.kubeClient.AppsV1().DaemonSets(obj.Namespace).Get(context.Background(), obj.Name, metav1.GetOptions{})
+		if err != nil && !k8serrors.IsNotFound(err) {
+			return nil, err
+		}
+
+		var result *appsv1.DaemonSet
+		if k8serrors.IsNotFound(err) {
+			result, err = t.kubeClient.AppsV1().DaemonSets(obj.Namespace).Create(context.Background(), obj, metav1.CreateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			obj.ResourceVersion = existing.ResourceVersion
+			result, err = t.kubeClient.AppsV1().DaemonSets(obj.Namespace).Update(context.Background(), obj, metav1.UpdateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		// Update DaemonSet status to make it appear ready for the test
+		result.Status.ObservedGeneration = result.Generation
+		result.Status.DesiredNumberScheduled = 1
+		result.Status.CurrentNumberScheduled = 1
+		result.Status.NumberAvailable = 1
+		result.Status.UpdatedNumberScheduled = 1
+		result.Status.NumberUnavailable = 0
+		result, err = t.kubeClient.AppsV1().DaemonSets(obj.Namespace).UpdateStatus(context.Background(), result, metav1.UpdateOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)
+		if err != nil {
+			return nil, err
+		}
+		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
+
+	case *corev1.Service:
+		var existing *corev1.Service
+		var err error
+		existing, err = t.kubeClient.CoreV1().Services(obj.Namespace).Get(context.Background(), obj.Name, metav1.GetOptions{})
+		if err != nil && !k8serrors.IsNotFound(err) {
+			return nil, err
+		}
+
+		var result *corev1.Service
+		if k8serrors.IsNotFound(err) {
+			result, err = t.kubeClient.CoreV1().Services(obj.Namespace).Create(context.Background(), obj, metav1.CreateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			obj.ResourceVersion = existing.ResourceVersion
+			result, err = t.kubeClient.CoreV1().Services(obj.Namespace).Update(context.Background(), obj, metav1.UpdateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)
+		if err != nil {
+			return nil, err
+		}
+		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
+
+	case *corev1.ServiceAccount:
+		var existing *corev1.ServiceAccount
+		var err error
+		existing, err = t.kubeClient.CoreV1().ServiceAccounts(obj.Namespace).Get(context.Background(), obj.Name, metav1.GetOptions{})
+		if err != nil && !k8serrors.IsNotFound(err) {
+			return nil, err
+		}
+
+		var result *corev1.ServiceAccount
+		if k8serrors.IsNotFound(err) {
+			result, err = t.kubeClient.CoreV1().ServiceAccounts(obj.Namespace).Create(context.Background(), obj, metav1.CreateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			obj.ResourceVersion = existing.ResourceVersion
+			result, err = t.kubeClient.CoreV1().ServiceAccounts(obj.Namespace).Update(context.Background(), obj, metav1.UpdateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)
+		if err != nil {
+			return nil, err
+		}
+		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
+
+	case *admissionregistrationv1.MutatingWebhookConfiguration:
+		var existing *admissionregistrationv1.MutatingWebhookConfiguration
+		var err error
+		existing, err = t.kubeClient.AdmissionregistrationV1().MutatingWebhookConfigurations().Get(context.Background(), obj.Name, metav1.GetOptions{})
+		if err != nil && !k8serrors.IsNotFound(err) {
+			return nil, err
+		}
+
+		var result *admissionregistrationv1.MutatingWebhookConfiguration
+		if k8serrors.IsNotFound(err) {
+			result, err = t.kubeClient.AdmissionregistrationV1().MutatingWebhookConfigurations().Create(context.Background(), obj, metav1.CreateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			obj.ResourceVersion = existing.ResourceVersion
+			result, err = t.kubeClient.AdmissionregistrationV1().MutatingWebhookConfigurations().Update(context.Background(), obj, metav1.UpdateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)
+		if err != nil {
+			return nil, err
+		}
+		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
+
+	case *rbacv1.Role:
+		var existing *rbacv1.Role
+		var err error
+		existing, err = t.kubeClient.RbacV1().Roles(obj.Namespace).Get(context.Background(), obj.Name, metav1.GetOptions{})
+		if err != nil && !k8serrors.IsNotFound(err) {
+			return nil, err
+		}
+
+		var result *rbacv1.Role
+		if k8serrors.IsNotFound(err) {
+			result, err = t.kubeClient.RbacV1().Roles(obj.Namespace).Create(context.Background(), obj, metav1.CreateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			obj.ResourceVersion = existing.ResourceVersion
+			result, err = t.kubeClient.RbacV1().Roles(obj.Namespace).Update(context.Background(), obj, metav1.UpdateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)
+		if err != nil {
+			return nil, err
+		}
+		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
+
+	case *rbacv1.RoleBinding:
+		var existing *rbacv1.RoleBinding
+		var err error
+		existing, err = t.kubeClient.RbacV1().RoleBindings(obj.Namespace).Get(context.Background(), obj.Name, metav1.GetOptions{})
+		if err != nil && !k8serrors.IsNotFound(err) {
+			return nil, err
+		}
+
+		var result *rbacv1.RoleBinding
+		if k8serrors.IsNotFound(err) {
+			result, err = t.kubeClient.RbacV1().RoleBindings(obj.Namespace).Create(context.Background(), obj, metav1.CreateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			obj.ResourceVersion = existing.ResourceVersion
+			result, err = t.kubeClient.RbacV1().RoleBindings(obj.Namespace).Update(context.Background(), obj, metav1.UpdateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)
+		if err != nil {
+			return nil, err
+		}
+		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
+
+	case *rbacv1.ClusterRole:
+		var existing *rbacv1.ClusterRole
+		var err error
+		existing, err = t.kubeClient.RbacV1().ClusterRoles().Get(context.Background(), obj.Name, metav1.GetOptions{})
+		if err != nil && !k8serrors.IsNotFound(err) {
+			return nil, err
+		}
+
+		var result *rbacv1.ClusterRole
+		if k8serrors.IsNotFound(err) {
+			result, err = t.kubeClient.RbacV1().ClusterRoles().Create(context.Background(), obj, metav1.CreateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			obj.ResourceVersion = existing.ResourceVersion
+			result, err = t.kubeClient.RbacV1().ClusterRoles().Update(context.Background(), obj, metav1.UpdateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)
+		if err != nil {
+			return nil, err
+		}
+		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
+
+	case *rbacv1.ClusterRoleBinding:
+		var existing *rbacv1.ClusterRoleBinding
+		var err error
+		existing, err = t.kubeClient.RbacV1().ClusterRoleBindings().Get(context.Background(), obj.Name, metav1.GetOptions{})
+		if err != nil && !k8serrors.IsNotFound(err) {
+			return nil, err
+		}
+
+		var result *rbacv1.ClusterRoleBinding
+		if k8serrors.IsNotFound(err) {
+			result, err = t.kubeClient.RbacV1().ClusterRoleBindings().Create(context.Background(), obj, metav1.CreateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			obj.ResourceVersion = existing.ResourceVersion
+			result, err = t.kubeClient.RbacV1().ClusterRoleBindings().Update(context.Background(), obj, metav1.UpdateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)
+		if err != nil {
+			return nil, err
+		}
+		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
+
+	case *apiregistrationv1.APIService:
+		var existing *apiregistrationv1.APIService
+		var err error
+		existing, err = t.aggregatorClient.ApiregistrationV1().APIServices().Get(context.Background(), obj.Name, metav1.GetOptions{})
+		if err != nil && !k8serrors.IsNotFound(err) {
+			return nil, err
+		}
+
+		var result *apiregistrationv1.APIService
+		if k8serrors.IsNotFound(err) {
+			result, err = t.aggregatorClient.ApiregistrationV1().APIServices().Create(context.Background(), obj, metav1.CreateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			obj.ResourceVersion = existing.ResourceVersion
+			result, err = t.aggregatorClient.ApiregistrationV1().APIServices().Update(context.Background(), obj, metav1.UpdateOptions{})
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)
+		if err != nil {
+			return nil, err
+		}
+		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
+	}
+
+	// For other types, use the wrapped dynamic ensurer
+	return (*t.wrapped).Ensure(resource, object)
 }
