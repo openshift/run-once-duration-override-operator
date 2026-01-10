@@ -16,7 +16,6 @@ import (
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	"github.com/openshift/run-once-duration-override-operator/pkg/cert"
-	"github.com/openshift/run-once-duration-override-operator/pkg/ensurer"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
 	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 )
@@ -34,20 +33,18 @@ var (
 
 func NewCertGenerationHandler(o *Options) *certGenerationHandler {
 	return &certGenerationHandler{
-		client:        o.Client.Kubernetes,
-		recorder:      o.Recorder,
-		secretEnsurer: ensurer.NewSecretEnsurer(o.Client.Dynamic),
-		lister:        o.SecondaryLister,
-		asset:         o.Asset,
+		client:   o.Client.Kubernetes,
+		recorder: o.Recorder,
+		lister:   o.SecondaryLister,
+		asset:    o.Asset,
 	}
 }
 
 type certGenerationHandler struct {
-	client        kubernetes.Interface
-	recorder      events.Recorder
-	secretEnsurer *ensurer.SecretEnsurer
-	lister        *secondarywatch.Lister
-	asset         *asset.Asset
+	client   kubernetes.Interface
+	recorder events.Recorder
+	lister   *secondarywatch.Lister
+	asset    *asset.Asset
 }
 
 func (c *certGenerationHandler) Handle(context *ReconcileRequestContext, original *appsv1.RunOnceDurationOverride) (current *appsv1.RunOnceDurationOverride, result controllerreconciler.Result, handleErr error) {
@@ -96,7 +93,7 @@ func (c *certGenerationHandler) Handle(context *ReconcileRequestContext, origina
 		desiredSecret.Data["tls.key"] = bundle.Serving.ServiceKey
 		desiredSecret.Data["tls.crt"] = bundle.Serving.ServiceCert
 
-		secret, err := c.secretEnsurer.Ensure(desiredSecret)
+		secret, _, err := resourceapply.ApplySecret(gocontext.TODO(), c.client.CoreV1(), c.recorder, desiredSecret)
 		if err != nil {
 			handleErr = condition.NewInstallReadinessError(appsv1.CannotGenerateCert, err)
 			return

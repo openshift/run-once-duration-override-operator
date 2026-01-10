@@ -549,36 +549,8 @@ type testDynamicEnsurer struct {
 }
 
 func (t *testDynamicEnsurer) Ensure(resource string, object runtime.Object) (*metav1unstructured.Unstructured, error) {
-	// For Secrets, use typed clients to avoid schema validation issues
+	// Use typed clients to avoid schema validation issues
 	switch obj := object.(type) {
-	case *corev1.Secret:
-		var existing *corev1.Secret
-		var err error
-		existing, err = t.kubeClient.CoreV1().Secrets(obj.Namespace).Get(context.Background(), obj.Name, metav1.GetOptions{})
-		if err != nil && !k8serrors.IsNotFound(err) {
-			return nil, err
-		}
-
-		var result *corev1.Secret
-		if k8serrors.IsNotFound(err) {
-			result, err = t.kubeClient.CoreV1().Secrets(obj.Namespace).Create(context.Background(), obj, metav1.CreateOptions{})
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			obj.ResourceVersion = existing.ResourceVersion
-			result, err = t.kubeClient.CoreV1().Secrets(obj.Namespace).Update(context.Background(), obj, metav1.UpdateOptions{})
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)
-		if err != nil {
-			return nil, err
-		}
-		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
-
 	case *corev1.Service:
 		var existing *corev1.Service
 		var err error
