@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/deploy"
 	"github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
 	runoncedurationoverridev1listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
+	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/handlers"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -35,22 +36,20 @@ func NewReconciler(options *handlers.Options) *reconciler {
 		options.Recorder,
 	)
 
-	handlers := HandlerChain{
-		handlers.NewAvailabilityHandler(options),
-		handlers.NewValidationHandler(options),
-		handlers.NewConfigurationHandler(options),
-		handlers.NewCertGenerationHandler(options),
-		handlers.NewCertReadyHandler(options),
-		handlers.NewDaemonSetHandler(options),
-		handlers.NewDeploymentReadyHandler(options),
-		handlers.NewWebhookConfigurationHandlerHandler(options),
-		handlers.NewAvailabilityHandler(options),
-	}
-
 	return &reconciler{
-		client:         options.Client.Operator,
-		lister:         options.PrimaryLister,
-		handlers:       handlers,
+		client: options.Client.Operator,
+		lister: options.PrimaryLister,
+		handlers: []handlers.Handler{
+			handlers.NewAvailabilityHandler(options),
+			handlers.NewValidationHandler(options),
+			handlers.NewConfigurationHandler(options),
+			handlers.NewCertGenerationHandler(options),
+			handlers.NewCertReadyHandler(options),
+			handlers.NewDaemonSetHandler(options),
+			handlers.NewDeploymentReadyHandler(options),
+			handlers.NewWebhookConfigurationHandlerHandler(options),
+			handlers.NewAvailabilityHandler(options),
+		},
 		operandContext: options.OperandContext,
 	}
 }
@@ -58,7 +57,7 @@ func NewReconciler(options *handlers.Options) *reconciler {
 type reconciler struct {
 	client         versioned.Interface
 	lister         runoncedurationoverridev1listers.RunOnceDurationOverrideLister
-	handlers       HandlerChain
+	handlers       []handlers.Handler
 	operandContext operatorruntime.OperandContext
 }
 
@@ -90,7 +89,19 @@ func (r *reconciler) Reconcile(ctx context.Context, request controllerreconciler
 	copy.SetGroupVersionKind(RunOnceDurationOverrideGVK)
 
 	reconcileContext := handlers.NewReconcileRequestContext(r.operandContext)
-	current, result, err := r.handlers.Handle(reconcileContext, copy)
+	modified := copy
+	var current *runoncedurationoverridev1.RunOnceDurationOverride
+	for _, handler := range r.handlers {
+		current, result, err = handler.Handle(reconcileContext, modified)
+		if err != nil {
+			condition.NewBuilderWithStatus(&current.Status).WithError(err)
+			break
+		}
+		if result.Requeue || result.RequeueAfter > 0 {
+			break
+		}
+		modified = current
+	}
 
 	updateErr := r.updateStatus(original, current)
 	if updateErr != nil {
