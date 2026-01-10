@@ -8,6 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -25,19 +26,23 @@ const (
 )
 
 type Options struct {
-	ResyncPeriod   time.Duration
-	Workers        int
-	Client         *operatorruntime.Client
-	RuntimeContext operatorruntime.OperandContext
-	Lister         *SecondaryLister
-	Recorder       events.Recorder
+	ResyncPeriod    time.Duration
+	Workers         int
+	Client          *operatorruntime.Client
+	RuntimeContext  operatorruntime.OperandContext
+	InformerFactory informers.SharedInformerFactory
+	ShutdownContext context.Context
+	Recorder        events.Recorder
 }
 
-func New(options *Options) (c Interface, e operatorruntime.Enqueuer, err error) {
+func New(options *Options) (c Interface, err error) {
 	if options == nil || options.Client == nil || options.RuntimeContext == nil {
 		err = errors.New("invalid input to New")
 		return
 	}
+
+	// create lister(s) for secondary resources
+	secondaryLister, secondaryStarter := NewSecondaryWatch(options.InformerFactory)
 
 	// Create a new RunOnceDurationOverrides watcher
 	client := options.Client.Operator
@@ -72,7 +77,7 @@ func New(options *Options) (c Interface, e operatorruntime.Enqueuer, err error) 
 		OperandContext:  options.RuntimeContext,
 		Client:          options.Client,
 		PrimaryLister:   lister,
-		SecondaryLister: options.Lister,
+		SecondaryLister: secondaryLister,
 		Asset:           operandAsset,
 		Recorder:        options.Recorder,
 	})
@@ -84,10 +89,16 @@ func New(options *Options) (c Interface, e operatorruntime.Enqueuer, err error) 
 		reconciler: r,
 		lister:     lister,
 	}
-	e = &enqueuer{
+
+	e := &enqueuer{
 		queue:              queue,
 		lister:             lister,
 		ownerAnnotationKey: operandAsset.Values().OwnerAnnotationKey,
+	}
+
+	// setup watches for secondary resources
+	if err = secondaryStarter.Start(e, options.ShutdownContext); err != nil {
+		return
 	}
 
 	return

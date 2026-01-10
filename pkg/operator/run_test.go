@@ -243,11 +243,6 @@ func setupTestOperator(t *testing.T) *testOperatorSetup {
 		DefaultResyncPeriodPrimaryResource,
 	)
 
-	lister, starter := runoncedurationoverride.NewSecondaryWatch(kubeInformerFactory)
-	if lister == nil || starter == nil {
-		t.Fatal("expected lister and starter to be non-nil")
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 
 	runtimeContext := operatorruntime.NewOperandContext(operatorName, namespace, crName, "test-image:latest", "v1.0.0")
@@ -261,20 +256,17 @@ func setupTestOperator(t *testing.T) *testOperatorSetup {
 	// create recorder for tests
 	recorder := events.NewLoggingEventRecorder(operatorName, clock.RealClock{})
 
-	c, enqueuer, err := runoncedurationoverride.New(&runoncedurationoverride.Options{
-		ResyncPeriod:   DefaultResyncPeriodPrimaryResource,
-		Workers:        DefaultWorkerCount,
-		RuntimeContext: runtimeContext,
-		Client:         mockClient,
-		Lister:         lister,
-		Recorder:       recorder,
+	c, err := runoncedurationoverride.New(&runoncedurationoverride.Options{
+		ResyncPeriod:    DefaultResyncPeriodPrimaryResource,
+		Workers:         DefaultWorkerCount,
+		RuntimeContext:  runtimeContext,
+		Client:          mockClient,
+		InformerFactory: kubeInformerFactory,
+		ShutdownContext: ctx,
+		Recorder:        recorder,
 	})
 	if err != nil {
 		t.Fatalf("failed to create controller: %v", err)
-	}
-
-	if err := starter.Start(enqueuer, ctx); err != nil {
-		t.Fatalf("expected starter.Start to succeed, got error: %v", err)
 	}
 
 	kubeInformerFactory.Start(ctx.Done())

@@ -62,29 +62,21 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 		informers.WithNamespace(config.Namespace),
 	)
 
-	// create lister(s) for secondary resources
-	lister, starter := runoncedurationoverride.NewSecondaryWatch(kubeInformerFactory)
-
 	// create recorder for resource apply operations
 	recorder := events.NewLoggingEventRecorder(config.Name, clock.RealClock{})
 
 	// start the controllers
-	c, enqueuer, err := runoncedurationoverride.New(&runoncedurationoverride.Options{
-		ResyncPeriod:   DefaultResyncPeriodPrimaryResource,
-		Workers:        DefaultWorkerCount,
-		RuntimeContext: context,
-		Client:         clients,
-		Lister:         lister,
-		Recorder:       recorder,
+	c, err := runoncedurationoverride.New(&runoncedurationoverride.Options{
+		ResyncPeriod:    DefaultResyncPeriodPrimaryResource,
+		Workers:         DefaultWorkerCount,
+		RuntimeContext:  context,
+		Client:          clients,
+		InformerFactory: kubeInformerFactory,
+		ShutdownContext: config.ShutdownContext,
+		Recorder:        recorder,
 	})
 	if err != nil {
 		errorCh <- fmt.Errorf("failed to create controller - %s", err.Error())
-		return
-	}
-
-	// setup watches for secondary resources
-	if err := starter.Start(enqueuer, config.ShutdownContext); err != nil {
-		errorCh <- fmt.Errorf("failed to start watch on secondary resources - %s", err.Error())
 		return
 	}
 
