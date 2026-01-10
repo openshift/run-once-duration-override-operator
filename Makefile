@@ -37,9 +37,9 @@ test-e2e: test-unit
 
 regen-crd:
 	go build -o _output/tools/bin/controller-gen ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen
-	cp manifests/stable/runoncedurationoverride.crd.yaml manifests/stable/operator.openshift.io_runoncedurationoverrides.yaml
-	./_output/tools/bin/controller-gen crd paths=./pkg/apis/runoncedurationoverride/v1/... schemapatch:manifests=./manifests/stable
-	mv manifests/stable/operator.openshift.io_runoncedurationoverrides.yaml manifests/stable/runoncedurationoverride.crd.yaml
+	cp manifests/runoncedurationoverride.crd.yaml manifests/operator.openshift.io_runoncedurationoverrides.yaml
+	./_output/tools/bin/controller-gen crd paths=./pkg/apis/runoncedurationoverride/v1/... schemapatch:manifests=./manifests
+	mv manifests/operator.openshift.io_runoncedurationoverrides.yaml manifests/runoncedurationoverride.crd.yaml
 
 generate: update-codegen-crds generate-clients
 .PHONY: generate

@@ -11,12 +11,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 
+	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 	"github.com/openshift/run-once-duration-override-operator/pkg/apis/reference"
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	"github.com/openshift/run-once-duration-override-operator/pkg/deploy"
 	dynamicclient "github.com/openshift/run-once-duration-override-operator/pkg/dynamic"
-	"github.com/openshift/run-once-duration-override-operator/pkg/ensurer"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
 	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -24,21 +24,19 @@ import (
 
 func NewDaemonSetHandler(o *Options) *daemonSetHandler {
 	return &daemonSetHandler{
-		client:     o.Client.Kubernetes,
-		dynamic:    o.Client.Dynamic,
-		deployment: ensurer.NewDaemonSetEnsurer(o.Client.Dynamic),
-		asset:      o.Asset,
-		lister:     o.SecondaryLister,
-		deploy:     o.Deploy,
+		client:  o.Client.Kubernetes,
+		dynamic: o.Client.Dynamic,
+		asset:   o.Asset,
+		lister:  o.SecondaryLister,
+		deploy:  o.Deploy,
 	}
 }
 
 type daemonSetHandler struct {
-	client     kubernetes.Interface
-	deployment *ensurer.DaemonSetEnsurer
-	dynamic    dynamicclient.Ensurer
-	lister     *secondarywatch.Lister
-	asset      *asset.Asset
+	client  kubernetes.Interface
+	dynamic dynamicclient.Ensurer
+	lister  *secondarywatch.Lister
+	asset   *asset.Asset
 
 	deploy deploy.Interface
 }
@@ -78,6 +76,7 @@ func (c *daemonSetHandler) Handle(context *ReconcileRequestContext, original *ap
 			return
 		}
 
+		resourcemerge.SetDaemonSetGeneration(&current.Status.Generations, object.(*k8sappsv1.DaemonSet))
 		klog.V(2).Infof("key=%s resource=%T/%s successfully ensured", original.Name, object, accessor.GetName())
 	}
 
@@ -111,7 +110,7 @@ func (c *daemonSetHandler) Ensure(ctx *ReconcileRequestContext, cro *appsv1.RunO
 
 	parent := c.ApplyToDeploymentObject(ctx, cro)
 	child := c.ApplyToToPodTemplate(ctx, cro)
-	current, accessor, err = c.deploy.Ensure(parent, child)
+	current, accessor, err = c.deploy.Ensure(parent, child, cro.Status.Generations)
 	return
 }
 

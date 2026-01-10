@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/openshift/run-once-duration-override-operator/pkg/deploy"
-	"github.com/openshift/run-once-duration-override-operator/pkg/ensurer"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -15,6 +14,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/openshift/library-go/pkg/operator/events"
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
@@ -35,6 +35,7 @@ type Options struct {
 	Client         *operatorruntime.Client
 	RuntimeContext operatorruntime.OperandContext
 	Lister         *secondarywatch.Lister
+	Recorder       events.Recorder
 }
 
 func New(options *Options) (c Interface, e operatorruntime.Enqueuer, err error) {
@@ -73,7 +74,7 @@ func New(options *Options) (c Interface, e operatorruntime.Enqueuer, err error) 
 	operandAsset := asset.New(options.RuntimeContext)
 
 	// initialize install strategy, we use daemonset
-	d := deploy.NewDaemonSetInstall(options.Lister.AppsV1DaemonSetLister(), options.RuntimeContext, operandAsset, ensurer.NewDaemonSetEnsurer(options.Client.Dynamic))
+	d := deploy.NewDaemonSetInstall(options.Lister.AppsV1DaemonSetLister(), options.RuntimeContext, operandAsset, options.Client.Kubernetes, options.Recorder)
 
 	reconciler := reconciler.NewReconciler(&handlers.Options{
 		OperandContext:  options.RuntimeContext,
