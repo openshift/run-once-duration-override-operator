@@ -1,4 +1,4 @@
-package handlers
+package runoncedurationoverride
 
 import (
 	gocontext "context"
@@ -20,7 +20,7 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 )
 
-func NewConfigurationHandler(o *Options) *configurationHandler {
+func NewConfigurationHandler(o *HandlerOptions) *configurationHandler {
 	return &configurationHandler{
 		client:   o.Client.Kubernetes,
 		recorder: o.Recorder,

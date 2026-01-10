@@ -17,7 +17,6 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
 	runoncedurationoverridev1listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
-	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/handlers"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 )
@@ -70,7 +69,7 @@ func New(options *Options) (c Interface, e operatorruntime.Enqueuer, err error) 
 	// setup operand asset
 	operandAsset := asset.New(options.RuntimeContext)
 
-	r := NewReconciler(&handlers.Options{
+	r := NewReconciler(&HandlerOptions{
 		OperandContext:  options.RuntimeContext,
 		Client:          options.Client,
 		PrimaryLister:   lister,

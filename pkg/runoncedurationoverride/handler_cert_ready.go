@@ -1,4 +1,4 @@
-package handlers
+package runoncedurationoverride
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-func NewCertReadyHandler(o *Options) *certReadyHandler {
+func NewCertReadyHandler(o *HandlerOptions) *certReadyHandler {
 	return &certReadyHandler{
 		client: o.Client.Kubernetes,
 		lister: o.SecondaryLister,

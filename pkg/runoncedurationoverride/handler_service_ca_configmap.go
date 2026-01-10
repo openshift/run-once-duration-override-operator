@@ -1,4 +1,4 @@
-package handlers
+package runoncedurationoverride
 
 import (
 	gocontext "context"
@@ -21,7 +21,7 @@ const (
 	ServiceCAInjectBundle = "service.beta.openshift.io/inject-cabundle"
 )
 
-func NewServiceCAConfigMapHandler(o *Options) *serviceCAConfigMapHandler {
+func NewServiceCAConfigMapHandler(o *HandlerOptions) *serviceCAConfigMapHandler {
 	return &serviceCAConfigMapHandler{
 		client:   o.Client.Kubernetes,
 		recorder: o.Recorder,

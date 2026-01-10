@@ -1,4 +1,4 @@
-package handlers
+package runoncedurationoverride
 
 import (
 	gocontext "context"
@@ -17,7 +17,7 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 )
 
-func NewWebhookConfigurationHandlerHandler(o *Options) *webhookConfigurationHandler {
+func NewWebhookConfigurationHandlerHandler(o *HandlerOptions) *webhookConfigurationHandler {
 	return &webhookConfigurationHandler{
 		client:   o.Client.Kubernetes,
 		recorder: o.Recorder,

@@ -1,4 +1,4 @@
-package handlers
+package runoncedurationoverride
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-func NewServiceCertSecretHandler(o *Options) *serviceCertSecretHandler {
+func NewServiceCertSecretHandler(o *HandlerOptions) *serviceCertSecretHandler {
 	return &serviceCertSecretHandler{
 		client: o.Client.Kubernetes,
 		lister: o.SecondaryLister,

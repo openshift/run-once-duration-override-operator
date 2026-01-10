@@ -1,4 +1,4 @@
-package handlers
+package runoncedurationoverride
 
 import (
 	gocontext "context"
@@ -31,7 +31,7 @@ var (
 	Organization = "Red Hat, Inc."
 )
 
-func NewCertGenerationHandler(o *Options) *certGenerationHandler {
+func NewCertGenerationHandler(o *HandlerOptions) *certGenerationHandler {
 	return &certGenerationHandler{
 		client:   o.Client.Kubernetes,
 		recorder: o.Recorder,

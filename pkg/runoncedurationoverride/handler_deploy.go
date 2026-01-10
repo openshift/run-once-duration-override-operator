@@ -1,4 +1,4 @@
-package handlers
+package runoncedurationoverride
 
 import (
 	"context"
@@ -25,7 +25,7 @@ import (
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-func NewDaemonSetHandler(o *Options) *daemonSetHandler {
+func NewDaemonSetHandler(o *HandlerOptions) *daemonSetHandler {
 	return &daemonSetHandler{
 		client:   o.Client.Kubernetes,
 		recorder: o.Recorder,

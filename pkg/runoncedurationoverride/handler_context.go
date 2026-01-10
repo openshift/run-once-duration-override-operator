@@ -1,4 +1,4 @@
-package handlers
+package runoncedurationoverride
 
 import (
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
@@ -35,7 +35,7 @@ func NewReconcileRequestContext(oc operatorruntime.OperandContext) *ReconcileReq
 	}
 }
 
-type Options struct {
+type HandlerOptions struct {
 	OperandContext  operatorruntime.OperandContext
 	Client          *operatorruntime.Client
 	PrimaryLister   runoncedurationoverridev1listers.RunOnceDurationOverrideLister

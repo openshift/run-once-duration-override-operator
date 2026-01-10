@@ -1,4 +1,4 @@
-package handlers
+package runoncedurationoverride
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
 )
 
-func NewDeploymentReadyHandler(o *Options) *deploymentReadyHandler {
+func NewDeploymentReadyHandler(o *HandlerOptions) *deploymentReadyHandler {
 	return &deploymentReadyHandler{
 		deploy: o.Deploy,
 	}
