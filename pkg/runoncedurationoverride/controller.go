@@ -83,6 +83,7 @@ func New(options *Options) (c Interface, e operatorruntime.Enqueuer, err error) 
 		SecondaryLister: options.Lister,
 		Asset:           operandAsset,
 		Deploy:          d,
+		Recorder:        options.Recorder,
 	})
 
 	c = &runOnceDurationOverrideController{

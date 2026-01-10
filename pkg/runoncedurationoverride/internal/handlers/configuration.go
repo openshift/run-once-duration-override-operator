@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	gocontext "context"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -9,28 +11,29 @@ import (
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/yaml"
 
+	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/run-once-duration-override-operator/pkg/apis/reference"
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
-	"github.com/openshift/run-once-duration-override-operator/pkg/ensurer"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
 	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 )
 
 func NewConfigurationHandler(o *Options) *configurationHandler {
 	return &configurationHandler{
-		client:  o.Client.Kubernetes,
-		ensurer: ensurer.NewConfigMapEnsurer(o.Client.Dynamic),
-		lister:  o.SecondaryLister,
-		asset:   o.Asset,
+		client:   o.Client.Kubernetes,
+		recorder: o.Recorder,
+		lister:   o.SecondaryLister,
+		asset:    o.Asset,
 	}
 }
 
 type configurationHandler struct {
-	client  kubernetes.Interface
-	ensurer *ensurer.ConfigMapEnsurer
-	asset   *asset.Asset
-	lister  *secondarywatch.Lister
+	client   kubernetes.Interface
+	recorder events.Recorder
+	asset    *asset.Asset
+	lister   *secondarywatch.Lister
 }
 
 func (c *configurationHandler) Handle(context *ReconcileRequestContext, original *appsv1.RunOnceDurationOverride) (current *appsv1.RunOnceDurationOverride, result controllerreconciler.Result, handleErr error) {
@@ -50,7 +53,7 @@ func (c *configurationHandler) Handle(context *ReconcileRequestContext, original
 			return
 		}
 
-		cm, err := c.ensurer.Ensure(desired)
+		cm, _, err := resourceapply.ApplyConfigMap(gocontext.TODO(), c.client.CoreV1(), c.recorder, desired)
 		if err != nil {
 			handleErr = condition.NewInstallReadinessError(appsv1.InternalError, err)
 			return
@@ -74,7 +77,7 @@ func (c *configurationHandler) Handle(context *ReconcileRequestContext, original
 	if !equal {
 		klog.V(2).Infof("key=%s resource=%T/%s configuration has drifted", original.Name, object, object.Name)
 
-		cm, err := c.ensurer.Ensure(desired)
+		cm, _, err := resourceapply.ApplyConfigMap(gocontext.TODO(), c.client.CoreV1(), c.recorder, desired)
 		if err != nil {
 			handleErr = condition.NewInstallReadinessError(appsv1.ConfigurationCheckFailed, err)
 			return
