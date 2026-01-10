@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
+	"github.com/openshift/run-once-duration-override-operator/pkg/deploy"
 	"github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
 	runoncedurationoverridev1listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/handlers"
@@ -24,6 +25,14 @@ var (
 )
 
 func NewReconciler(options *handlers.Options) *reconciler {
+	options.Deploy = deploy.NewDaemonSetInstall(
+		options.SecondaryLister.AppsV1DaemonSetLister(),
+		options.OperandContext,
+		options.Asset,
+		options.Client.Kubernetes,
+		options.Recorder,
+	)
+
 	handlers := HandlerChain{
 		handlers.NewAvailabilityHandler(options),
 		handlers.NewValidationHandler(options),

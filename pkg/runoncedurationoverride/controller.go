@@ -5,8 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/openshift/run-once-duration-override-operator/pkg/deploy"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -73,16 +71,12 @@ func New(options *Options) (c Interface, e operatorruntime.Enqueuer, err error) 
 	// setup operand asset
 	operandAsset := asset.New(options.RuntimeContext)
 
-	// initialize install strategy, we use daemonset
-	d := deploy.NewDaemonSetInstall(options.Lister.AppsV1DaemonSetLister(), options.RuntimeContext, operandAsset, options.Client.Kubernetes, options.Recorder)
-
 	reconciler := reconciler.NewReconciler(&handlers.Options{
 		OperandContext:  options.RuntimeContext,
 		Client:          options.Client,
 		PrimaryLister:   lister,
 		SecondaryLister: options.Lister,
 		Asset:           operandAsset,
-		Deploy:          d,
 		Recorder:        options.Recorder,
 	})
 
