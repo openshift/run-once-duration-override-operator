@@ -3,6 +3,7 @@ package reconciler
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/deploy"
@@ -11,6 +12,7 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/handlers"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog/v2"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -46,12 +48,9 @@ func NewReconciler(options *handlers.Options) *reconciler {
 	}
 
 	return &reconciler{
-		client:   options.Client.Operator,
-		lister:   options.PrimaryLister,
-		handlers: handlers,
-		updater: &StatusUpdater{
-			client: options.Client.Operator,
-		},
+		client:         options.Client.Operator,
+		lister:         options.PrimaryLister,
+		handlers:       handlers,
 		operandContext: options.OperandContext,
 	}
 }
@@ -60,7 +59,6 @@ type reconciler struct {
 	client         versioned.Interface
 	lister         runoncedurationoverridev1listers.RunOnceDurationOverrideLister
 	handlers       HandlerChain
-	updater        *StatusUpdater
 	operandContext operatorruntime.OperandContext
 }
 
@@ -94,7 +92,7 @@ func (r *reconciler) Reconcile(ctx context.Context, request controllerreconciler
 	reconcileContext := handlers.NewReconcileRequestContext(r.operandContext)
 	current, result, err := r.handlers.Handle(reconcileContext, copy)
 
-	updateErr := r.updater.Update(original, current)
+	updateErr := r.updateStatus(original, current)
 	if updateErr != nil {
 		klog.Errorf("[reconciler] key=%s failed to update status - %s", request.Name, updateErr.Error())
 
@@ -107,4 +105,16 @@ func (r *reconciler) Reconcile(ctx context.Context, request controllerreconciler
 	}
 
 	return
+}
+
+// updateStatus updates the status of a RunOnceDurationOverride resource.
+// If the status inside of the desired object is equal to that of the observed then
+// the function does not make an update call.
+func (r *reconciler) updateStatus(observed, desired *runoncedurationoverridev1.RunOnceDurationOverride) error {
+	if reflect.DeepEqual(&observed.Status, &desired.Status) {
+		return nil
+	}
+
+	_, err := r.client.RunOnceDurationOverrideV1().RunOnceDurationOverrides().UpdateStatus(context.TODO(), desired, metav1.UpdateOptions{})
+	return err
 }
