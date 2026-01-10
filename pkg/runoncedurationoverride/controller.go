@@ -17,7 +17,6 @@ import (
 
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
-	"github.com/openshift/run-once-duration-override-operator/pkg/controller"
 	listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
 	runoncedurationoverridev1listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/handlers"
@@ -38,9 +37,9 @@ type Options struct {
 	Lister         *secondarywatch.Lister
 }
 
-func New(options *Options) (c controller.Interface, e operatorruntime.Enqueuer, err error) {
+func New(options *Options) (c Interface, e operatorruntime.Enqueuer, err error) {
 	if options == nil || options.Client == nil || options.RuntimeContext == nil {
-		err = errors.New("invalid input to controller.New")
+		err = errors.New("invalid input to New")
 		return
 	}
 
@@ -66,7 +65,7 @@ func New(options *Options) (c controller.Interface, e operatorruntime.Enqueuer, 
 	// see a newer version of the RunOnceDurationOverride than the version which
 	// was responsible for triggering the update.
 	indexer, informer := cache.NewIndexerInformer(watcher, &runoncedurationoverridev1.RunOnceDurationOverride{}, options.ResyncPeriod,
-		controller.NewEventHandler(queue), cache.Indexers{})
+		newEventHandler(queue), cache.Indexers{})
 
 	lister := listers.NewRunOnceDurationOverrideLister(indexer)
 

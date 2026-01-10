@@ -17,7 +17,6 @@ import (
 	"k8s.io/client-go/rest"
 
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
-	"github.com/openshift/run-once-duration-override-operator/pkg/controller"
 	"github.com/openshift/run-once-duration-override-operator/pkg/dynamic"
 	fakeclientset "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned/fake"
 	operatorinformers "github.com/openshift/run-once-duration-override-operator/pkg/generated/informers/externalversions"
@@ -128,7 +127,7 @@ func TestConfig_Validate(t *testing.T) {
 }
 
 type testOperatorSetup struct {
-	controller       controller.Interface
+	controller       runoncedurationoverride.Interface
 	kubeClient       *kubefake.Clientset
 	aggregatorClient *fakeaggregator.Clientset
 	expectedNames    *expectedResourceNames
@@ -263,7 +262,7 @@ func TestOperatorReconciliation(t *testing.T) {
 
 	verifyResources(t, setup.ctx, setup.kubeClient, setup.aggregatorClient, setup.namespace, setup.expectedNames, true)
 
-	runner := controller.NewRunner()
+	runner := runoncedurationoverride.NewRunner()
 	runnerErrorCh := make(chan error, 1)
 	go runner.Run(setup.ctx, setup.controller, runnerErrorCh)
 

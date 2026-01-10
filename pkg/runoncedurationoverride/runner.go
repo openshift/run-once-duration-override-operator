@@ -1,33 +1,79 @@
-package controller
+package runoncedurationoverride
 
 import (
 	"context"
+	"errors"
 	"fmt"
-
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 )
 
-type WorkerFunc func(shutdown context.Context, controller Interface)
-
-func (w WorkerFunc) Work(shutdown context.Context, controller Interface) {
-	w(shutdown, controller)
+// NewRunner returns a new instance of runnerImpl.
+func NewRunner() *runnerImpl {
+	return &runnerImpl{
+		done: make(chan struct{}, 0),
+	}
 }
 
-// Work represents a worker function that pulls item(s) off of the underlying
+type runnerImpl struct {
+	done chan struct{}
+}
+
+func (r *runnerImpl) Run(parent context.Context, controller Interface, errorCh chan<- error) {
+	defer func() {
+		close(r.done)
+	}()
+
+	if parent == nil || controller == nil {
+		errorCh <- errors.New("invalid input to runnerImpl.Run")
+		return
+	}
+
+	defer utilruntime.HandleCrash()
+	defer controller.Queue().ShutDown()
+
+	klog.V(1).Infof("[controller] name=%s starting informer", controller.Name())
+	go controller.Informer().Run(parent.Done())
+
+	klog.V(1).Infof("[controller] name=%s waiting for informer cache to sync", controller.Name())
+	if ok := cache.WaitForCacheSync(parent.Done(), controller.Informer().HasSynced); !ok {
+		errorCh <- fmt.Errorf("controller=%s failed to wait for caches to sync", controller.Name())
+		return
+	}
+
+	for i := 0; i < controller.WorkerCount(); i++ {
+		go r.work(parent, controller)
+	}
+
+	klog.V(1).Infof("[controller] name=%s started %d worker(s)", controller.Name(), controller.WorkerCount())
+	errorCh <- nil
+	klog.V(1).Infof("[controller] name=%s waiting ", controller.Name())
+
+	// Not waiting for any child to finish, waiting for the parent to signal done.
+	<-parent.Done()
+
+	klog.V(1).Infof("[controller] name=%s shutting down queue", controller.Name())
+}
+
+func (r *runnerImpl) Done() <-chan struct{} {
+	return r.done
+}
+
+// work represents a worker function that pulls item(s) off of the underlying
 // work queue and invokes the reconciler function associated with the controller.
-func Work(shutdown context.Context, controller Interface) {
+func (r *runnerImpl) work(shutdown context.Context, controller Interface) {
 	klog.V(1).Infof("[controller] name=%s starting to process work item(s)", controller.Name())
 
-	for processNextWorkItem(shutdown, controller) {
+	for r.processNextWorkItem(shutdown, controller) {
 	}
 
 	klog.V(1).Infof("[controller] name=%s shutting down", controller.Name())
 }
 
-func processNextWorkItem(shutdownCtx context.Context, controller Interface) bool {
+func (r *runnerImpl) processNextWorkItem(shutdownCtx context.Context, controller Interface) bool {
 	if shutdownCtx == nil || controller == nil {
 		return false
 	}

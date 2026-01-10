@@ -1,4 +1,4 @@
-package controller
+package runoncedurationoverride
 
 import (
 	"k8s.io/apimachinery/pkg/types"
@@ -8,22 +8,22 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-// NewEventHandler returns a cache.ResourceEventHandler appropriate for
+// newEventHandler returns a cache.ResourceEventHandler appropriate for
 // reconciliation of RunOnceDurationOverride object(s).
-func NewEventHandler(queue workqueue.RateLimitingInterface) EventHandler {
-	return EventHandler{
+func newEventHandler(queue workqueue.RateLimitingInterface) eventHandler {
+	return eventHandler{
 		queue: queue,
 	}
 }
 
-var _ cache.ResourceEventHandler = EventHandler{}
+var _ cache.ResourceEventHandler = eventHandler{}
 
-type EventHandler struct {
+type eventHandler struct {
 	// The underlying work queue where the keys are added for reconciliation.
 	queue workqueue.RateLimitingInterface
 }
 
-func (e EventHandler) OnAdd(obj interface{}, isInInitialList bool) {
+func (e eventHandler) OnAdd(obj interface{}, isInInitialList bool) {
 	key, err := cache.MetaNamespaceKeyFunc(obj)
 
 	if err != nil {
@@ -34,13 +34,13 @@ func (e EventHandler) OnAdd(obj interface{}, isInInitialList bool) {
 	e.add(key, e.queue)
 }
 
-// OnUpdate creates UpdateEvent and calls Update on EventHandler
-func (e EventHandler) OnUpdate(oldObj, newObj interface{}) {
+// OnUpdate creates UpdateEvent and calls Update on eventHandler
+func (e eventHandler) OnUpdate(oldObj, newObj interface{}) {
 	// We don't distinguish between an add and update.
 	e.OnAdd(newObj, false)
 }
 
-func (e EventHandler) OnDelete(obj interface{}) {
+func (e eventHandler) OnDelete(obj interface{}) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		return
@@ -49,7 +49,7 @@ func (e EventHandler) OnDelete(obj interface{}) {
 	e.add(key, e.queue)
 }
 
-func (e EventHandler) add(key string, queue workqueue.RateLimitingInterface) {
+func (e eventHandler) add(key string, queue workqueue.RateLimitingInterface) {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		return
