@@ -6,7 +6,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	dynamicclient "github.com/openshift/run-once-duration-override-operator/pkg/dynamic"
 	"github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
 	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apiregistrationclientset "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset"
@@ -17,7 +16,6 @@ type Client struct {
 	Kubernetes      kubernetes.Interface
 	APIRegistration apiregistrationclientset.Interface
 	APIExtension    apiextensionsclientset.Interface
-	Dynamic         dynamicclient.Ensurer
 }
 
 func NewClient(config *rest.Config) (clients *Client, err error) {
@@ -30,12 +28,6 @@ func NewClient(config *rest.Config) (clients *Client, err error) {
 	kubeclient, buildErr := kubernetes.NewForConfig(config)
 	if buildErr != nil {
 		err = fmt.Errorf("failed to construct client for kubernetes - %s", buildErr.Error())
-		return
-	}
-
-	dynamic, buildErr := dynamicclient.NewForConfig(config)
-	if buildErr != nil {
-		err = fmt.Errorf("failed to construct dynamic client - %s", buildErr.Error())
 		return
 	}
 
@@ -54,7 +46,6 @@ func NewClient(config *rest.Config) (clients *Client, err error) {
 		Kubernetes:      kubeclient,
 		APIRegistration: apiregistration,
 		APIExtension:    apiextension,
-		Dynamic:         dynamic,
 	}
 
 	return

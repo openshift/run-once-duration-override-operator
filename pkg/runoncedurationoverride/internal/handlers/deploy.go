@@ -5,18 +5,21 @@ import (
 	"fmt"
 
 	k8sappsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 
+	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 	"github.com/openshift/run-once-duration-override-operator/pkg/apis/reference"
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	"github.com/openshift/run-once-duration-override-operator/pkg/deploy"
-	dynamicclient "github.com/openshift/run-once-duration-override-operator/pkg/dynamic"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
 	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -24,19 +27,19 @@ import (
 
 func NewDaemonSetHandler(o *Options) *daemonSetHandler {
 	return &daemonSetHandler{
-		client:  o.Client.Kubernetes,
-		dynamic: o.Client.Dynamic,
-		asset:   o.Asset,
-		lister:  o.SecondaryLister,
-		deploy:  o.Deploy,
+		client:   o.Client.Kubernetes,
+		recorder: o.Recorder,
+		asset:    o.Asset,
+		lister:   o.SecondaryLister,
+		deploy:   o.Deploy,
 	}
 }
 
 type daemonSetHandler struct {
-	client  kubernetes.Interface
-	dynamic dynamicclient.Ensurer
-	lister  *secondarywatch.Lister
-	asset   *asset.Asset
+	client   kubernetes.Interface
+	recorder events.Recorder
+	lister   *secondarywatch.Lister
+	asset    *asset.Asset
 
 	deploy deploy.Interface
 }
@@ -143,17 +146,40 @@ func (c *daemonSetHandler) ApplyToToPodTemplate(context *ReconcileRequestContext
 	}
 }
 
-func (c *daemonSetHandler) EnsureRBAC(context *ReconcileRequestContext, in *appsv1.RunOnceDurationOverride) error {
+func (c *daemonSetHandler) EnsureRBAC(reqContext *ReconcileRequestContext, in *appsv1.RunOnceDurationOverride) error {
 	list := c.asset.RBAC().New()
 	for _, item := range list {
-		context.ControllerSetter()(item.Object, in)
+		reqContext.ControllerSetter()(item.Object, in)
 
-		current, err := c.dynamic.Ensure(item.Resource, item.Object)
+		var name string
+		var err error
+
+		ctx := context.TODO()
+		switch obj := item.Object.(type) {
+		case *corev1.ServiceAccount:
+			_, _, err = resourceapply.ApplyServiceAccount(ctx, c.client.CoreV1(), c.recorder, obj)
+			name = obj.Name
+		case *rbacv1.Role:
+			_, _, err = resourceapply.ApplyRole(ctx, c.client.RbacV1(), c.recorder, obj)
+			name = obj.Name
+		case *rbacv1.RoleBinding:
+			_, _, err = resourceapply.ApplyRoleBinding(ctx, c.client.RbacV1(), c.recorder, obj)
+			name = obj.Name
+		case *rbacv1.ClusterRole:
+			_, _, err = resourceapply.ApplyClusterRole(ctx, c.client.RbacV1(), c.recorder, obj)
+			name = obj.Name
+		case *rbacv1.ClusterRoleBinding:
+			_, _, err = resourceapply.ApplyClusterRoleBinding(ctx, c.client.RbacV1(), c.recorder, obj)
+			name = obj.Name
+		default:
+			return fmt.Errorf("unsupported RBAC resource type: %T", item.Object)
+		}
+
 		if err != nil {
 			return fmt.Errorf("resource=%s failed to ensure RBAC - %s %v", item.Resource, err, item.Object)
 		}
 
-		klog.V(2).Infof("key=%s ensured RBAC resource %s", in.Name, current.GetName())
+		klog.V(2).Infof("key=%s ensured RBAC resource %s", in.Name, name)
 	}
 
 	return nil

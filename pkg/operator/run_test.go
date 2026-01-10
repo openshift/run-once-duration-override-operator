@@ -11,10 +11,8 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/informers"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
@@ -23,13 +21,11 @@ import (
 
 	"github.com/openshift/library-go/pkg/operator/events"
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
-	"github.com/openshift/run-once-duration-override-operator/pkg/dynamic"
 	fakeclientset "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned/fake"
 	operatorinformers "github.com/openshift/run-once-duration-override-operator/pkg/generated/informers/externalversions"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
-	apiregistrationv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	fakeaggregator "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/fake"
 )
 
@@ -236,13 +232,6 @@ func setupTestOperator(t *testing.T) *testOperatorSetup {
 	_ = corev1.AddToScheme(scheme)
 	_ = admissionregistrationv1.AddToScheme(scheme)
 	_ = rbacv1.AddToScheme(scheme)
-	fakeDynamicClient := fake.NewSimpleDynamicClient(scheme)
-	wrappedEnsurer := dynamic.NewEnsurer(fakeDynamicClient)
-	dynamicEnsurer := &testDynamicEnsurer{
-		kubeClient:       fakeKubeClient,
-		aggregatorClient: fakeAggregatorClient,
-		wrapped:          &wrappedEnsurer,
-	}
 
 	kubeInformerFactory := informers.NewSharedInformerFactoryWithOptions(
 		fakeKubeClient,
@@ -267,7 +256,6 @@ func setupTestOperator(t *testing.T) *testOperatorSetup {
 	mockClient := &operatorruntime.Client{
 		Operator:        fakeOperatorClient,
 		Kubernetes:      fakeKubeClient,
-		Dynamic:         dynamicEnsurer,
 		APIRegistration: fakeAggregatorClient,
 	}
 
@@ -538,216 +526,4 @@ type mockEnqueuer struct{}
 func (m *mockEnqueuer) Enqueue(owned interface{}) error {
 	// No-op for testing
 	return nil
-}
-
-// testDynamicEnsurer wraps the real dynamic ensurer and uses typed clients for testing
-// This avoids schema validation issues with fake.NewSimpleDynamicClient
-type testDynamicEnsurer struct {
-	kubeClient       *kubefake.Clientset
-	aggregatorClient *fakeaggregator.Clientset
-	wrapped          *dynamic.Ensurer
-}
-
-func (t *testDynamicEnsurer) Ensure(resource string, object runtime.Object) (*metav1unstructured.Unstructured, error) {
-	// Use typed clients to avoid schema validation issues
-	switch obj := object.(type) {
-	case *corev1.Service:
-		var existing *corev1.Service
-		var err error
-		existing, err = t.kubeClient.CoreV1().Services(obj.Namespace).Get(context.Background(), obj.Name, metav1.GetOptions{})
-		if err != nil && !k8serrors.IsNotFound(err) {
-			return nil, err
-		}
-
-		var result *corev1.Service
-		if k8serrors.IsNotFound(err) {
-			result, err = t.kubeClient.CoreV1().Services(obj.Namespace).Create(context.Background(), obj, metav1.CreateOptions{})
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			obj.ResourceVersion = existing.ResourceVersion
-			result, err = t.kubeClient.CoreV1().Services(obj.Namespace).Update(context.Background(), obj, metav1.UpdateOptions{})
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)
-		if err != nil {
-			return nil, err
-		}
-		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
-
-	case *corev1.ServiceAccount:
-		var existing *corev1.ServiceAccount
-		var err error
-		existing, err = t.kubeClient.CoreV1().ServiceAccounts(obj.Namespace).Get(context.Background(), obj.Name, metav1.GetOptions{})
-		if err != nil && !k8serrors.IsNotFound(err) {
-			return nil, err
-		}
-
-		var result *corev1.ServiceAccount
-		if k8serrors.IsNotFound(err) {
-			result, err = t.kubeClient.CoreV1().ServiceAccounts(obj.Namespace).Create(context.Background(), obj, metav1.CreateOptions{})
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			obj.ResourceVersion = existing.ResourceVersion
-			result, err = t.kubeClient.CoreV1().ServiceAccounts(obj.Namespace).Update(context.Background(), obj, metav1.UpdateOptions{})
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)
-		if err != nil {
-			return nil, err
-		}
-		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
-
-	case *rbacv1.Role:
-		var existing *rbacv1.Role
-		var err error
-		existing, err = t.kubeClient.RbacV1().Roles(obj.Namespace).Get(context.Background(), obj.Name, metav1.GetOptions{})
-		if err != nil && !k8serrors.IsNotFound(err) {
-			return nil, err
-		}
-
-		var result *rbacv1.Role
-		if k8serrors.IsNotFound(err) {
-			result, err = t.kubeClient.RbacV1().Roles(obj.Namespace).Create(context.Background(), obj, metav1.CreateOptions{})
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			obj.ResourceVersion = existing.ResourceVersion
-			result, err = t.kubeClient.RbacV1().Roles(obj.Namespace).Update(context.Background(), obj, metav1.UpdateOptions{})
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)
-		if err != nil {
-			return nil, err
-		}
-		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
-
-	case *rbacv1.RoleBinding:
-		var existing *rbacv1.RoleBinding
-		var err error
-		existing, err = t.kubeClient.RbacV1().RoleBindings(obj.Namespace).Get(context.Background(), obj.Name, metav1.GetOptions{})
-		if err != nil && !k8serrors.IsNotFound(err) {
-			return nil, err
-		}
-
-		var result *rbacv1.RoleBinding
-		if k8serrors.IsNotFound(err) {
-			result, err = t.kubeClient.RbacV1().RoleBindings(obj.Namespace).Create(context.Background(), obj, metav1.CreateOptions{})
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			obj.ResourceVersion = existing.ResourceVersion
-			result, err = t.kubeClient.RbacV1().RoleBindings(obj.Namespace).Update(context.Background(), obj, metav1.UpdateOptions{})
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)
-		if err != nil {
-			return nil, err
-		}
-		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
-
-	case *rbacv1.ClusterRole:
-		var existing *rbacv1.ClusterRole
-		var err error
-		existing, err = t.kubeClient.RbacV1().ClusterRoles().Get(context.Background(), obj.Name, metav1.GetOptions{})
-		if err != nil && !k8serrors.IsNotFound(err) {
-			return nil, err
-		}
-
-		var result *rbacv1.ClusterRole
-		if k8serrors.IsNotFound(err) {
-			result, err = t.kubeClient.RbacV1().ClusterRoles().Create(context.Background(), obj, metav1.CreateOptions{})
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			obj.ResourceVersion = existing.ResourceVersion
-			result, err = t.kubeClient.RbacV1().ClusterRoles().Update(context.Background(), obj, metav1.UpdateOptions{})
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)
-		if err != nil {
-			return nil, err
-		}
-		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
-
-	case *rbacv1.ClusterRoleBinding:
-		var existing *rbacv1.ClusterRoleBinding
-		var err error
-		existing, err = t.kubeClient.RbacV1().ClusterRoleBindings().Get(context.Background(), obj.Name, metav1.GetOptions{})
-		if err != nil && !k8serrors.IsNotFound(err) {
-			return nil, err
-		}
-
-		var result *rbacv1.ClusterRoleBinding
-		if k8serrors.IsNotFound(err) {
-			result, err = t.kubeClient.RbacV1().ClusterRoleBindings().Create(context.Background(), obj, metav1.CreateOptions{})
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			obj.ResourceVersion = existing.ResourceVersion
-			result, err = t.kubeClient.RbacV1().ClusterRoleBindings().Update(context.Background(), obj, metav1.UpdateOptions{})
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)
-		if err != nil {
-			return nil, err
-		}
-		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
-
-	case *apiregistrationv1.APIService:
-		var existing *apiregistrationv1.APIService
-		var err error
-		existing, err = t.aggregatorClient.ApiregistrationV1().APIServices().Get(context.Background(), obj.Name, metav1.GetOptions{})
-		if err != nil && !k8serrors.IsNotFound(err) {
-			return nil, err
-		}
-
-		var result *apiregistrationv1.APIService
-		if k8serrors.IsNotFound(err) {
-			result, err = t.aggregatorClient.ApiregistrationV1().APIServices().Create(context.Background(), obj, metav1.CreateOptions{})
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			obj.ResourceVersion = existing.ResourceVersion
-			result, err = t.aggregatorClient.ApiregistrationV1().APIServices().Update(context.Background(), obj, metav1.UpdateOptions{})
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)
-		if err != nil {
-			return nil, err
-		}
-		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
-	}
-
-	// For other types, use the wrapped dynamic ensurer
-	return (*t.wrapped).Ensure(resource, object)
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
-	dynamicclient "github.com/openshift/run-once-duration-override-operator/pkg/dynamic"
 	"github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
 	runoncedurationoverridev1listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/handlers"
@@ -45,7 +44,6 @@ func NewReconciler(options *handlers.Options) *reconciler {
 			client: options.Client.Operator,
 		},
 		operandContext: options.OperandContext,
-		dynamic:        options.Client.Dynamic,
 	}
 }
 
@@ -55,7 +53,6 @@ type reconciler struct {
 	handlers       HandlerChain
 	updater        *StatusUpdater
 	operandContext operatorruntime.OperandContext
-	dynamic        dynamicclient.Ensurer
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, request controllerreconciler.Request) (result controllerreconciler.Result, err error) {
