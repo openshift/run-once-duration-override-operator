@@ -1,29 +1,38 @@
 package handlers
 
 import (
+	gocontext "context"
+
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
+	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/run-once-duration-override-operator/pkg/apis/reference"
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
-	"github.com/openshift/run-once-duration-override-operator/pkg/ensurer"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
 	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/klog/v2"
-	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 func NewWebhookConfigurationHandlerHandler(o *Options) *webhookConfigurationHandler {
 	return &webhookConfigurationHandler{
-		dynamic: ensurer.NewMutatingWebhookConfigurationEnsurer(o.Client.Dynamic),
-		lister:  o.SecondaryLister,
-		asset:   o.Asset,
+		client:   o.Client.Kubernetes,
+		recorder: o.Recorder,
+		lister:   o.SecondaryLister,
+		asset:    o.Asset,
+		cache:    resourceapply.NewResourceCache(),
 	}
 }
 
 type webhookConfigurationHandler struct {
-	dynamic *ensurer.MutatingWebhookConfigurationEnsurer
-	lister  *secondarywatch.Lister
-	asset   *asset.Asset
+	client   kubernetes.Interface
+	recorder events.Recorder
+	lister   *secondarywatch.Lister
+	asset    *asset.Asset
+	cache    resourceapply.ResourceCache
 }
 
 func (w *webhookConfigurationHandler) Handle(context *ReconcileRequestContext, original *appsv1.RunOnceDurationOverride) (current *appsv1.RunOnceDurationOverride, result controllerreconciler.Result, handleErr error) {
@@ -50,7 +59,7 @@ func (w *webhookConfigurationHandler) Handle(context *ReconcileRequestContext, o
 			desired.Webhooks[i].ClientConfig.CABundle = servingCertCA
 		}
 
-		webhook, err := w.dynamic.Ensure(desired)
+		webhook, _, err := resourceapply.ApplyMutatingWebhookConfigurationImproved(gocontext.TODO(), w.client.AdmissionregistrationV1(), w.recorder, desired, w.cache)
 		if err != nil {
 			handleErr = condition.NewInstallReadinessError(appsv1.CertNotAvailable, err)
 			return

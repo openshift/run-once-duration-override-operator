@@ -607,34 +607,6 @@ func (t *testDynamicEnsurer) Ensure(resource string, object runtime.Object) (*me
 		}
 		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
 
-	case *admissionregistrationv1.MutatingWebhookConfiguration:
-		var existing *admissionregistrationv1.MutatingWebhookConfiguration
-		var err error
-		existing, err = t.kubeClient.AdmissionregistrationV1().MutatingWebhookConfigurations().Get(context.Background(), obj.Name, metav1.GetOptions{})
-		if err != nil && !k8serrors.IsNotFound(err) {
-			return nil, err
-		}
-
-		var result *admissionregistrationv1.MutatingWebhookConfiguration
-		if k8serrors.IsNotFound(err) {
-			result, err = t.kubeClient.AdmissionregistrationV1().MutatingWebhookConfigurations().Create(context.Background(), obj, metav1.CreateOptions{})
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			obj.ResourceVersion = existing.ResourceVersion
-			result, err = t.kubeClient.AdmissionregistrationV1().MutatingWebhookConfigurations().Update(context.Background(), obj, metav1.UpdateOptions{})
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(result)
-		if err != nil {
-			return nil, err
-		}
-		return &metav1unstructured.Unstructured{Object: unstructuredMap}, nil
-
 	case *rbacv1.Role:
 		var existing *rbacv1.Role
 		var err error
