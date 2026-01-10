@@ -14,7 +14,6 @@ import (
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
-	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 )
 
 const (
@@ -33,7 +32,7 @@ func NewServiceCAConfigMapHandler(o *HandlerOptions) *serviceCAConfigMapHandler 
 type serviceCAConfigMapHandler struct {
 	client   kubernetes.Interface
 	recorder events.Recorder
-	lister   *secondarywatch.Lister
+	lister   *SecondaryLister
 	asset    *asset.Asset
 }
 

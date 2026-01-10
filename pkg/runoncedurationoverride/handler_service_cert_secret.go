@@ -7,7 +7,6 @@ import (
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
-	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -25,7 +24,7 @@ func NewServiceCertSecretHandler(o *HandlerOptions) *serviceCertSecretHandler {
 
 type serviceCertSecretHandler struct {
 	client kubernetes.Interface
-	lister *secondarywatch.Lister
+	lister *SecondaryLister
 	asset  *asset.Asset
 }
 

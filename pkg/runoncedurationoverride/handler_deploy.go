@@ -21,7 +21,6 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	"github.com/openshift/run-once-duration-override-operator/pkg/deploy"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
-	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -38,7 +37,7 @@ func NewDaemonSetHandler(o *HandlerOptions) *daemonSetHandler {
 type daemonSetHandler struct {
 	client   kubernetes.Interface
 	recorder events.Recorder
-	lister   *secondarywatch.Lister
+	lister   *SecondaryLister
 	asset    *asset.Asset
 
 	deploy deploy.Interface

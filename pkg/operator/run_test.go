@@ -25,7 +25,6 @@ import (
 	operatorinformers "github.com/openshift/run-once-duration-override-operator/pkg/generated/informers/externalversions"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
-	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 	fakeaggregator "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/fake"
 )
 
@@ -244,7 +243,7 @@ func setupTestOperator(t *testing.T) *testOperatorSetup {
 		DefaultResyncPeriodPrimaryResource,
 	)
 
-	lister, starter := secondarywatch.New(kubeInformerFactory)
+	lister, starter := runoncedurationoverride.NewSecondaryWatch(kubeInformerFactory)
 	if lister == nil || starter == nil {
 		t.Fatal("expected lister and starter to be non-nil")
 	}

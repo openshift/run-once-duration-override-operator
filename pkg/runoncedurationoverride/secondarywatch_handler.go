@@ -1,4 +1,4 @@
-package secondarywatch
+package runoncedurationoverride
 
 import (
 	"k8s.io/client-go/tools/cache"

@@ -12,7 +12,6 @@ import (
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runtime"
-	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 )
 
 const (
@@ -64,7 +63,7 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 	)
 
 	// create lister(s) for secondary resources
-	lister, starter := secondarywatch.New(kubeInformerFactory)
+	lister, starter := runoncedurationoverride.NewSecondaryWatch(kubeInformerFactory)
 
 	// create recorder for resource apply operations
 	recorder := events.NewLoggingEventRecorder(config.Name, clock.RealClock{})

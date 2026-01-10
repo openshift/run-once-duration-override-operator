@@ -1,4 +1,4 @@
-package secondarywatch
+package runoncedurationoverride
 
 import (
 	admissionregistrationv1 "k8s.io/client-go/listers/admissionregistration/v1"
@@ -6,8 +6,8 @@ import (
 	listerscorev1 "k8s.io/client-go/listers/core/v1"
 )
 
-// Lister is a set of Lister(s) for secondary resource(s)
-type Lister struct {
+// SecondaryLister is a set of Lister(s) for secondary resource(s)
+type SecondaryLister struct {
 	deployment     listersappsv1.DeploymentLister
 	daemonset      listersappsv1.DaemonSetLister
 	pod            listerscorev1.PodLister
@@ -18,26 +18,26 @@ type Lister struct {
 	webhook        admissionregistrationv1.MutatingWebhookConfigurationLister
 }
 
-func (l *Lister) CoreV1ConfigMapLister() listerscorev1.ConfigMapLister {
+func (l *SecondaryLister) CoreV1ConfigMapLister() listerscorev1.ConfigMapLister {
 	return l.configmap
 }
 
-func (l *Lister) CoreV1SecretLister() listerscorev1.SecretLister {
+func (l *SecondaryLister) CoreV1SecretLister() listerscorev1.SecretLister {
 	return l.secret
 }
 
-func (l *Lister) CoreV1ServiceLister() listerscorev1.ServiceLister {
+func (l *SecondaryLister) CoreV1ServiceLister() listerscorev1.ServiceLister {
 	return l.service
 }
 
-func (l *Lister) AppsV1DeploymentLister() listersappsv1.DeploymentLister {
+func (l *SecondaryLister) AppsV1DeploymentLister() listersappsv1.DeploymentLister {
 	return l.deployment
 }
 
-func (l *Lister) AppsV1DaemonSetLister() listersappsv1.DaemonSetLister {
+func (l *SecondaryLister) AppsV1DaemonSetLister() listersappsv1.DaemonSetLister {
 	return l.daemonset
 }
 
-func (l *Lister) AdmissionRegistrationV1MutatingWebhookConfigurationLister() admissionregistrationv1.MutatingWebhookConfigurationLister {
+func (l *SecondaryLister) AdmissionRegistrationV1MutatingWebhookConfigurationLister() admissionregistrationv1.MutatingWebhookConfigurationLister {
 	return l.webhook
 }

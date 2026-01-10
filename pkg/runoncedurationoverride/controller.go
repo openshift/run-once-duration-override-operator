@@ -18,7 +18,6 @@ import (
 	listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
 	runoncedurationoverridev1listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
-	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 )
 
 const (
@@ -30,7 +29,7 @@ type Options struct {
 	Workers        int
 	Client         *operatorruntime.Client
 	RuntimeContext operatorruntime.OperandContext
-	Lister         *secondarywatch.Lister
+	Lister         *SecondaryLister
 	Recorder       events.Recorder
 }
 
