@@ -6,7 +6,6 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/apis/reference"
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
-	"github.com/openshift/run-once-duration-override-operator/pkg/ensurer"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
 	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -18,18 +17,16 @@ import (
 
 func NewServiceCertSecretHandler(o *Options) *serviceCertSecretHandler {
 	return &serviceCertSecretHandler{
-		client:  o.Client.Kubernetes,
-		dynamic: ensurer.NewServiceEnsurer(o.Client.Dynamic),
-		lister:  o.SecondaryLister,
-		asset:   o.Asset,
+		client: o.Client.Kubernetes,
+		lister: o.SecondaryLister,
+		asset:  o.Asset,
 	}
 }
 
 type serviceCertSecretHandler struct {
-	client  kubernetes.Interface
-	dynamic *ensurer.ServiceEnsurer
-	lister  *secondarywatch.Lister
-	asset   *asset.Asset
+	client kubernetes.Interface
+	lister *secondarywatch.Lister
+	asset  *asset.Asset
 }
 
 func (c *serviceCertSecretHandler) Handle(ctx *ReconcileRequestContext, original *appsv1.RunOnceDurationOverride) (current *appsv1.RunOnceDurationOverride, result controllerreconciler.Result, handleErr error) {
