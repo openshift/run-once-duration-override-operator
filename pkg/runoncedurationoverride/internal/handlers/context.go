@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	"github.com/openshift/run-once-duration-override-operator/pkg/cert"
 	"github.com/openshift/run-once-duration-override-operator/pkg/deploy"
@@ -22,6 +23,7 @@ type Options struct {
 	SecondaryLister *secondarywatch.Lister
 	Asset           *asset.Asset
 	Deploy          deploy.Interface
+	Recorder        events.Recorder
 }
 
 type ReconcileRequestContext struct {

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	gocontext "context"
 	"time"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -9,6 +10,8 @@ import (
 	"k8s.io/klog/v2"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/run-once-duration-override-operator/pkg/apis/reference"
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
@@ -31,20 +34,20 @@ var (
 
 func NewCertGenerationHandler(o *Options) *certGenerationHandler {
 	return &certGenerationHandler{
-		client:           o.Client.Kubernetes,
-		secretEnsurer:    ensurer.NewSecretEnsurer(o.Client.Dynamic),
-		configmapEnsurer: ensurer.NewConfigMapEnsurer(o.Client.Dynamic),
-		lister:           o.SecondaryLister,
-		asset:            o.Asset,
+		client:        o.Client.Kubernetes,
+		recorder:      o.Recorder,
+		secretEnsurer: ensurer.NewSecretEnsurer(o.Client.Dynamic),
+		lister:        o.SecondaryLister,
+		asset:         o.Asset,
 	}
 }
 
 type certGenerationHandler struct {
-	client           kubernetes.Interface
-	secretEnsurer    *ensurer.SecretEnsurer
-	configmapEnsurer *ensurer.ConfigMapEnsurer
-	lister           *secondarywatch.Lister
-	asset            *asset.Asset
+	client        kubernetes.Interface
+	recorder      events.Recorder
+	secretEnsurer *ensurer.SecretEnsurer
+	lister        *secondarywatch.Lister
+	asset         *asset.Asset
 }
 
 func (c *certGenerationHandler) Handle(context *ReconcileRequestContext, original *appsv1.RunOnceDurationOverride) (current *appsv1.RunOnceDurationOverride, result controllerreconciler.Result, handleErr error) {
@@ -108,7 +111,7 @@ func (c *certGenerationHandler) Handle(context *ReconcileRequestContext, origina
 		}
 		desiredConfigMap.Data["service-ca.crt"] = string(bundle.ServingCertCA)
 
-		configmap, err := c.configmapEnsurer.Ensure(desiredConfigMap)
+		configmap, _, err := resourceapply.ApplyConfigMap(gocontext.TODO(), c.client.CoreV1(), c.recorder, desiredConfigMap)
 		if err != nil {
 			handleErr = condition.NewInstallReadinessError(appsv1.CannotGenerateCert, err)
 			return

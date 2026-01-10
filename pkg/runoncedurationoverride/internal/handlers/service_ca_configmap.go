@@ -1,15 +1,20 @@
 package handlers
 
 import (
+	gocontext "context"
+
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
+	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/run-once-duration-override-operator/pkg/apis/reference"
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
-	"github.com/openshift/run-once-duration-override-operator/pkg/ensurer"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
 	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/klog/v2"
-	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 const (
@@ -18,16 +23,18 @@ const (
 
 func NewServiceCAConfigMapHandler(o *Options) *serviceCAConfigMapHandler {
 	return &serviceCAConfigMapHandler{
-		dynamic: ensurer.NewConfigMapEnsurer(o.Client.Dynamic),
-		lister:  o.SecondaryLister,
-		asset:   o.Asset,
+		client:   o.Client.Kubernetes,
+		recorder: o.Recorder,
+		lister:   o.SecondaryLister,
+		asset:    o.Asset,
 	}
 }
 
 type serviceCAConfigMapHandler struct {
-	dynamic *ensurer.ConfigMapEnsurer
-	lister  *secondarywatch.Lister
-	asset   *asset.Asset
+	client   kubernetes.Interface
+	recorder events.Recorder
+	lister   *secondarywatch.Lister
+	asset    *asset.Asset
 }
 
 func (c *serviceCAConfigMapHandler) Handle(context *ReconcileRequestContext, original *appsv1.RunOnceDurationOverride) (current *appsv1.RunOnceDurationOverride, result controllerreconciler.Result, handleErr error) {
@@ -63,7 +70,7 @@ func (c *serviceCAConfigMapHandler) Handle(context *ReconcileRequestContext, ori
 		// ask service-ca operator to provide with the serving cert.
 		desired.Annotations[ServiceCAInjectBundle] = "true"
 
-		cm, err := c.dynamic.Ensure(desired)
+		cm, _, err := resourceapply.ApplyConfigMap(gocontext.TODO(), c.client.CoreV1(), c.recorder, desired)
 		if err != nil {
 			handleErr = condition.NewInstallReadinessError(appsv1.CertNotAvailable, err)
 			return
