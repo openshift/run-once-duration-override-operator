@@ -5,6 +5,7 @@ import (
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
+	listerscorev1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/klog/v2"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -20,20 +21,20 @@ const (
 	ServiceCAInjectBundle = "service.beta.openshift.io/inject-cabundle"
 )
 
-func NewServiceCAConfigMapHandler(o *HandlerOptions) *serviceCAConfigMapHandler {
+func NewServiceCAConfigMapHandler(client kubernetes.Interface, recorder events.Recorder, configMapLister listerscorev1.ConfigMapLister, asset *asset.Asset) *serviceCAConfigMapHandler {
 	return &serviceCAConfigMapHandler{
-		client:   o.Client.Kubernetes,
-		recorder: o.Recorder,
-		lister:   o.SecondaryLister,
-		asset:    o.Asset,
+		client:          client,
+		recorder:        recorder,
+		configMapLister: configMapLister,
+		asset:           asset,
 	}
 }
 
 type serviceCAConfigMapHandler struct {
-	client   kubernetes.Interface
-	recorder events.Recorder
-	lister   *SecondaryLister
-	asset    *asset.Asset
+	client          kubernetes.Interface
+	recorder        events.Recorder
+	configMapLister listerscorev1.ConfigMapLister
+	asset           *asset.Asset
 }
 
 func (c *serviceCAConfigMapHandler) Handle(context *ReconcileRequestContext, original *appsv1.RunOnceDurationOverride) (current *appsv1.RunOnceDurationOverride, result controllerreconciler.Result, handleErr error) {
@@ -43,7 +44,7 @@ func (c *serviceCAConfigMapHandler) Handle(context *ReconcileRequestContext, ori
 	ensure := false
 
 	name := c.asset.CABundleConfigMap().Name()
-	object, err := c.lister.CoreV1ConfigMapLister().ConfigMaps(context.WebhookNamespace()).Get(name)
+	object, err := c.configMapLister.ConfigMaps(context.WebhookNamespace()).Get(name)
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
 			handleErr = condition.NewInstallReadinessError(appsv1.CertNotAvailable, err)

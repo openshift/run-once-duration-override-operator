@@ -1,12 +1,8 @@
 package runoncedurationoverride
 
 import (
-	"github.com/openshift/library-go/pkg/operator/events"
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
-	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	"github.com/openshift/run-once-duration-override-operator/pkg/cert"
-	"github.com/openshift/run-once-duration-override-operator/pkg/deploy"
-	runoncedurationoverridev1listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -32,16 +28,6 @@ func NewReconcileRequestContext(oc operatorruntime.OperandContext) *ReconcileReq
 	return &ReconcileRequestContext{
 		OperandContext: oc,
 	}
-}
-
-type HandlerOptions struct {
-	OperandContext  operatorruntime.OperandContext
-	Client          *operatorruntime.Client
-	PrimaryLister   runoncedurationoverridev1listers.RunOnceDurationOverrideLister
-	SecondaryLister *SecondaryLister
-	Asset           *asset.Asset
-	Deploy          deploy.Interface
-	Recorder        events.Recorder
 }
 
 type ReconcileRequestContext struct {

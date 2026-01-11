@@ -112,16 +112,7 @@ func New(options *Options) (c *runOnceDurationOverrideController, err error) {
 		}
 	}
 
-	handlerOptions := &HandlerOptions{
-		OperandContext:  options.RuntimeContext,
-		Client:          options.Client,
-		PrimaryLister:   lister,
-		SecondaryLister: secondaryLister,
-		Asset:           operandAsset,
-		Recorder:        options.Recorder,
-	}
-
-	handlerOptions.Deploy = deploy.NewDaemonSetInstall(
+	deployInterface := deploy.NewDaemonSetInstall(
 		secondaryLister.AppsV1DaemonSetLister(),
 		options.RuntimeContext,
 		operandAsset,
@@ -138,15 +129,15 @@ func New(options *Options) (c *runOnceDurationOverrideController, err error) {
 		client:         options.Client.Operator,
 		operandContext: options.RuntimeContext,
 		handlers: []Handler{
-			NewAvailabilityHandler(handlerOptions),
-			NewValidationHandler(handlerOptions),
-			NewConfigurationHandler(handlerOptions),
-			NewCertGenerationHandler(handlerOptions),
-			NewCertReadyHandler(handlerOptions),
-			NewDaemonSetHandler(handlerOptions),
-			NewDeploymentReadyHandler(handlerOptions),
-			NewWebhookConfigurationHandlerHandler(handlerOptions),
-			NewAvailabilityHandler(handlerOptions),
+			NewAvailabilityHandler(operandAsset, deployInterface),
+			NewValidationHandler(),
+			NewConfigurationHandler(options.Client.Kubernetes, options.Recorder, secondaryLister.CoreV1ConfigMapLister(), operandAsset),
+			NewCertGenerationHandler(options.Client.Kubernetes, options.Recorder, secondaryLister.CoreV1SecretLister(), secondaryLister.CoreV1ConfigMapLister(), operandAsset),
+			NewCertReadyHandler(options.Client.Kubernetes, secondaryLister.CoreV1SecretLister(), secondaryLister.CoreV1ConfigMapLister()),
+			NewDaemonSetHandler(options.Client.Kubernetes, options.Recorder, operandAsset, deployInterface),
+			NewDeploymentReadyHandler(deployInterface),
+			NewWebhookConfigurationHandlerHandler(options.Client.Kubernetes, options.Recorder, secondaryLister.AdmissionRegistrationV1MutatingWebhookConfigurationLister(), operandAsset),
+			NewAvailabilityHandler(operandAsset, deployInterface),
 		},
 	}
 
