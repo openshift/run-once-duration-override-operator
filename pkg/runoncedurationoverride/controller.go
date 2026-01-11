@@ -117,37 +117,22 @@ func New(options *Options) (c Interface, err error) {
 	// setup watches for secondary resources
 	handler := newResourceEventHandler(e)
 
-	_, err = deployment.Informer().AddEventHandler(handler)
-	if err != nil {
-		return
+	informers := []cache.SharedIndexInformer{
+		deployment.Informer(),
+		daemonset.Informer(),
+		pod.Informer(),
+		configmap.Informer(),
+		service.Informer(),
+		secret.Informer(),
+		serviceaccount.Informer(),
+		webhook.Informer(),
 	}
-	_, err = daemonset.Informer().AddEventHandler(handler)
-	if err != nil {
-		return
-	}
-	_, err = pod.Informer().AddEventHandler(handler)
-	if err != nil {
-		return
-	}
-	_, err = configmap.Informer().AddEventHandler(handler)
-	if err != nil {
-		return
-	}
-	_, err = service.Informer().AddEventHandler(handler)
-	if err != nil {
-		return
-	}
-	_, err = secret.Informer().AddEventHandler(handler)
-	if err != nil {
-		return
-	}
-	_, err = serviceaccount.Informer().AddEventHandler(handler)
-	if err != nil {
-		return
-	}
-	_, err = webhook.Informer().AddEventHandler(handler)
-	if err != nil {
-		return
+
+	for _, informer := range informers {
+		_, err = informer.AddEventHandler(handler)
+		if err != nil {
+			return
+		}
 	}
 
 	return
