@@ -1,17 +1,15 @@
 package runoncedurationoverride
 
 import (
-	"context"
-
 	"github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 	"k8s.io/client-go/informers"
 )
 
 // SecondaryStarterFunc refers to a function that can be called to start watch on secondary resources.
-type SecondaryStarterFunc func(enqueuer runtime.Enqueuer, shutdown context.Context) error
+type SecondaryStarterFunc func(enqueuer runtime.Enqueuer) error
 
-func (s SecondaryStarterFunc) Start(enqueuer runtime.Enqueuer, shutdown context.Context) error {
-	return s(enqueuer, shutdown)
+func (s SecondaryStarterFunc) Start(enqueuer runtime.Enqueuer) error {
+	return s(enqueuer)
 }
 
 // NewSecondaryWatch sets up watch on secondary resources.
@@ -28,7 +26,7 @@ func NewSecondaryWatch(factory informers.SharedInformerFactory) (lister *Seconda
 	serviceaccount := factory.Core().V1().ServiceAccounts()
 	webhook := factory.Admissionregistration().V1().MutatingWebhookConfigurations()
 
-	startFunc = func(enqueuer runtime.Enqueuer, shutdown context.Context) error {
+	startFunc = func(enqueuer runtime.Enqueuer) error {
 		handler := newResourceEventHandler(enqueuer)
 
 		_, err := deployment.Informer().AddEventHandler(handler)

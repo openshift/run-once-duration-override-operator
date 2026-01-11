@@ -97,7 +97,7 @@ func New(options *Options) (c Interface, err error) {
 	}
 
 	// setup watches for secondary resources
-	if err = secondaryStarter.Start(e, options.ShutdownContext); err != nil {
+	if err = secondaryStarter.Start(e); err != nil {
 		return
 	}
 
