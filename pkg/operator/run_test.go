@@ -25,7 +25,6 @@ import (
 	operatorinformers "github.com/openshift/run-once-duration-override-operator/pkg/generated/informers/externalversions"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
-	fakeaggregator "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/fake"
 )
 
 var daemonSetGVR = schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "daemonsets"}
@@ -132,7 +131,7 @@ func TestConfig_Validate(t *testing.T) {
 
 type testOperatorSetup struct {
 	kubeClient              *kubefake.Clientset
-	aggregatorClient        *fakeaggregator.Clientset
+	operatorClient          *fakeclientset.Clientset
 	expectedNames           *expectedResourceNames
 	ctx                     context.Context
 	cancel                  context.CancelFunc
@@ -140,7 +139,6 @@ type testOperatorSetup struct {
 	kubeInformerFactory     informers.SharedInformerFactory
 	operatorInformerFactory operatorinformers.SharedInformerFactory
 	runtimeContext          operatorruntime.OperandContext
-	mockClient              *operatorruntime.Client
 	recorder                events.Recorder
 }
 
@@ -205,7 +203,6 @@ func setupTestOperator(t *testing.T) *testOperatorSetup {
 	})
 
 	fakeOperatorClient := fakeclientset.NewSimpleClientset(rodoo)
-	fakeAggregatorClient := fakeaggregator.NewSimpleClientset()
 
 	expectedNames := &expectedResourceNames{
 		deployment:                        operatorName,
@@ -251,18 +248,12 @@ func setupTestOperator(t *testing.T) *testOperatorSetup {
 
 	runtimeContext := operatorruntime.NewOperandContext(operatorName, namespace, crName, "test-image:latest", "v1.0.0")
 
-	mockClient := &operatorruntime.Client{
-		Operator:        fakeOperatorClient,
-		Kubernetes:      fakeKubeClient,
-		APIRegistration: fakeAggregatorClient,
-	}
-
 	// create recorder for tests
 	recorder := events.NewLoggingEventRecorder(operatorName, clock.RealClock{})
 
 	return &testOperatorSetup{
 		kubeClient:              fakeKubeClient,
-		aggregatorClient:        fakeAggregatorClient,
+		operatorClient:          fakeOperatorClient,
 		expectedNames:           expectedNames,
 		ctx:                     ctx,
 		cancel:                  cancel,
@@ -270,7 +261,6 @@ func setupTestOperator(t *testing.T) *testOperatorSetup {
 		kubeInformerFactory:     kubeInformerFactory,
 		operatorInformerFactory: operatorInformerFactory,
 		runtimeContext:          runtimeContext,
-		mockClient:              mockClient,
 		recorder:                recorder,
 	}
 }
@@ -288,7 +278,8 @@ func TestOperatorReconciliation(t *testing.T) {
 
 	c, err := runoncedurationoverride.New(
 		DefaultWorkerCount,
-		setup.mockClient,
+		setup.operatorClient,
+		setup.kubeClient,
 		setup.runtimeContext,
 		setup.kubeInformerFactory,
 		setup.operatorInformerFactory,
@@ -312,7 +303,7 @@ func TestOperatorReconciliation(t *testing.T) {
 		}
 	}
 
-	verifyResources(t, setup.ctx, setup.kubeClient, setup.aggregatorClient, setup.namespace, setup.expectedNames, true)
+	verifyResources(t, setup.ctx, setup.kubeClient, setup.namespace, setup.expectedNames, true)
 
 	runnerErrorCh := make(chan error, 1)
 	go c.Run(setup.ctx, runnerErrorCh)
@@ -323,7 +314,7 @@ func TestOperatorReconciliation(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
-	verifyResources(t, setup.ctx, setup.kubeClient, setup.aggregatorClient, setup.namespace, setup.expectedNames, false)
+	verifyResources(t, setup.ctx, setup.kubeClient, setup.namespace, setup.expectedNames, false)
 
 	setup.cancel()
 
@@ -357,7 +348,7 @@ type expectedResourceNames struct {
 	clusterRoleBindingAnonymousAccess string
 }
 
-func verifyResources(t *testing.T, ctx context.Context, client *kubefake.Clientset, aggregatorClient *fakeaggregator.Clientset, namespace string, expected *expectedResourceNames, expectZero bool) {
+func verifyResources(t *testing.T, ctx context.Context, client *kubefake.Clientset, namespace string, expected *expectedResourceNames, expectZero bool) {
 	checkResource := func(name, resourceType string, exists bool) {
 		if expectZero && exists {
 			t.Errorf("expected no %s named %q, but it exists", resourceType, name)

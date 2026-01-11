@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
@@ -41,13 +42,14 @@ var (
 
 func New(
 	workers int,
-	client *operatorruntime.Client,
+	operatorClient versioned.Interface,
+	kubeClient kubernetes.Interface,
 	runtimeContext operatorruntime.OperandContext,
 	informerFactory informers.SharedInformerFactory,
 	operatorInformerFactory operatorinformers.SharedInformerFactory,
 	recorder events.Recorder,
 ) (c *runOnceDurationOverrideController, err error) {
-	if client == nil || runtimeContext == nil {
+	if operatorClient == nil || kubeClient == nil || runtimeContext == nil {
 		err = errors.New("invalid input to New")
 		return
 	}
@@ -87,7 +89,7 @@ func New(
 		informerFactory.Apps().V1().DaemonSets().Lister(),
 		runtimeContext,
 		operandAsset,
-		client.Kubernetes,
+		kubeClient,
 		recorder,
 	)
 
@@ -97,17 +99,17 @@ func New(
 		informer:       operatorInformerFactory.RunOnceDurationOverride().V1().RunOnceDurationOverrides().Informer(),
 		lister:         operatorInformerFactory.RunOnceDurationOverride().V1().RunOnceDurationOverrides().Lister(),
 		done:           make(chan struct{}, 0),
-		client:         client.Operator,
+		client:         operatorClient,
 		operandContext: runtimeContext,
 		handlers: []Handler{
 			NewAvailabilityHandler(operandAsset, deployInterface),
 			NewValidationHandler(),
-			NewConfigurationHandler(client.Kubernetes, recorder, informerFactory.Core().V1().ConfigMaps().Lister(), operandAsset),
-			NewCertGenerationHandler(client.Kubernetes, recorder, informerFactory.Core().V1().Secrets().Lister(), informerFactory.Core().V1().ConfigMaps().Lister(), operandAsset),
-			NewCertReadyHandler(client.Kubernetes, informerFactory.Core().V1().Secrets().Lister(), informerFactory.Core().V1().ConfigMaps().Lister()),
-			NewDaemonSetHandler(client.Kubernetes, recorder, operandAsset, deployInterface),
+			NewConfigurationHandler(kubeClient, recorder, informerFactory.Core().V1().ConfigMaps().Lister(), operandAsset),
+			NewCertGenerationHandler(kubeClient, recorder, informerFactory.Core().V1().Secrets().Lister(), informerFactory.Core().V1().ConfigMaps().Lister(), operandAsset),
+			NewCertReadyHandler(kubeClient, informerFactory.Core().V1().Secrets().Lister(), informerFactory.Core().V1().ConfigMaps().Lister()),
+			NewDaemonSetHandler(kubeClient, recorder, operandAsset, deployInterface),
 			NewDeploymentReadyHandler(deployInterface),
-			NewWebhookConfigurationHandlerHandler(client.Kubernetes, recorder, informerFactory.Admissionregistration().V1().MutatingWebhookConfigurations().Lister(), operandAsset),
+			NewWebhookConfigurationHandlerHandler(kubeClient, recorder, informerFactory.Admissionregistration().V1().MutatingWebhookConfigurations().Lister(), operandAsset),
 			NewAvailabilityHandler(operandAsset, deployInterface),
 		},
 	}
