@@ -286,15 +286,14 @@ func TestOperatorReconciliation(t *testing.T) {
 	setup := setupTestOperator(t)
 	defer setup.cancel()
 
-	c, err := runoncedurationoverride.New(&runoncedurationoverride.Options{
-		ResyncPeriod:            DefaultResyncPeriodPrimaryResource,
-		Workers:                 DefaultWorkerCount,
-		RuntimeContext:          setup.runtimeContext,
-		Client:                  setup.mockClient,
-		InformerFactory:         setup.kubeInformerFactory,
-		OperatorInformerFactory: setup.operatorInformerFactory,
-		Recorder:                setup.recorder,
-	})
+	c, err := runoncedurationoverride.New(
+		DefaultWorkerCount,
+		setup.mockClient,
+		setup.runtimeContext,
+		setup.kubeInformerFactory,
+		setup.operatorInformerFactory,
+		setup.recorder,
+	)
 	if err != nil {
 		t.Fatalf("failed to create controller: %v", err)
 	}

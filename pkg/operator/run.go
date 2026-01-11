@@ -73,15 +73,14 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 	recorder := events.NewLoggingEventRecorder(config.Name, clock.RealClock{})
 
 	// start the controllers
-	c, err := runoncedurationoverride.New(&runoncedurationoverride.Options{
-		ResyncPeriod:            DefaultResyncPeriodPrimaryResource,
-		Workers:                 DefaultWorkerCount,
-		RuntimeContext:          context,
-		Client:                  clients,
-		InformerFactory:         kubeInformerFactory,
-		OperatorInformerFactory: operatorInformerFactory,
-		Recorder:                recorder,
-	})
+	c, err := runoncedurationoverride.New(
+		DefaultWorkerCount,
+		clients,
+		context,
+		kubeInformerFactory,
+		operatorInformerFactory,
+		recorder,
+	)
 	if err != nil {
 		errorCh <- fmt.Errorf("failed to create controller - %s", err.Error())
 		return

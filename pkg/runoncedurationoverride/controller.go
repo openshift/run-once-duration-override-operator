@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"time"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,36 +39,33 @@ var (
 	}
 )
 
-type Options struct {
-	ResyncPeriod            time.Duration
-	Workers                 int
-	Client                  *operatorruntime.Client
-	RuntimeContext          operatorruntime.OperandContext
-	InformerFactory         informers.SharedInformerFactory
-	OperatorInformerFactory operatorinformers.SharedInformerFactory
-	Recorder                events.Recorder
-}
-
-func New(options *Options) (c *runOnceDurationOverrideController, err error) {
-	if options == nil || options.Client == nil || options.RuntimeContext == nil {
+func New(
+	workers int,
+	client *operatorruntime.Client,
+	runtimeContext operatorruntime.OperandContext,
+	informerFactory informers.SharedInformerFactory,
+	operatorInformerFactory operatorinformers.SharedInformerFactory,
+	recorder events.Recorder,
+) (c *runOnceDurationOverrideController, err error) {
+	if client == nil || runtimeContext == nil {
 		err = errors.New("invalid input to New")
 		return
 	}
 
 	// setup operand asset
-	operandAsset := asset.New(options.RuntimeContext)
+	operandAsset := asset.New(runtimeContext)
 
 	// create lister(s) for secondary resources
-	deployment := options.InformerFactory.Apps().V1().Deployments()
-	daemonset := options.InformerFactory.Apps().V1().DaemonSets()
-	pod := options.InformerFactory.Core().V1().Pods()
-	configmap := options.InformerFactory.Core().V1().ConfigMaps()
-	service := options.InformerFactory.Core().V1().Services()
-	secret := options.InformerFactory.Core().V1().Secrets()
-	serviceaccount := options.InformerFactory.Core().V1().ServiceAccounts()
-	webhook := options.InformerFactory.Admissionregistration().V1().MutatingWebhookConfigurations()
+	deployment := informerFactory.Apps().V1().Deployments()
+	daemonset := informerFactory.Apps().V1().DaemonSets()
+	pod := informerFactory.Core().V1().Pods()
+	configmap := informerFactory.Core().V1().ConfigMaps()
+	service := informerFactory.Core().V1().Services()
+	secret := informerFactory.Core().V1().Secrets()
+	serviceaccount := informerFactory.Core().V1().ServiceAccounts()
+	webhook := informerFactory.Admissionregistration().V1().MutatingWebhookConfigurations()
 	// Create RunOnceDurationOverride informer using the standard informer factory
-	rodooInformer := options.OperatorInformerFactory.RunOnceDurationOverride().V1().RunOnceDurationOverrides()
+	rodooInformer := operatorInformerFactory.RunOnceDurationOverride().V1().RunOnceDurationOverrides()
 
 	lister := rodooInformer.Lister()
 
@@ -103,29 +99,29 @@ func New(options *Options) (c *runOnceDurationOverrideController, err error) {
 
 	deployInterface := deploy.NewDaemonSetInstall(
 		daemonset.Lister(),
-		options.RuntimeContext,
+		runtimeContext,
 		operandAsset,
-		options.Client.Kubernetes,
-		options.Recorder,
+		client.Kubernetes,
+		recorder,
 	)
 
 	c = &runOnceDurationOverrideController{
-		workers:        options.Workers,
+		workers:        workers,
 		queue:          queue,
 		informer:       rodooInformer.Informer(),
 		lister:         lister,
 		done:           make(chan struct{}, 0),
-		client:         options.Client.Operator,
-		operandContext: options.RuntimeContext,
+		client:         client.Operator,
+		operandContext: runtimeContext,
 		handlers: []Handler{
 			NewAvailabilityHandler(operandAsset, deployInterface),
 			NewValidationHandler(),
-			NewConfigurationHandler(options.Client.Kubernetes, options.Recorder, configmap.Lister(), operandAsset),
-			NewCertGenerationHandler(options.Client.Kubernetes, options.Recorder, secret.Lister(), configmap.Lister(), operandAsset),
-			NewCertReadyHandler(options.Client.Kubernetes, secret.Lister(), configmap.Lister()),
-			NewDaemonSetHandler(options.Client.Kubernetes, options.Recorder, operandAsset, deployInterface),
+			NewConfigurationHandler(client.Kubernetes, recorder, configmap.Lister(), operandAsset),
+			NewCertGenerationHandler(client.Kubernetes, recorder, secret.Lister(), configmap.Lister(), operandAsset),
+			NewCertReadyHandler(client.Kubernetes, secret.Lister(), configmap.Lister()),
+			NewDaemonSetHandler(client.Kubernetes, recorder, operandAsset, deployInterface),
 			NewDeploymentReadyHandler(deployInterface),
-			NewWebhookConfigurationHandlerHandler(options.Client.Kubernetes, options.Recorder, webhook.Lister(), operandAsset),
+			NewWebhookConfigurationHandlerHandler(client.Kubernetes, recorder, webhook.Lister(), operandAsset),
 			NewAvailabilityHandler(operandAsset, deployInterface),
 		},
 	}
