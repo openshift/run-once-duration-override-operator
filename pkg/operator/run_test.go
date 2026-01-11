@@ -507,11 +507,3 @@ func verifyResources(t *testing.T, ctx context.Context, client *kubefake.Clients
 		}
 	}
 }
-
-// mockEnqueuer is a mock implementation of runtime.Enqueuer for testing
-type mockEnqueuer struct{}
-
-func (m *mockEnqueuer) Enqueue(owned interface{}) error {
-	// No-op for testing
-	return nil
-}
