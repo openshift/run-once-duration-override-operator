@@ -4,8 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"time"
 
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
@@ -14,14 +18,26 @@ import (
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/openshift/library-go/pkg/operator/events"
+	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
+	"github.com/openshift/run-once-duration-override-operator/pkg/deploy"
+	"github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
 	operatorinformers "github.com/openshift/run-once-duration-override-operator/pkg/generated/informers/externalversions"
 	runoncedurationoverridev1listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
+	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 )
 
 const (
 	ControllerName = "runoncedurationoverride"
+)
+
+var (
+	RunOnceDurationOverrideGVK = schema.GroupVersionKind{
+		Group:   runoncedurationoverridev1.GroupName,
+		Version: runoncedurationoverridev1.GroupVersion,
+		Kind:    runoncedurationoverridev1.RunOnceDurationOverrideKind,
+	}
 )
 
 type Options struct {
@@ -96,34 +112,56 @@ func New(options *Options) (c Interface, err error) {
 		}
 	}
 
-	r := NewReconciler(&HandlerOptions{
+	handlerOptions := &HandlerOptions{
 		OperandContext:  options.RuntimeContext,
 		Client:          options.Client,
 		PrimaryLister:   lister,
 		SecondaryLister: secondaryLister,
 		Asset:           operandAsset,
 		Recorder:        options.Recorder,
-	})
+	}
+
+	handlerOptions.Deploy = deploy.NewDaemonSetInstall(
+		secondaryLister.AppsV1DaemonSetLister(),
+		options.RuntimeContext,
+		operandAsset,
+		options.Client.Kubernetes,
+		options.Recorder,
+	)
 
 	c = &runOnceDurationOverrideController{
-		workers:    options.Workers,
-		queue:      queue,
-		informer:   rodooInformer.Informer(),
-		reconciler: r,
-		lister:     lister,
-		done:       make(chan struct{}, 0),
+		workers:        options.Workers,
+		queue:          queue,
+		informer:       rodooInformer.Informer(),
+		lister:         lister,
+		done:           make(chan struct{}, 0),
+		client:         options.Client.Operator,
+		operandContext: options.RuntimeContext,
+		handlers: []Handler{
+			NewAvailabilityHandler(handlerOptions),
+			NewValidationHandler(handlerOptions),
+			NewConfigurationHandler(handlerOptions),
+			NewCertGenerationHandler(handlerOptions),
+			NewCertReadyHandler(handlerOptions),
+			NewDaemonSetHandler(handlerOptions),
+			NewDeploymentReadyHandler(handlerOptions),
+			NewWebhookConfigurationHandlerHandler(handlerOptions),
+			NewAvailabilityHandler(handlerOptions),
+		},
 	}
 
 	return
 }
 
 type runOnceDurationOverrideController struct {
-	workers    int
-	queue      workqueue.RateLimitingInterface
-	informer   cache.SharedIndexInformer
-	reconciler controllerreconciler.Reconciler
-	lister     runoncedurationoverridev1listers.RunOnceDurationOverrideLister
-	done       chan struct{}
+	workers        int
+	queue          workqueue.RateLimitingInterface
+	informer       cache.SharedIndexInformer
+	lister         runoncedurationoverridev1listers.RunOnceDurationOverrideLister
+	done           chan struct{}
+	client         versioned.Interface
+	handlers       []Handler
+	operandContext operatorruntime.OperandContext
 }
 
 func (c *runOnceDurationOverrideController) Run(parent context.Context, errorCh chan<- error) {
@@ -209,7 +247,7 @@ func (c *runOnceDurationOverrideController) processNextWorkItem(shutdownCtx cont
 
 	// Run the syncHandler, passing it the namespace/name string of the
 	// Foo resource to be synced.
-	result, err := c.reconciler.Reconcile(shutdownCtx, request)
+	result, err := c.Reconcile(shutdownCtx, request)
 	if err != nil {
 		// Put the item back on the workqueue to handle any transient errors.
 		c.queue.AddRateLimited(request)
@@ -238,4 +276,73 @@ func (c *runOnceDurationOverrideController) processNextWorkItem(shutdownCtx cont
 	// get queued again until another change happens.
 	c.queue.Forget(obj)
 	return true
+}
+
+func (c *runOnceDurationOverrideController) Reconcile(ctx context.Context, request controllerreconciler.Request) (result controllerreconciler.Result, err error) {
+	klog.V(4).Infof("key=%s new request for reconcile", request.Name)
+
+	result = controllerreconciler.Result{}
+
+	// The operand is a singleton, so we are only interested in the CR specified in cluster
+	if request.Name != c.operandContext.ResourceName() {
+		klog.V(2).Infof("key=%s skipping reconcile", request.Name)
+		return
+	}
+
+	original, getErr := c.lister.Get(request.Name)
+	if getErr != nil {
+		if k8serrors.IsNotFound(getErr) {
+			klog.Errorf("[reconciler] key=%s object has been deleted - %s", request.Name, getErr.Error())
+			return
+		}
+
+		// Otherwise, we will requeue.
+		klog.Errorf("[reconciler] key=%s unexpected error - %s", request.Name, getErr.Error())
+		err = getErr
+		return
+	}
+
+	copy := original.DeepCopy()
+	copy.SetGroupVersionKind(RunOnceDurationOverrideGVK)
+
+	reconcileContext := NewReconcileRequestContext(c.operandContext)
+	modified := copy
+	var current *runoncedurationoverridev1.RunOnceDurationOverride
+	for _, handler := range c.handlers {
+		current, result, err = handler.Handle(reconcileContext, modified)
+		if err != nil {
+			condition.NewBuilderWithStatus(&current.Status).WithError(err)
+			break
+		}
+		if result.Requeue || result.RequeueAfter > 0 {
+			break
+		}
+		modified = current
+	}
+
+	updateErr := c.updateStatus(original, current)
+	if updateErr != nil {
+		klog.Errorf("[reconciler] key=%s failed to update status - %s", request.Name, updateErr.Error())
+
+		if err != nil {
+			err = fmt.Errorf("[reconciler] reconciliation error - %s -- update status error - %s", err.Error(), updateErr.Error())
+			return
+		}
+
+		err = updateErr
+	}
+
+	return
+}
+
+// updateStatus updates the status of a RunOnceDurationOverride resource.
+// If the status inside of the desired object is equal to that of the observed then
+// the function does not make an update call.
+func (c *runOnceDurationOverrideController) updateStatus(observed, desired *runoncedurationoverridev1.RunOnceDurationOverride) error {
+	if reflect.DeepEqual(&observed.Status, &desired.Status) {
+		return nil
+	}
+
+	_, err := c.client.RunOnceDurationOverrideV1().RunOnceDurationOverrides().UpdateStatus(context.TODO(), desired, metav1.UpdateOptions{})
+	return err
 }
