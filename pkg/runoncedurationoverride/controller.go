@@ -5,11 +5,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/openshift/run-once-duration-override-operator/pkg/deploy"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -19,10 +18,7 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
 	runoncedurationoverridev1listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
-	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/handlers"
-	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/reconciler"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
-	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 )
 
 const (
@@ -30,19 +26,23 @@ const (
 )
 
 type Options struct {
-	ResyncPeriod   time.Duration
-	Workers        int
-	Client         *operatorruntime.Client
-	RuntimeContext operatorruntime.OperandContext
-	Lister         *secondarywatch.Lister
-	Recorder       events.Recorder
+	ResyncPeriod    time.Duration
+	Workers         int
+	Client          *operatorruntime.Client
+	RuntimeContext  operatorruntime.OperandContext
+	InformerFactory informers.SharedInformerFactory
+	ShutdownContext context.Context
+	Recorder        events.Recorder
 }
 
-func New(options *Options) (c Interface, e operatorruntime.Enqueuer, err error) {
+func New(options *Options) (c Interface, err error) {
 	if options == nil || options.Client == nil || options.RuntimeContext == nil {
 		err = errors.New("invalid input to New")
 		return
 	}
+
+	// create lister(s) for secondary resources
+	secondaryLister, secondaryStarter := NewSecondaryWatch(options.InformerFactory)
 
 	// Create a new RunOnceDurationOverrides watcher
 	client := options.Client.Operator
@@ -73,16 +73,12 @@ func New(options *Options) (c Interface, e operatorruntime.Enqueuer, err error) 
 	// setup operand asset
 	operandAsset := asset.New(options.RuntimeContext)
 
-	// initialize install strategy, we use daemonset
-	d := deploy.NewDaemonSetInstall(options.Lister.AppsV1DaemonSetLister(), options.RuntimeContext, operandAsset, options.Client.Kubernetes, options.Recorder)
-
-	reconciler := reconciler.NewReconciler(&handlers.Options{
+	r := NewReconciler(&HandlerOptions{
 		OperandContext:  options.RuntimeContext,
 		Client:          options.Client,
 		PrimaryLister:   lister,
-		SecondaryLister: options.Lister,
+		SecondaryLister: secondaryLister,
 		Asset:           operandAsset,
-		Deploy:          d,
 		Recorder:        options.Recorder,
 	})
 
@@ -90,13 +86,19 @@ func New(options *Options) (c Interface, e operatorruntime.Enqueuer, err error) 
 		workers:    options.Workers,
 		queue:      queue,
 		informer:   informer,
-		reconciler: reconciler,
+		reconciler: r,
 		lister:     lister,
 	}
-	e = &enqueuer{
+
+	e := &enqueuer{
 		queue:              queue,
 		lister:             lister,
 		ownerAnnotationKey: operandAsset.Values().OwnerAnnotationKey,
+	}
+
+	// setup watches for secondary resources
+	if err = secondaryStarter.Start(e, options.ShutdownContext); err != nil {
+		return
 	}
 
 	return

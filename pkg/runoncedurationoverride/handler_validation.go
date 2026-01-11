@@ -1,4 +1,4 @@
-package handlers
+package runoncedurationoverride
 
 import (
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
@@ -6,7 +6,7 @@ import (
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-func NewValidationHandler(o *Options) *validationHandler {
+func NewValidationHandler(o *HandlerOptions) *validationHandler {
 	return &validationHandler{}
 }
 

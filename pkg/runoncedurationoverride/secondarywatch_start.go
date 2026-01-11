@@ -1,4 +1,4 @@
-package secondarywatch
+package runoncedurationoverride
 
 import (
 	"context"
@@ -7,17 +7,17 @@ import (
 	"k8s.io/client-go/informers"
 )
 
-// StarterFunc refers to a function that can be called to start watch on secondary resources.
-type StarterFunc func(enqueuer runtime.Enqueuer, shutdown context.Context) error
+// SecondaryStarterFunc refers to a function that can be called to start watch on secondary resources.
+type SecondaryStarterFunc func(enqueuer runtime.Enqueuer, shutdown context.Context) error
 
-func (s StarterFunc) Start(enqueuer runtime.Enqueuer, shutdown context.Context) error {
+func (s SecondaryStarterFunc) Start(enqueuer runtime.Enqueuer, shutdown context.Context) error {
 	return s(enqueuer, shutdown)
 }
 
-// New sets up watch on secondary resources.
+// NewSecondaryWatch sets up watch on secondary resources.
 // The function returns lister(s) that can be used to query secondary resources
-// and a StarterFunc that can be called to start the watch.
-func New(factory informers.SharedInformerFactory) (lister *Lister, startFunc StarterFunc) {
+// and a SecondaryStarterFunc that can be called to start the watch.
+func NewSecondaryWatch(factory informers.SharedInformerFactory) (lister *SecondaryLister, startFunc SecondaryStarterFunc) {
 
 	deployment := factory.Apps().V1().Deployments()
 	daemonset := factory.Apps().V1().DaemonSets()
@@ -67,7 +67,7 @@ func New(factory informers.SharedInformerFactory) (lister *Lister, startFunc Sta
 		return nil
 	}
 
-	lister = &Lister{
+	lister = &SecondaryLister{
 		deployment:     deployment.Lister(),
 		daemonset:      daemonset.Lister(),
 		pod:            pod.Lister(),

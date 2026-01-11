@@ -1,4 +1,4 @@
-package handlers
+package runoncedurationoverride
 
 import (
 	gocontext "context"
@@ -17,7 +17,6 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	"github.com/openshift/run-once-duration-override-operator/pkg/cert"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
-	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 )
 
 var (
@@ -31,7 +30,7 @@ var (
 	Organization = "Red Hat, Inc."
 )
 
-func NewCertGenerationHandler(o *Options) *certGenerationHandler {
+func NewCertGenerationHandler(o *HandlerOptions) *certGenerationHandler {
 	return &certGenerationHandler{
 		client:   o.Client.Kubernetes,
 		recorder: o.Recorder,
@@ -43,7 +42,7 @@ func NewCertGenerationHandler(o *Options) *certGenerationHandler {
 type certGenerationHandler struct {
 	client   kubernetes.Interface
 	recorder events.Recorder
-	lister   *secondarywatch.Lister
+	lister   *SecondaryLister
 	asset    *asset.Asset
 }
 

@@ -1,4 +1,4 @@
-package handlers
+package runoncedurationoverride
 
 import (
 	gocontext "context"
@@ -14,10 +14,9 @@ import (
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
-	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 )
 
-func NewWebhookConfigurationHandlerHandler(o *Options) *webhookConfigurationHandler {
+func NewWebhookConfigurationHandlerHandler(o *HandlerOptions) *webhookConfigurationHandler {
 	return &webhookConfigurationHandler{
 		client:   o.Client.Kubernetes,
 		recorder: o.Recorder,
@@ -30,7 +29,7 @@ func NewWebhookConfigurationHandlerHandler(o *Options) *webhookConfigurationHand
 type webhookConfigurationHandler struct {
 	client   kubernetes.Interface
 	recorder events.Recorder
-	lister   *secondarywatch.Lister
+	lister   *SecondaryLister
 	asset    *asset.Asset
 	cache    resourceapply.ResourceCache
 }

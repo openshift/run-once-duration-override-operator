@@ -1,4 +1,4 @@
-package handlers
+package runoncedurationoverride
 
 import (
 	gocontext "context"
@@ -14,14 +14,13 @@ import (
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
-	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 )
 
 const (
 	ServiceCAInjectBundle = "service.beta.openshift.io/inject-cabundle"
 )
 
-func NewServiceCAConfigMapHandler(o *Options) *serviceCAConfigMapHandler {
+func NewServiceCAConfigMapHandler(o *HandlerOptions) *serviceCAConfigMapHandler {
 	return &serviceCAConfigMapHandler{
 		client:   o.Client.Kubernetes,
 		recorder: o.Recorder,
@@ -33,7 +32,7 @@ func NewServiceCAConfigMapHandler(o *Options) *serviceCAConfigMapHandler {
 type serviceCAConfigMapHandler struct {
 	client   kubernetes.Interface
 	recorder events.Recorder
-	lister   *secondarywatch.Lister
+	lister   *SecondaryLister
 	asset    *asset.Asset
 }
 

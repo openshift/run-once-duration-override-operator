@@ -1,4 +1,4 @@
-package handlers
+package runoncedurationoverride
 
 import (
 	gocontext "context"
@@ -17,10 +17,9 @@ import (
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
-	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 )
 
-func NewConfigurationHandler(o *Options) *configurationHandler {
+func NewConfigurationHandler(o *HandlerOptions) *configurationHandler {
 	return &configurationHandler{
 		client:   o.Client.Kubernetes,
 		recorder: o.Recorder,
@@ -33,7 +32,7 @@ type configurationHandler struct {
 	client   kubernetes.Interface
 	recorder events.Recorder
 	asset    *asset.Asset
-	lister   *secondarywatch.Lister
+	lister   *SecondaryLister
 }
 
 func (c *configurationHandler) Handle(context *ReconcileRequestContext, original *appsv1.RunOnceDurationOverride) (current *appsv1.RunOnceDurationOverride, result controllerreconciler.Result, handleErr error) {

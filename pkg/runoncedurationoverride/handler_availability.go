@@ -1,4 +1,4 @@
-package handlers
+package runoncedurationoverride
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
 )
 
-func NewAvailabilityHandler(o *Options) *availabilityHandler {
+func NewAvailabilityHandler(o *HandlerOptions) *availabilityHandler {
 	return &availabilityHandler{
 		asset:  o.Asset,
 		deploy: o.Deploy,

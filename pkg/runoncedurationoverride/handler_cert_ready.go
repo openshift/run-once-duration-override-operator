@@ -1,4 +1,4 @@
-package handlers
+package runoncedurationoverride
 
 import (
 	"fmt"
@@ -6,13 +6,12 @@ import (
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/cert"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
-	"github.com/openshift/run-once-duration-override-operator/pkg/secondarywatch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-func NewCertReadyHandler(o *Options) *certReadyHandler {
+func NewCertReadyHandler(o *HandlerOptions) *certReadyHandler {
 	return &certReadyHandler{
 		client: o.Client.Kubernetes,
 		lister: o.SecondaryLister,
@@ -21,7 +20,7 @@ func NewCertReadyHandler(o *Options) *certReadyHandler {
 
 type certReadyHandler struct {
 	client kubernetes.Interface
-	lister *secondarywatch.Lister
+	lister *SecondaryLister
 }
 
 func (c *certReadyHandler) Handle(context *ReconcileRequestContext, original *appsv1.RunOnceDurationOverride) (current *appsv1.RunOnceDurationOverride, result controllerreconciler.Result, handleErr error) {
