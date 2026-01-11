@@ -71,17 +71,6 @@ func New(options *Options) (c *runOnceDurationOverrideController, err error) {
 	// Create RunOnceDurationOverride informer using the standard informer factory
 	rodooInformer := options.OperatorInformerFactory.RunOnceDurationOverride().V1().RunOnceDurationOverrides()
 
-	secondaryLister := &SecondaryLister{
-		deployment:     deployment.Lister(),
-		daemonset:      daemonset.Lister(),
-		pod:            pod.Lister(),
-		configmap:      configmap.Lister(),
-		service:        service.Lister(),
-		secret:         secret.Lister(),
-		serviceaccount: serviceaccount.Lister(),
-		webhook:        webhook.Lister(),
-	}
-
 	lister := rodooInformer.Lister()
 
 	// We need a queue
@@ -113,7 +102,7 @@ func New(options *Options) (c *runOnceDurationOverrideController, err error) {
 	}
 
 	deployInterface := deploy.NewDaemonSetInstall(
-		secondaryLister.AppsV1DaemonSetLister(),
+		daemonset.Lister(),
 		options.RuntimeContext,
 		operandAsset,
 		options.Client.Kubernetes,
@@ -131,12 +120,12 @@ func New(options *Options) (c *runOnceDurationOverrideController, err error) {
 		handlers: []Handler{
 			NewAvailabilityHandler(operandAsset, deployInterface),
 			NewValidationHandler(),
-			NewConfigurationHandler(options.Client.Kubernetes, options.Recorder, secondaryLister.CoreV1ConfigMapLister(), operandAsset),
-			NewCertGenerationHandler(options.Client.Kubernetes, options.Recorder, secondaryLister.CoreV1SecretLister(), secondaryLister.CoreV1ConfigMapLister(), operandAsset),
-			NewCertReadyHandler(options.Client.Kubernetes, secondaryLister.CoreV1SecretLister(), secondaryLister.CoreV1ConfigMapLister()),
+			NewConfigurationHandler(options.Client.Kubernetes, options.Recorder, configmap.Lister(), operandAsset),
+			NewCertGenerationHandler(options.Client.Kubernetes, options.Recorder, secret.Lister(), configmap.Lister(), operandAsset),
+			NewCertReadyHandler(options.Client.Kubernetes, secret.Lister(), configmap.Lister()),
 			NewDaemonSetHandler(options.Client.Kubernetes, options.Recorder, operandAsset, deployInterface),
 			NewDeploymentReadyHandler(deployInterface),
-			NewWebhookConfigurationHandlerHandler(options.Client.Kubernetes, options.Recorder, secondaryLister.AdmissionRegistrationV1MutatingWebhookConfigurationLister(), operandAsset),
+			NewWebhookConfigurationHandlerHandler(options.Client.Kubernetes, options.Recorder, webhook.Lister(), operandAsset),
 			NewAvailabilityHandler(operandAsset, deployInterface),
 		},
 	}
