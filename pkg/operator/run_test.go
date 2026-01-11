@@ -131,13 +131,17 @@ func TestConfig_Validate(t *testing.T) {
 }
 
 type testOperatorSetup struct {
-	controller       runoncedurationoverride.Interface
-	kubeClient       *kubefake.Clientset
-	aggregatorClient *fakeaggregator.Clientset
-	expectedNames    *expectedResourceNames
-	ctx              context.Context
-	cancel           context.CancelFunc
-	namespace        string
+	kubeClient              *kubefake.Clientset
+	aggregatorClient        *fakeaggregator.Clientset
+	expectedNames           *expectedResourceNames
+	ctx                     context.Context
+	cancel                  context.CancelFunc
+	namespace               string
+	kubeInformerFactory     informers.SharedInformerFactory
+	operatorInformerFactory operatorinformers.SharedInformerFactory
+	runtimeContext          operatorruntime.OperandContext
+	mockClient              *operatorruntime.Client
+	recorder                events.Recorder
 }
 
 func setupTestOperator(t *testing.T) *testOperatorSetup {
@@ -256,41 +260,18 @@ func setupTestOperator(t *testing.T) *testOperatorSetup {
 	// create recorder for tests
 	recorder := events.NewLoggingEventRecorder(operatorName, clock.RealClock{})
 
-	c, err := runoncedurationoverride.New(&runoncedurationoverride.Options{
-		ResyncPeriod:            DefaultResyncPeriodPrimaryResource,
-		Workers:                 DefaultWorkerCount,
-		RuntimeContext:          runtimeContext,
-		Client:                  mockClient,
-		InformerFactory:         kubeInformerFactory,
-		OperatorInformerFactory: operatorInformerFactory,
-		Recorder:                recorder,
-	})
-	if err != nil {
-		t.Fatalf("failed to create controller: %v", err)
-	}
-
-	kubeInformerFactory.Start(ctx.Done())
-	operatorInformerFactory.Start(ctx.Done())
-
-	for _, synced := range kubeInformerFactory.WaitForCacheSync(ctx.Done()) {
-		if !synced {
-			t.Fatal("failed to sync kube informer caches")
-		}
-	}
-	for _, synced := range operatorInformerFactory.WaitForCacheSync(ctx.Done()) {
-		if !synced {
-			t.Fatal("failed to sync operator informer caches")
-		}
-	}
-
 	return &testOperatorSetup{
-		controller:       c,
-		kubeClient:       fakeKubeClient,
-		aggregatorClient: fakeAggregatorClient,
-		expectedNames:    expectedNames,
-		ctx:              ctx,
-		cancel:           cancel,
-		namespace:        namespace,
+		kubeClient:              fakeKubeClient,
+		aggregatorClient:        fakeAggregatorClient,
+		expectedNames:           expectedNames,
+		ctx:                     ctx,
+		cancel:                  cancel,
+		namespace:               namespace,
+		kubeInformerFactory:     kubeInformerFactory,
+		operatorInformerFactory: operatorInformerFactory,
+		runtimeContext:          runtimeContext,
+		mockClient:              mockClient,
+		recorder:                recorder,
 	}
 }
 
@@ -305,10 +286,37 @@ func TestOperatorReconciliation(t *testing.T) {
 	setup := setupTestOperator(t)
 	defer setup.cancel()
 
+	c, err := runoncedurationoverride.New(&runoncedurationoverride.Options{
+		ResyncPeriod:            DefaultResyncPeriodPrimaryResource,
+		Workers:                 DefaultWorkerCount,
+		RuntimeContext:          setup.runtimeContext,
+		Client:                  setup.mockClient,
+		InformerFactory:         setup.kubeInformerFactory,
+		OperatorInformerFactory: setup.operatorInformerFactory,
+		Recorder:                setup.recorder,
+	})
+	if err != nil {
+		t.Fatalf("failed to create controller: %v", err)
+	}
+
+	setup.kubeInformerFactory.Start(setup.ctx.Done())
+	setup.operatorInformerFactory.Start(setup.ctx.Done())
+
+	for _, synced := range setup.kubeInformerFactory.WaitForCacheSync(setup.ctx.Done()) {
+		if !synced {
+			t.Fatal("failed to sync kube informer caches")
+		}
+	}
+	for _, synced := range setup.operatorInformerFactory.WaitForCacheSync(setup.ctx.Done()) {
+		if !synced {
+			t.Fatal("failed to sync operator informer caches")
+		}
+	}
+
 	verifyResources(t, setup.ctx, setup.kubeClient, setup.aggregatorClient, setup.namespace, setup.expectedNames, true)
 
 	runnerErrorCh := make(chan error, 1)
-	go setup.controller.Run(setup.ctx, runnerErrorCh)
+	go c.Run(setup.ctx, runnerErrorCh)
 
 	if err := <-runnerErrorCh; err != nil {
 		t.Fatalf("failed to start controller: %v", err)
@@ -321,7 +329,7 @@ func TestOperatorReconciliation(t *testing.T) {
 	setup.cancel()
 
 	select {
-	case <-setup.controller.Done():
+	case <-c.Done():
 		t.Log("Controller stopped successfully")
 	case <-time.After(2 * time.Second):
 		t.Fatal("timeout waiting for controller to stop")

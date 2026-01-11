@@ -50,7 +50,7 @@ type Options struct {
 	Recorder                events.Recorder
 }
 
-func New(options *Options) (c Interface, err error) {
+func New(options *Options) (c *runOnceDurationOverrideController, err error) {
 	if options == nil || options.Client == nil || options.RuntimeContext == nil {
 		err = errors.New("invalid input to New")
 		return
