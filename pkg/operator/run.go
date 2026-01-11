@@ -10,6 +10,7 @@ import (
 	"k8s.io/utils/clock"
 
 	"github.com/openshift/library-go/pkg/operator/events"
+	operatorinformers "github.com/openshift/run-once-duration-override-operator/pkg/generated/informers/externalversions"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 )
@@ -62,18 +63,24 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 		informers.WithNamespace(config.Namespace),
 	)
 
+	// create informer factory for primary resource
+	operatorInformerFactory := operatorinformers.NewSharedInformerFactory(
+		clients.Operator,
+		DefaultResyncPeriodPrimaryResource,
+	)
+
 	// create recorder for resource apply operations
 	recorder := events.NewLoggingEventRecorder(config.Name, clock.RealClock{})
 
 	// start the controllers
 	c, err := runoncedurationoverride.New(&runoncedurationoverride.Options{
-		ResyncPeriod:    DefaultResyncPeriodPrimaryResource,
-		Workers:         DefaultWorkerCount,
-		RuntimeContext:  context,
-		Client:          clients,
-		InformerFactory: kubeInformerFactory,
-		ShutdownContext: config.ShutdownContext,
-		Recorder:        recorder,
+		ResyncPeriod:            DefaultResyncPeriodPrimaryResource,
+		Workers:                 DefaultWorkerCount,
+		RuntimeContext:          context,
+		Client:                  clients,
+		InformerFactory:         kubeInformerFactory,
+		OperatorInformerFactory: operatorInformerFactory,
+		Recorder:                recorder,
 	})
 	if err != nil {
 		errorCh <- fmt.Errorf("failed to create controller - %s", err.Error())

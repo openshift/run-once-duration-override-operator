@@ -1,22 +1,17 @@
 package runoncedurationoverride
 
 import (
-	"context"
 	"errors"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/openshift/library-go/pkg/operator/events"
-	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
-	listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
+	operatorinformers "github.com/openshift/run-once-duration-override-operator/pkg/generated/informers/externalversions"
 	runoncedurationoverridev1listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 )
@@ -26,13 +21,13 @@ const (
 )
 
 type Options struct {
-	ResyncPeriod    time.Duration
-	Workers         int
-	Client          *operatorruntime.Client
-	RuntimeContext  operatorruntime.OperandContext
-	InformerFactory informers.SharedInformerFactory
-	ShutdownContext context.Context
-	Recorder        events.Recorder
+	ResyncPeriod            time.Duration
+	Workers                 int
+	Client                  *operatorruntime.Client
+	RuntimeContext          operatorruntime.OperandContext
+	InformerFactory         informers.SharedInformerFactory
+	OperatorInformerFactory operatorinformers.SharedInformerFactory
+	Recorder                events.Recorder
 }
 
 func New(options *Options) (c Interface, err error) {
@@ -62,31 +57,20 @@ func New(options *Options) (c Interface, err error) {
 		webhook:        webhook.Lister(),
 	}
 
-	// Create a new RunOnceDurationOverrides watcher
-	client := options.Client.Operator
-	watcher := &cache.ListWatch{
-		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			return client.RunOnceDurationOverrideV1().RunOnceDurationOverrides().List(context.TODO(), options)
-		},
-
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return client.RunOnceDurationOverrideV1().RunOnceDurationOverrides().Watch(context.TODO(), options)
-		},
-	}
-
 	// We need a queue
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 
-	// Bind the work queue to a cache with the help of an informer. This way we
-	// make sure that whenever the cache is updated, the RunOnceDurationOverride
-	// key is added to the work queue.
-	// Note that when we finally process the item from the workqueue, we might
-	// see a newer version of the RunOnceDurationOverride than the version which
-	// was responsible for triggering the update.
-	indexer, informer := cache.NewIndexerInformer(watcher, &runoncedurationoverridev1.RunOnceDurationOverride{}, options.ResyncPeriod,
-		newEventHandler(queue), cache.Indexers{})
+	// Create RunOnceDurationOverride informer using the standard informer factory
+	rodooInformer := options.OperatorInformerFactory.RunOnceDurationOverride().V1().RunOnceDurationOverrides()
 
-	lister := listers.NewRunOnceDurationOverrideLister(indexer)
+	// Add event handler to the informer
+	_, err = rodooInformer.Informer().AddEventHandler(newEventHandler(queue))
+	if err != nil {
+		return
+	}
+
+	lister := rodooInformer.Lister()
+	informer := rodooInformer.Informer()
 
 	// setup operand asset
 	operandAsset := asset.New(options.RuntimeContext)
@@ -135,7 +119,7 @@ func New(options *Options) (c Interface, err error) {
 type runOnceDurationOverrideController struct {
 	workers    int
 	queue      workqueue.RateLimitingInterface
-	informer   cache.Controller
+	informer   cache.SharedIndexInformer
 	reconciler controllerreconciler.Reconciler
 	lister     runoncedurationoverridev1listers.RunOnceDurationOverrideLister
 }
@@ -152,7 +136,7 @@ func (c *runOnceDurationOverrideController) Queue() workqueue.RateLimitingInterf
 	return c.queue
 }
 
-func (c *runOnceDurationOverrideController) Informer() cache.Controller {
+func (c *runOnceDurationOverrideController) Informer() cache.SharedIndexInformer {
 	return c.informer
 }
 
