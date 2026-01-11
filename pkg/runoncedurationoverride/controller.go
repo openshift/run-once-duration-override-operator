@@ -55,50 +55,36 @@ func New(
 	// setup operand asset
 	operandAsset := asset.New(runtimeContext)
 
-	// create lister(s) for secondary resources
-	deployment := informerFactory.Apps().V1().Deployments()
-	daemonset := informerFactory.Apps().V1().DaemonSets()
-	pod := informerFactory.Core().V1().Pods()
-	configmap := informerFactory.Core().V1().ConfigMaps()
-	service := informerFactory.Core().V1().Services()
-	secret := informerFactory.Core().V1().Secrets()
-	serviceaccount := informerFactory.Core().V1().ServiceAccounts()
-	webhook := informerFactory.Admissionregistration().V1().MutatingWebhookConfigurations()
-	// Create RunOnceDurationOverride informer using the standard informer factory
-	rodooInformer := operatorInformerFactory.RunOnceDurationOverride().V1().RunOnceDurationOverrides()
-
-	lister := rodooInformer.Lister()
-
 	// We need a queue
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 
 	// Add event handler to the informer
-	_, err = rodooInformer.Informer().AddEventHandler(newEventHandler(queue))
+	_, err = operatorInformerFactory.RunOnceDurationOverride().V1().RunOnceDurationOverrides().Informer().AddEventHandler(newEventHandler(queue))
 	if err != nil {
 		return
 	}
 
 	informers := []cache.SharedIndexInformer{
-		deployment.Informer(),
-		daemonset.Informer(),
-		pod.Informer(),
-		configmap.Informer(),
-		service.Informer(),
-		secret.Informer(),
-		serviceaccount.Informer(),
-		webhook.Informer(),
+		informerFactory.Apps().V1().Deployments().Informer(),
+		informerFactory.Apps().V1().DaemonSets().Informer(),
+		informerFactory.Core().V1().Pods().Informer(),
+		informerFactory.Core().V1().ConfigMaps().Informer(),
+		informerFactory.Core().V1().Services().Informer(),
+		informerFactory.Core().V1().Secrets().Informer(),
+		informerFactory.Core().V1().ServiceAccounts().Informer(),
+		informerFactory.Admissionregistration().V1().MutatingWebhookConfigurations().Informer(),
 	}
 
 	for _, informer := range informers {
 		// setup watches for secondary resources
-		_, err = informer.AddEventHandler(newResourceEventHandler(queue, lister, operandAsset.Values().OwnerAnnotationKey))
+		_, err = informer.AddEventHandler(newResourceEventHandler(queue, operatorInformerFactory.RunOnceDurationOverride().V1().RunOnceDurationOverrides().Lister(), operandAsset.Values().OwnerAnnotationKey))
 		if err != nil {
 			return
 		}
 	}
 
 	deployInterface := deploy.NewDaemonSetInstall(
-		daemonset.Lister(),
+		informerFactory.Apps().V1().DaemonSets().Lister(),
 		runtimeContext,
 		operandAsset,
 		client.Kubernetes,
@@ -108,20 +94,20 @@ func New(
 	c = &runOnceDurationOverrideController{
 		workers:        workers,
 		queue:          queue,
-		informer:       rodooInformer.Informer(),
-		lister:         lister,
+		informer:       operatorInformerFactory.RunOnceDurationOverride().V1().RunOnceDurationOverrides().Informer(),
+		lister:         operatorInformerFactory.RunOnceDurationOverride().V1().RunOnceDurationOverrides().Lister(),
 		done:           make(chan struct{}, 0),
 		client:         client.Operator,
 		operandContext: runtimeContext,
 		handlers: []Handler{
 			NewAvailabilityHandler(operandAsset, deployInterface),
 			NewValidationHandler(),
-			NewConfigurationHandler(client.Kubernetes, recorder, configmap.Lister(), operandAsset),
-			NewCertGenerationHandler(client.Kubernetes, recorder, secret.Lister(), configmap.Lister(), operandAsset),
-			NewCertReadyHandler(client.Kubernetes, secret.Lister(), configmap.Lister()),
+			NewConfigurationHandler(client.Kubernetes, recorder, informerFactory.Core().V1().ConfigMaps().Lister(), operandAsset),
+			NewCertGenerationHandler(client.Kubernetes, recorder, informerFactory.Core().V1().Secrets().Lister(), informerFactory.Core().V1().ConfigMaps().Lister(), operandAsset),
+			NewCertReadyHandler(client.Kubernetes, informerFactory.Core().V1().Secrets().Lister(), informerFactory.Core().V1().ConfigMaps().Lister()),
 			NewDaemonSetHandler(client.Kubernetes, recorder, operandAsset, deployInterface),
 			NewDeploymentReadyHandler(deployInterface),
-			NewWebhookConfigurationHandlerHandler(client.Kubernetes, recorder, webhook.Lister(), operandAsset),
+			NewWebhookConfigurationHandlerHandler(client.Kubernetes, recorder, informerFactory.Admissionregistration().V1().MutatingWebhookConfigurations().Lister(), operandAsset),
 			NewAvailabilityHandler(operandAsset, deployInterface),
 		},
 	}
