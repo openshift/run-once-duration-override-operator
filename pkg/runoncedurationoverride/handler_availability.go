@@ -13,10 +13,10 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
 )
 
-func NewAvailabilityHandler(o *HandlerOptions) *availabilityHandler {
+func NewAvailabilityHandler(asset *asset.Asset, deploy deploy.Interface) *availabilityHandler {
 	return &availabilityHandler{
-		asset:  o.Asset,
-		deploy: o.Deploy,
+		asset:  asset,
+		deploy: deploy,
 	}
 }
 

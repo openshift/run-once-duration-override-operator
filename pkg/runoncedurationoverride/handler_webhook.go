@@ -5,6 +5,7 @@ import (
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
+	admissionregistrationv1 "k8s.io/client-go/listers/admissionregistration/v1"
 	"k8s.io/klog/v2"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -16,22 +17,22 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
 )
 
-func NewWebhookConfigurationHandlerHandler(o *HandlerOptions) *webhookConfigurationHandler {
+func NewWebhookConfigurationHandlerHandler(client kubernetes.Interface, recorder events.Recorder, webhookLister admissionregistrationv1.MutatingWebhookConfigurationLister, asset *asset.Asset) *webhookConfigurationHandler {
 	return &webhookConfigurationHandler{
-		client:   o.Client.Kubernetes,
-		recorder: o.Recorder,
-		lister:   o.SecondaryLister,
-		asset:    o.Asset,
-		cache:    resourceapply.NewResourceCache(),
+		client:        client,
+		recorder:      recorder,
+		webhookLister: webhookLister,
+		asset:         asset,
+		cache:         resourceapply.NewResourceCache(),
 	}
 }
 
 type webhookConfigurationHandler struct {
-	client   kubernetes.Interface
-	recorder events.Recorder
-	lister   *SecondaryLister
-	asset    *asset.Asset
-	cache    resourceapply.ResourceCache
+	client        kubernetes.Interface
+	recorder      events.Recorder
+	webhookLister admissionregistrationv1.MutatingWebhookConfigurationLister
+	asset         *asset.Asset
+	cache         resourceapply.ResourceCache
 }
 
 func (w *webhookConfigurationHandler) Handle(context *ReconcileRequestContext, original *appsv1.RunOnceDurationOverride) (current *appsv1.RunOnceDurationOverride, result controllerreconciler.Result, handleErr error) {
@@ -39,7 +40,7 @@ func (w *webhookConfigurationHandler) Handle(context *ReconcileRequestContext, o
 	ensure := false
 
 	name := w.asset.NewMutatingWebhookConfiguration().Name()
-	object, err := w.lister.AdmissionRegistrationV1MutatingWebhookConfigurationLister().Get(name)
+	object, err := w.webhookLister.Get(name)
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
 			handleErr = condition.NewInstallReadinessError(appsv1.CertNotAvailable, err)

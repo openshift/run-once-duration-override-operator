@@ -6,10 +6,12 @@ import (
 	"time"
 
 	"k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/clock"
 
 	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
 	operatorinformers "github.com/openshift/run-once-duration-override-operator/pkg/generated/informers/externalversions"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runtime"
@@ -48,9 +50,15 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 		klog.V(1).Infof("[operator] exiting")
 	}()
 
-	clients, err := runtime.NewClient(config.RestConfig)
+	operatorClient, err := versioned.NewForConfig(config.RestConfig)
 	if err != nil {
-		errorCh <- err
+		errorCh <- fmt.Errorf("failed to construct client for apps.openshift.io - %s", err.Error())
+		return
+	}
+
+	kubeClient, err := kubernetes.NewForConfig(config.RestConfig)
+	if err != nil {
+		errorCh <- fmt.Errorf("failed to construct client for kubernetes - %s", err.Error())
 		return
 	}
 
@@ -58,14 +66,14 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 
 	// create informer factory for secondary resources
 	kubeInformerFactory := informers.NewSharedInformerFactoryWithOptions(
-		clients.Kubernetes,
+		kubeClient,
 		DefaultResyncPeriodSecondaryResource,
 		informers.WithNamespace(config.Namespace),
 	)
 
 	// create informer factory for primary resource
 	operatorInformerFactory := operatorinformers.NewSharedInformerFactory(
-		clients.Operator,
+		operatorClient,
 		DefaultResyncPeriodPrimaryResource,
 	)
 
@@ -73,15 +81,15 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 	recorder := events.NewLoggingEventRecorder(config.Name, clock.RealClock{})
 
 	// start the controllers
-	c, err := runoncedurationoverride.New(&runoncedurationoverride.Options{
-		ResyncPeriod:            DefaultResyncPeriodPrimaryResource,
-		Workers:                 DefaultWorkerCount,
-		RuntimeContext:          context,
-		Client:                  clients,
-		InformerFactory:         kubeInformerFactory,
-		OperatorInformerFactory: operatorInformerFactory,
-		Recorder:                recorder,
-	})
+	c, err := runoncedurationoverride.New(
+		DefaultWorkerCount,
+		operatorClient,
+		kubeClient,
+		context,
+		kubeInformerFactory,
+		operatorInformerFactory,
+		recorder,
+	)
 	if err != nil {
 		errorCh <- fmt.Errorf("failed to create controller - %s", err.Error())
 		return
@@ -98,9 +106,8 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 		}
 	}
 
-	runner := runoncedurationoverride.NewRunner()
 	runnerErrorCh := make(chan error, 0)
-	go runner.Run(config.ShutdownContext, c, runnerErrorCh)
+	go c.Run(config.ShutdownContext, runnerErrorCh)
 	if err := <-runnerErrorCh; err != nil {
 		errorCh <- err
 		return
@@ -116,7 +123,7 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 	errorCh <- nil
 	klog.V(1).Infof("operator is waiting for controller(s) to be done")
 
-	<-runner.Done()
+	<-c.Done()
 }
 
 func (r *runner) Done() <-chan struct{} {

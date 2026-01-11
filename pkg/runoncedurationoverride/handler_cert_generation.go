@@ -7,6 +7,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	listerscorev1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/klog/v2"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -30,20 +31,22 @@ var (
 	Organization = "Red Hat, Inc."
 )
 
-func NewCertGenerationHandler(o *HandlerOptions) *certGenerationHandler {
+func NewCertGenerationHandler(client kubernetes.Interface, recorder events.Recorder, secretLister listerscorev1.SecretLister, configMapLister listerscorev1.ConfigMapLister, asset *asset.Asset) *certGenerationHandler {
 	return &certGenerationHandler{
-		client:   o.Client.Kubernetes,
-		recorder: o.Recorder,
-		lister:   o.SecondaryLister,
-		asset:    o.Asset,
+		client:          client,
+		recorder:        recorder,
+		secretLister:    secretLister,
+		configMapLister: configMapLister,
+		asset:           asset,
 	}
 }
 
 type certGenerationHandler struct {
-	client   kubernetes.Interface
-	recorder events.Recorder
-	lister   *SecondaryLister
-	asset    *asset.Asset
+	client          kubernetes.Interface
+	recorder        events.Recorder
+	secretLister    listerscorev1.SecretLister
+	configMapLister listerscorev1.ConfigMapLister
+	asset           *asset.Asset
 }
 
 func (c *certGenerationHandler) Handle(context *ReconcileRequestContext, original *appsv1.RunOnceDurationOverride) (current *appsv1.RunOnceDurationOverride, result controllerreconciler.Result, handleErr error) {
@@ -51,14 +54,14 @@ func (c *certGenerationHandler) Handle(context *ReconcileRequestContext, origina
 	ensure := false
 
 	secretName := c.asset.ServiceServingSecret().Name()
-	currentSecret, secretGetErr := c.lister.CoreV1SecretLister().Secrets(context.WebhookNamespace()).Get(secretName)
+	currentSecret, secretGetErr := c.secretLister.Secrets(context.WebhookNamespace()).Get(secretName)
 	if secretGetErr != nil && !k8serrors.IsNotFound(secretGetErr) {
 		handleErr = condition.NewInstallReadinessError(appsv1.InternalError, secretGetErr)
 		return
 	}
 
 	configMapName := c.asset.CABundleConfigMap().Name()
-	currentConfigMap, configMapGetErr := c.lister.CoreV1ConfigMapLister().ConfigMaps(context.WebhookNamespace()).Get(configMapName)
+	currentConfigMap, configMapGetErr := c.configMapLister.ConfigMaps(context.WebhookNamespace()).Get(configMapName)
 	if configMapGetErr != nil && !k8serrors.IsNotFound(configMapGetErr) {
 		handleErr = condition.NewInstallReadinessError(appsv1.InternalError, configMapGetErr)
 		return

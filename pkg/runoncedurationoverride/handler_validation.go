@@ -6,7 +6,7 @@ import (
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-func NewValidationHandler(o *HandlerOptions) *validationHandler {
+func NewValidationHandler() *validationHandler {
 	return &validationHandler{}
 }
 

@@ -25,7 +25,6 @@ import (
 	operatorinformers "github.com/openshift/run-once-duration-override-operator/pkg/generated/informers/externalversions"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
-	fakeaggregator "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/fake"
 )
 
 var daemonSetGVR = schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "daemonsets"}
@@ -131,13 +130,16 @@ func TestConfig_Validate(t *testing.T) {
 }
 
 type testOperatorSetup struct {
-	controller       runoncedurationoverride.Interface
-	kubeClient       *kubefake.Clientset
-	aggregatorClient *fakeaggregator.Clientset
-	expectedNames    *expectedResourceNames
-	ctx              context.Context
-	cancel           context.CancelFunc
-	namespace        string
+	kubeClient              *kubefake.Clientset
+	operatorClient          *fakeclientset.Clientset
+	expectedNames           *expectedResourceNames
+	ctx                     context.Context
+	cancel                  context.CancelFunc
+	namespace               string
+	kubeInformerFactory     informers.SharedInformerFactory
+	operatorInformerFactory operatorinformers.SharedInformerFactory
+	runtimeContext          operatorruntime.OperandContext
+	recorder                events.Recorder
 }
 
 func setupTestOperator(t *testing.T) *testOperatorSetup {
@@ -201,7 +203,6 @@ func setupTestOperator(t *testing.T) *testOperatorSetup {
 	})
 
 	fakeOperatorClient := fakeclientset.NewSimpleClientset(rodoo)
-	fakeAggregatorClient := fakeaggregator.NewSimpleClientset()
 
 	expectedNames := &expectedResourceNames{
 		deployment:                        operatorName,
@@ -247,50 +248,20 @@ func setupTestOperator(t *testing.T) *testOperatorSetup {
 
 	runtimeContext := operatorruntime.NewOperandContext(operatorName, namespace, crName, "test-image:latest", "v1.0.0")
 
-	mockClient := &operatorruntime.Client{
-		Operator:        fakeOperatorClient,
-		Kubernetes:      fakeKubeClient,
-		APIRegistration: fakeAggregatorClient,
-	}
-
 	// create recorder for tests
 	recorder := events.NewLoggingEventRecorder(operatorName, clock.RealClock{})
 
-	c, err := runoncedurationoverride.New(&runoncedurationoverride.Options{
-		ResyncPeriod:            DefaultResyncPeriodPrimaryResource,
-		Workers:                 DefaultWorkerCount,
-		RuntimeContext:          runtimeContext,
-		Client:                  mockClient,
-		InformerFactory:         kubeInformerFactory,
-		OperatorInformerFactory: operatorInformerFactory,
-		Recorder:                recorder,
-	})
-	if err != nil {
-		t.Fatalf("failed to create controller: %v", err)
-	}
-
-	kubeInformerFactory.Start(ctx.Done())
-	operatorInformerFactory.Start(ctx.Done())
-
-	for _, synced := range kubeInformerFactory.WaitForCacheSync(ctx.Done()) {
-		if !synced {
-			t.Fatal("failed to sync kube informer caches")
-		}
-	}
-	for _, synced := range operatorInformerFactory.WaitForCacheSync(ctx.Done()) {
-		if !synced {
-			t.Fatal("failed to sync operator informer caches")
-		}
-	}
-
 	return &testOperatorSetup{
-		controller:       c,
-		kubeClient:       fakeKubeClient,
-		aggregatorClient: fakeAggregatorClient,
-		expectedNames:    expectedNames,
-		ctx:              ctx,
-		cancel:           cancel,
-		namespace:        namespace,
+		kubeClient:              fakeKubeClient,
+		operatorClient:          fakeOperatorClient,
+		expectedNames:           expectedNames,
+		ctx:                     ctx,
+		cancel:                  cancel,
+		namespace:               namespace,
+		kubeInformerFactory:     kubeInformerFactory,
+		operatorInformerFactory: operatorInformerFactory,
+		runtimeContext:          runtimeContext,
+		recorder:                recorder,
 	}
 }
 
@@ -305,11 +276,37 @@ func TestOperatorReconciliation(t *testing.T) {
 	setup := setupTestOperator(t)
 	defer setup.cancel()
 
-	verifyResources(t, setup.ctx, setup.kubeClient, setup.aggregatorClient, setup.namespace, setup.expectedNames, true)
+	c, err := runoncedurationoverride.New(
+		DefaultWorkerCount,
+		setup.operatorClient,
+		setup.kubeClient,
+		setup.runtimeContext,
+		setup.kubeInformerFactory,
+		setup.operatorInformerFactory,
+		setup.recorder,
+	)
+	if err != nil {
+		t.Fatalf("failed to create controller: %v", err)
+	}
 
-	runner := runoncedurationoverride.NewRunner()
+	setup.kubeInformerFactory.Start(setup.ctx.Done())
+	setup.operatorInformerFactory.Start(setup.ctx.Done())
+
+	for _, synced := range setup.kubeInformerFactory.WaitForCacheSync(setup.ctx.Done()) {
+		if !synced {
+			t.Fatal("failed to sync kube informer caches")
+		}
+	}
+	for _, synced := range setup.operatorInformerFactory.WaitForCacheSync(setup.ctx.Done()) {
+		if !synced {
+			t.Fatal("failed to sync operator informer caches")
+		}
+	}
+
+	verifyResources(t, setup.ctx, setup.kubeClient, setup.namespace, setup.expectedNames, true)
+
 	runnerErrorCh := make(chan error, 1)
-	go runner.Run(setup.ctx, setup.controller, runnerErrorCh)
+	go c.Run(setup.ctx, runnerErrorCh)
 
 	if err := <-runnerErrorCh; err != nil {
 		t.Fatalf("failed to start controller: %v", err)
@@ -317,12 +314,12 @@ func TestOperatorReconciliation(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
-	verifyResources(t, setup.ctx, setup.kubeClient, setup.aggregatorClient, setup.namespace, setup.expectedNames, false)
+	verifyResources(t, setup.ctx, setup.kubeClient, setup.namespace, setup.expectedNames, false)
 
 	setup.cancel()
 
 	select {
-	case <-runner.Done():
+	case <-c.Done():
 		t.Log("Controller stopped successfully")
 	case <-time.After(2 * time.Second):
 		t.Fatal("timeout waiting for controller to stop")
@@ -351,7 +348,7 @@ type expectedResourceNames struct {
 	clusterRoleBindingAnonymousAccess string
 }
 
-func verifyResources(t *testing.T, ctx context.Context, client *kubefake.Clientset, aggregatorClient *fakeaggregator.Clientset, namespace string, expected *expectedResourceNames, expectZero bool) {
+func verifyResources(t *testing.T, ctx context.Context, client *kubefake.Clientset, namespace string, expected *expectedResourceNames, expectZero bool) {
 	checkResource := func(name, resourceType string, exists bool) {
 		if expectZero && exists {
 			t.Errorf("expected no %s named %q, but it exists", resourceType, name)

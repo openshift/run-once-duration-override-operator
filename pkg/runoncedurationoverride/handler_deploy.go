@@ -24,23 +24,20 @@ import (
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-func NewDaemonSetHandler(o *HandlerOptions) *daemonSetHandler {
+func NewDaemonSetHandler(client kubernetes.Interface, recorder events.Recorder, asset *asset.Asset, deploy deploy.Interface) *daemonSetHandler {
 	return &daemonSetHandler{
-		client:   o.Client.Kubernetes,
-		recorder: o.Recorder,
-		asset:    o.Asset,
-		lister:   o.SecondaryLister,
-		deploy:   o.Deploy,
+		client:   client,
+		recorder: recorder,
+		asset:    asset,
+		deploy:   deploy,
 	}
 }
 
 type daemonSetHandler struct {
 	client   kubernetes.Interface
 	recorder events.Recorder
-	lister   *SecondaryLister
 	asset    *asset.Asset
-
-	deploy deploy.Interface
+	deploy   deploy.Interface
 }
 
 type Deployer interface {
