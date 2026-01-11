@@ -307,9 +307,8 @@ func TestOperatorReconciliation(t *testing.T) {
 
 	verifyResources(t, setup.ctx, setup.kubeClient, setup.aggregatorClient, setup.namespace, setup.expectedNames, true)
 
-	runner := runoncedurationoverride.NewRunner()
 	runnerErrorCh := make(chan error, 1)
-	go runner.Run(setup.ctx, setup.controller, runnerErrorCh)
+	go setup.controller.Run(setup.ctx, runnerErrorCh)
 
 	if err := <-runnerErrorCh; err != nil {
 		t.Fatalf("failed to start controller: %v", err)
@@ -322,7 +321,7 @@ func TestOperatorReconciliation(t *testing.T) {
 	setup.cancel()
 
 	select {
-	case <-runner.Done():
+	case <-setup.controller.Done():
 		t.Log("Controller stopped successfully")
 	case <-time.After(2 * time.Second):
 		t.Fatal("timeout waiting for controller to stop")

@@ -98,9 +98,8 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 		}
 	}
 
-	runner := runoncedurationoverride.NewRunner()
 	runnerErrorCh := make(chan error, 0)
-	go runner.Run(config.ShutdownContext, c, runnerErrorCh)
+	go c.Run(config.ShutdownContext, runnerErrorCh)
 	if err := <-runnerErrorCh; err != nil {
 		errorCh <- err
 		return
@@ -116,7 +115,7 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 	errorCh <- nil
 	klog.V(1).Infof("operator is waiting for controller(s) to be done")
 
-	<-runner.Done()
+	<-c.Done()
 }
 
 func (r *runner) Done() <-chan struct{} {

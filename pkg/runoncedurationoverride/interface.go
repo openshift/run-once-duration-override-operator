@@ -1,6 +1,8 @@
 package runoncedurationoverride
 
 import (
+	"context"
+
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
@@ -24,4 +26,10 @@ type Interface interface {
 
 	// Reconciler returns the reconciler function that reconciles a request from a work queue.
 	Reconciler() reconcile.Reconciler
+
+	// Run starts the controller and blocks until the parent context is done.
+	Run(parent context.Context, errorCh chan<- error)
+
+	// Done returns a channel that is closed when the controller is finished.
+	Done() <-chan struct{}
 }

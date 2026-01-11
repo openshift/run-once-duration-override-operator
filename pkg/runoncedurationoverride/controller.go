@@ -1,12 +1,16 @@
 package runoncedurationoverride
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/klog/v2"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/openshift/library-go/pkg/operator/events"
@@ -107,6 +111,7 @@ func New(options *Options) (c Interface, err error) {
 		informer:   rodooInformer.Informer(),
 		reconciler: r,
 		lister:     lister,
+		done:       make(chan struct{}, 0),
 	}
 
 	return
@@ -118,6 +123,7 @@ type runOnceDurationOverrideController struct {
 	informer   cache.SharedIndexInformer
 	reconciler controllerreconciler.Reconciler
 	lister     runoncedurationoverridev1listers.RunOnceDurationOverrideLister
+	done       chan struct{}
 }
 
 func (c *runOnceDurationOverrideController) Name() string {
@@ -138,4 +144,118 @@ func (c *runOnceDurationOverrideController) Informer() cache.SharedIndexInformer
 
 func (c *runOnceDurationOverrideController) Reconciler() controllerreconciler.Reconciler {
 	return c.reconciler
+}
+
+func (c *runOnceDurationOverrideController) Run(parent context.Context, errorCh chan<- error) {
+	defer func() {
+		close(c.done)
+	}()
+
+	if parent == nil {
+		errorCh <- errors.New("invalid input to Run")
+		return
+	}
+
+	defer runtime.HandleCrash()
+	defer c.queue.ShutDown()
+
+	klog.V(1).Infof("[controller] name=%s starting informer", c.Name())
+	go c.informer.Run(parent.Done())
+
+	klog.V(1).Infof("[controller] name=%s waiting for informer cache to sync", c.Name())
+	if ok := cache.WaitForCacheSync(parent.Done(), c.informer.HasSynced); !ok {
+		errorCh <- fmt.Errorf("controller=%s failed to wait for caches to sync", c.Name())
+		return
+	}
+
+	for i := 0; i < c.workers; i++ {
+		go c.work(parent)
+	}
+
+	klog.V(1).Infof("[controller] name=%s started %d worker(s)", c.Name(), c.workers)
+	errorCh <- nil
+	klog.V(1).Infof("[controller] name=%s waiting ", c.Name())
+
+	// Not waiting for any child to finish, waiting for the parent to signal done.
+	<-parent.Done()
+
+	klog.V(1).Infof("[controller] name=%s shutting down queue", c.Name())
+}
+
+func (c *runOnceDurationOverrideController) Done() <-chan struct{} {
+	return c.done
+}
+
+// work represents a worker function that pulls item(s) off of the underlying
+// work queue and invokes the reconciler function associated with the controller.
+func (c *runOnceDurationOverrideController) work(shutdown context.Context) {
+	klog.V(1).Infof("[controller] name=%s starting to process work item(s)", c.Name())
+
+	for c.processNextWorkItem(shutdown) {
+	}
+
+	klog.V(1).Infof("[controller] name=%s shutting down", c.Name())
+}
+
+func (c *runOnceDurationOverrideController) processNextWorkItem(shutdownCtx context.Context) bool {
+	if shutdownCtx == nil {
+		return false
+	}
+
+	obj, shutdown := c.queue.Get()
+
+	if shutdown {
+		return false
+	}
+
+	// We call Done here so the workqueue knows we have finished
+	// processing this item. We also must remember to call Forget if we
+	// do not want this work item being re-queued. For example, we do
+	// not call Forget if a transient error occurs, instead the item is
+	// put back on the workqueue and attempted again after a back-off
+	// period.
+	defer c.queue.Done(obj)
+
+	request, ok := obj.(controllerreconciler.Request)
+	if !ok {
+		// As the item in the workqueue is actually invalid, we call
+		// Forget here else we'd go into a loop of attempting to
+		// process a work item that is invalid.
+		c.queue.Forget(obj)
+
+		runtime.HandleError(fmt.Errorf("expected reconcile.Request in workqueue but got %#v", obj))
+		return true
+	}
+
+	// Run the syncHandler, passing it the namespace/name string of the
+	// Foo resource to be synced.
+	result, err := c.reconciler.Reconcile(shutdownCtx, request)
+	if err != nil {
+		// Put the item back on the workqueue to handle any transient errors.
+		c.queue.AddRateLimited(request)
+
+		runtime.HandleError(fmt.Errorf("error syncing '%s': %s, requeuing", request, err.Error()))
+		return true
+	}
+
+	if result.RequeueAfter > 0 {
+		// The result.RequeueAfter request will be lost, if it is returned
+		// along with a non-nil error. But this is intended as
+		// We need to drive to stable reconcile loops before queuing due
+		// to result.RequestAfter
+		c.queue.Forget(obj)
+		c.queue.AddAfter(request, result.RequeueAfter)
+
+		return true
+	}
+
+	if result.Requeue {
+		c.queue.AddRateLimited(request)
+		return true
+	}
+
+	// Finally, if no error occurs we Forget this item so it does not
+	// get queued again until another change happens.
+	c.queue.Forget(obj)
+	return true
 }
