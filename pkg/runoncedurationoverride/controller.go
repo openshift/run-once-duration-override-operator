@@ -126,26 +126,6 @@ type runOnceDurationOverrideController struct {
 	done       chan struct{}
 }
 
-func (c *runOnceDurationOverrideController) Name() string {
-	return ControllerName
-}
-
-func (c *runOnceDurationOverrideController) WorkerCount() int {
-	return c.workers
-}
-
-func (c *runOnceDurationOverrideController) Queue() workqueue.RateLimitingInterface {
-	return c.queue
-}
-
-func (c *runOnceDurationOverrideController) Informer() cache.SharedIndexInformer {
-	return c.informer
-}
-
-func (c *runOnceDurationOverrideController) Reconciler() controllerreconciler.Reconciler {
-	return c.reconciler
-}
-
 func (c *runOnceDurationOverrideController) Run(parent context.Context, errorCh chan<- error) {
 	defer func() {
 		close(c.done)
@@ -159,12 +139,12 @@ func (c *runOnceDurationOverrideController) Run(parent context.Context, errorCh 
 	defer runtime.HandleCrash()
 	defer c.queue.ShutDown()
 
-	klog.V(1).Infof("[controller] name=%s starting informer", c.Name())
+	klog.V(1).Infof("[controller] name=%s starting informer", ControllerName)
 	go c.informer.Run(parent.Done())
 
-	klog.V(1).Infof("[controller] name=%s waiting for informer cache to sync", c.Name())
+	klog.V(1).Infof("[controller] name=%s waiting for informer cache to sync", ControllerName)
 	if ok := cache.WaitForCacheSync(parent.Done(), c.informer.HasSynced); !ok {
-		errorCh <- fmt.Errorf("controller=%s failed to wait for caches to sync", c.Name())
+		errorCh <- fmt.Errorf("controller=%s failed to wait for caches to sync", ControllerName)
 		return
 	}
 
@@ -172,14 +152,14 @@ func (c *runOnceDurationOverrideController) Run(parent context.Context, errorCh 
 		go c.work(parent)
 	}
 
-	klog.V(1).Infof("[controller] name=%s started %d worker(s)", c.Name(), c.workers)
+	klog.V(1).Infof("[controller] name=%s started %d worker(s)", ControllerName, c.workers)
 	errorCh <- nil
-	klog.V(1).Infof("[controller] name=%s waiting ", c.Name())
+	klog.V(1).Infof("[controller] name=%s waiting ", ControllerName)
 
 	// Not waiting for any child to finish, waiting for the parent to signal done.
 	<-parent.Done()
 
-	klog.V(1).Infof("[controller] name=%s shutting down queue", c.Name())
+	klog.V(1).Infof("[controller] name=%s shutting down queue", ControllerName)
 }
 
 func (c *runOnceDurationOverrideController) Done() <-chan struct{} {
@@ -189,12 +169,12 @@ func (c *runOnceDurationOverrideController) Done() <-chan struct{} {
 // work represents a worker function that pulls item(s) off of the underlying
 // work queue and invokes the reconciler function associated with the controller.
 func (c *runOnceDurationOverrideController) work(shutdown context.Context) {
-	klog.V(1).Infof("[controller] name=%s starting to process work item(s)", c.Name())
+	klog.V(1).Infof("[controller] name=%s starting to process work item(s)", ControllerName)
 
 	for c.processNextWorkItem(shutdown) {
 	}
 
-	klog.V(1).Infof("[controller] name=%s shutting down", c.Name())
+	klog.V(1).Infof("[controller] name=%s shutting down", ControllerName)
 }
 
 func (c *runOnceDurationOverrideController) processNextWorkItem(shutdownCtx context.Context) bool {
