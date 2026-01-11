@@ -10,57 +10,46 @@ import (
 
 // newEventHandler returns a cache.ResourceEventHandler appropriate for
 // reconciliation of RunOnceDurationOverride object(s).
-func newEventHandler(queue workqueue.RateLimitingInterface) eventHandler {
-	return eventHandler{
-		queue: queue,
-	}
-}
+func newEventHandler(queue workqueue.RateLimitingInterface) cache.ResourceEventHandler {
+	enqueue := func(key string) {
+		namespace, name, err := cache.SplitMetaNamespaceKey(key)
+		if err != nil {
+			return
+		}
 
-var _ cache.ResourceEventHandler = eventHandler{}
+		request := reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Namespace: namespace,
+				Name:      name,
+			},
+		}
 
-type eventHandler struct {
-	// The underlying work queue where the keys are added for reconciliation.
-	queue workqueue.RateLimitingInterface
-}
-
-func (e eventHandler) OnAdd(obj interface{}, isInInitialList bool) {
-	key, err := cache.MetaNamespaceKeyFunc(obj)
-
-	if err != nil {
-		klog.Errorf("OnAdd: could not extract key, type=%T", obj)
-		return
+		queue.Add(request)
 	}
 
-	e.add(key, e.queue)
-}
-
-// OnUpdate creates UpdateEvent and calls Update on eventHandler
-func (e eventHandler) OnUpdate(oldObj, newObj interface{}) {
-	// We don't distinguish between an add and update.
-	e.OnAdd(newObj, false)
-}
-
-func (e eventHandler) OnDelete(obj interface{}) {
-	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-	if err != nil {
-		return
+	add := func(obj interface{}) {
+		key, err := cache.MetaNamespaceKeyFunc(obj)
+		if err != nil {
+			klog.Errorf("could not extract key, type=%T", obj)
+			return
+		}
+		enqueue(key)
 	}
 
-	e.add(key, e.queue)
-}
-
-func (e eventHandler) add(key string, queue workqueue.RateLimitingInterface) {
-	namespace, name, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		return
-	}
-
-	request := reconcile.Request{
-		NamespacedName: types.NamespacedName{
-			Namespace: namespace,
-			Name:      name,
+	return cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			add(obj)
+		},
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			// We don't distinguish between an add and update.
+			add(newObj)
+		},
+		DeleteFunc: func(obj interface{}) {
+			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+			if err != nil {
+				return
+			}
+			enqueue(key)
 		},
 	}
-
-	queue.Add(request)
 }

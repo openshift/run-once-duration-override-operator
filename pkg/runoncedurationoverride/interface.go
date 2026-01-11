@@ -20,7 +20,7 @@ type Interface interface {
 	Queue() workqueue.RateLimitingInterface
 
 	// Informer returns the underlying Informer object associated with the controller.
-	Informer() cache.Controller
+	Informer() cache.SharedIndexInformer
 
 	// Reconciler returns the reconciler function that reconciles a request from a work queue.
 	Reconciler() reconcile.Reconciler

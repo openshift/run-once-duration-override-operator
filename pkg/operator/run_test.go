@@ -257,13 +257,13 @@ func setupTestOperator(t *testing.T) *testOperatorSetup {
 	recorder := events.NewLoggingEventRecorder(operatorName, clock.RealClock{})
 
 	c, err := runoncedurationoverride.New(&runoncedurationoverride.Options{
-		ResyncPeriod:    DefaultResyncPeriodPrimaryResource,
-		Workers:         DefaultWorkerCount,
-		RuntimeContext:  runtimeContext,
-		Client:          mockClient,
-		InformerFactory: kubeInformerFactory,
-		ShutdownContext: ctx,
-		Recorder:        recorder,
+		ResyncPeriod:            DefaultResyncPeriodPrimaryResource,
+		Workers:                 DefaultWorkerCount,
+		RuntimeContext:          runtimeContext,
+		Client:                  mockClient,
+		InformerFactory:         kubeInformerFactory,
+		OperatorInformerFactory: operatorInformerFactory,
+		Recorder:                recorder,
 	})
 	if err != nil {
 		t.Fatalf("failed to create controller: %v", err)
