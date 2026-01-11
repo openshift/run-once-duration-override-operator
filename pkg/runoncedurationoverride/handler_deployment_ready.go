@@ -11,9 +11,9 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
 )
 
-func NewDeploymentReadyHandler(o *HandlerOptions) *deploymentReadyHandler {
+func NewDeploymentReadyHandler(deploy deploy.Interface) *deploymentReadyHandler {
 	return &deploymentReadyHandler{
-		deploy: o.Deploy,
+		deploy: deploy,
 	}
 }
 

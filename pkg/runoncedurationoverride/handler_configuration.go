@@ -7,6 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
+	listerscorev1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/klog/v2"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/yaml"
@@ -19,20 +20,20 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
 )
 
-func NewConfigurationHandler(o *HandlerOptions) *configurationHandler {
+func NewConfigurationHandler(client kubernetes.Interface, recorder events.Recorder, configMapLister listerscorev1.ConfigMapLister, asset *asset.Asset) *configurationHandler {
 	return &configurationHandler{
-		client:   o.Client.Kubernetes,
-		recorder: o.Recorder,
-		lister:   o.SecondaryLister,
-		asset:    o.Asset,
+		client:          client,
+		recorder:        recorder,
+		configMapLister: configMapLister,
+		asset:           asset,
 	}
 }
 
 type configurationHandler struct {
-	client   kubernetes.Interface
-	recorder events.Recorder
-	asset    *asset.Asset
-	lister   *SecondaryLister
+	client          kubernetes.Interface
+	recorder        events.Recorder
+	asset           *asset.Asset
+	configMapLister listerscorev1.ConfigMapLister
 }
 
 func (c *configurationHandler) Handle(context *ReconcileRequestContext, original *appsv1.RunOnceDurationOverride) (current *appsv1.RunOnceDurationOverride, result controllerreconciler.Result, handleErr error) {
@@ -45,7 +46,7 @@ func (c *configurationHandler) Handle(context *ReconcileRequestContext, original
 	}
 
 	name := c.asset.Configuration().Name()
-	object, err := c.lister.CoreV1ConfigMapLister().ConfigMaps(context.WebhookNamespace()).Get(name)
+	object, err := c.configMapLister.ConfigMaps(context.WebhookNamespace()).Get(name)
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
 			handleErr = condition.NewInstallReadinessError(appsv1.InternalError, err)
