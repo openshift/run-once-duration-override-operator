@@ -108,14 +108,8 @@ func New(options *Options) (c Interface, err error) {
 		lister:     lister,
 	}
 
-	e := &enqueuer{
-		queue:              queue,
-		lister:             lister,
-		ownerAnnotationKey: operandAsset.Values().OwnerAnnotationKey,
-	}
-
 	// setup watches for secondary resources
-	handler := newResourceEventHandler(e)
+	handler := newResourceEventHandler(queue, lister, operandAsset.Values().OwnerAnnotationKey)
 
 	informers := []cache.SharedIndexInformer{
 		deployment.Informer(),
