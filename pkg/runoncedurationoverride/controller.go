@@ -42,7 +42,25 @@ func New(options *Options) (c Interface, err error) {
 	}
 
 	// create lister(s) for secondary resources
-	secondaryLister, secondaryStarter := NewSecondaryWatch(options.InformerFactory)
+	deployment := options.InformerFactory.Apps().V1().Deployments()
+	daemonset := options.InformerFactory.Apps().V1().DaemonSets()
+	pod := options.InformerFactory.Core().V1().Pods()
+	configmap := options.InformerFactory.Core().V1().ConfigMaps()
+	service := options.InformerFactory.Core().V1().Services()
+	secret := options.InformerFactory.Core().V1().Secrets()
+	serviceaccount := options.InformerFactory.Core().V1().ServiceAccounts()
+	webhook := options.InformerFactory.Admissionregistration().V1().MutatingWebhookConfigurations()
+
+	secondaryLister := &SecondaryLister{
+		deployment:     deployment.Lister(),
+		daemonset:      daemonset.Lister(),
+		pod:            pod.Lister(),
+		configmap:      configmap.Lister(),
+		service:        service.Lister(),
+		secret:         secret.Lister(),
+		serviceaccount: serviceaccount.Lister(),
+		webhook:        webhook.Lister(),
+	}
 
 	// Create a new RunOnceDurationOverrides watcher
 	client := options.Client.Operator
@@ -97,7 +115,38 @@ func New(options *Options) (c Interface, err error) {
 	}
 
 	// setup watches for secondary resources
-	if err = secondaryStarter.Start(e); err != nil {
+	handler := newResourceEventHandler(e)
+
+	_, err = deployment.Informer().AddEventHandler(handler)
+	if err != nil {
+		return
+	}
+	_, err = daemonset.Informer().AddEventHandler(handler)
+	if err != nil {
+		return
+	}
+	_, err = pod.Informer().AddEventHandler(handler)
+	if err != nil {
+		return
+	}
+	_, err = configmap.Informer().AddEventHandler(handler)
+	if err != nil {
+		return
+	}
+	_, err = service.Informer().AddEventHandler(handler)
+	if err != nil {
+		return
+	}
+	_, err = secret.Informer().AddEventHandler(handler)
+	if err != nil {
+		return
+	}
+	_, err = serviceaccount.Informer().AddEventHandler(handler)
+	if err != nil {
+		return
+	}
+	_, err = webhook.Informer().AddEventHandler(handler)
+	if err != nil {
 		return
 	}
 
