@@ -24,6 +24,7 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
 	operatorinformers "github.com/openshift/run-once-duration-override-operator/pkg/generated/informers/externalversions"
 	runoncedurationoverridev1listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
+	"github.com/openshift/run-once-duration-override-operator/pkg/operator/operatorclient"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 )
@@ -206,7 +207,7 @@ func (c *runOnceDurationOverrideController) processNextWorkItem(shutdownCtx cont
 
 	// Run the syncHandler, passing it the namespace/name string of the
 	// Foo resource to be synced.
-	result, err := c.Reconcile(shutdownCtx, request)
+	result, err := c.Reconcile(shutdownCtx)
 	if err != nil {
 		// Put the item back on the workqueue to handle any transient errors.
 		c.queue.AddRateLimited(request)
@@ -237,26 +238,20 @@ func (c *runOnceDurationOverrideController) processNextWorkItem(shutdownCtx cont
 	return true
 }
 
-func (c *runOnceDurationOverrideController) Reconcile(ctx context.Context, request controllerreconciler.Request) (result controllerreconciler.Result, err error) {
-	klog.V(4).Infof("key=%s new request for reconcile", request.Name)
+func (c *runOnceDurationOverrideController) Reconcile(ctx context.Context) (result controllerreconciler.Result, err error) {
+	klog.V(4).Infof("key=%s new request for reconcile", operatorclient.OperatorConfigName)
 
 	result = controllerreconciler.Result{}
 
-	// The operand is a singleton, so we are only interested in the CR specified in cluster
-	if request.Name != c.operandContext.ResourceName() {
-		klog.V(2).Infof("key=%s skipping reconcile", request.Name)
-		return
-	}
-
-	original, getErr := c.lister.Get(request.Name)
+	original, getErr := c.lister.Get(operatorclient.OperatorConfigName)
 	if getErr != nil {
 		if k8serrors.IsNotFound(getErr) {
-			klog.Errorf("[reconciler] key=%s object has been deleted - %s", request.Name, getErr.Error())
+			klog.Errorf("[reconciler] key=%s object has been deleted - %s", operatorclient.OperatorConfigName, getErr.Error())
 			return
 		}
 
 		// Otherwise, we will requeue.
-		klog.Errorf("[reconciler] key=%s unexpected error - %s", request.Name, getErr.Error())
+		klog.Errorf("[reconciler] key=%s unexpected error - %s", operatorclient.OperatorConfigName, getErr.Error())
 		err = getErr
 		return
 	}
@@ -281,7 +276,7 @@ func (c *runOnceDurationOverrideController) Reconcile(ctx context.Context, reque
 
 	updateErr := c.updateStatus(original, current)
 	if updateErr != nil {
-		klog.Errorf("[reconciler] key=%s failed to update status - %s", request.Name, updateErr.Error())
+		klog.Errorf("[reconciler] key=%s failed to update status - %s", operatorclient.OperatorConfigName, updateErr.Error())
 
 		if err != nil {
 			err = fmt.Errorf("[reconciler] reconciliation error - %s -- update status error - %s", err.Error(), updateErr.Error())
