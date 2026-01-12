@@ -60,12 +60,6 @@ func New(
 	// We need a queue
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 
-	// Add event handler to the informer
-	_, err = operatorInformerFactory.RunOnceDurationOverride().V1().RunOnceDurationOverrides().Informer().AddEventHandler(newEventHandler(queue))
-	if err != nil {
-		return
-	}
-
 	informers := []cache.SharedIndexInformer{
 		informerFactory.Apps().V1().Deployments().Informer(),
 		informerFactory.Apps().V1().DaemonSets().Informer(),
@@ -75,11 +69,12 @@ func New(
 		informerFactory.Core().V1().Secrets().Informer(),
 		informerFactory.Core().V1().ServiceAccounts().Informer(),
 		informerFactory.Admissionregistration().V1().MutatingWebhookConfigurations().Informer(),
+		operatorInformerFactory.RunOnceDurationOverride().V1().RunOnceDurationOverrides().Informer(),
 	}
 
 	for _, informer := range informers {
 		// setup watches for secondary resources
-		_, err = informer.AddEventHandler(newResourceEventHandler(queue))
+		_, err = informer.AddEventHandler(newEventHandler(queue))
 		if err != nil {
 			return
 		}
