@@ -3,12 +3,13 @@ package targetconfigcontroller
 import (
 	"fmt"
 
+	operatorv1 "github.com/openshift/api/operator/v1"
+	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	"k8s.io/klog/v2"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/deploy"
-	"github.com/openshift/run-once-duration-override-operator/pkg/operator/targetconfigcontroller/internal/condition"
 )
 
 func NewDeploymentReadyHandler(deploy deploy.Interface) *deploymentReadyHandler {
@@ -28,7 +29,10 @@ func (c *deploymentReadyHandler) Handle(context *ReconcileRequestContext, origin
 	if available {
 		klog.V(2).Infof("key=%s resource=%s deployment is ready", original.Name, c.deploy.Name())
 
-		condition.NewBuilderWithStatus(&current.Status).WithInstallReady()
+		v1helpers.SetOperatorCondition(&current.Status.Conditions, operatorv1.OperatorCondition{
+			Type:   appsv1.InstallReadinessFailure,
+			Status: operatorv1.ConditionFalse,
+		})
 		current.Status.Version = context.OperandVersion()
 		current.Status.Image = context.OperandImage()
 		return
@@ -40,6 +44,6 @@ func (c *deploymentReadyHandler) Handle(context *ReconcileRequestContext, origin
 		err = fmt.Errorf("name=%s waiting for deployment to complete", c.deploy.Name())
 	}
 
-	handleErr = condition.NewInstallReadinessError(appsv1.DeploymentNotReady, err)
+	handleErr = NewInstallReadinessError(appsv1.DeploymentNotReady, err)
 	return
 }

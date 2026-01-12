@@ -3,10 +3,9 @@ package targetconfigcontroller
 import (
 	"context"
 	"fmt"
-	"reflect"
 
+	operatorv1 "github.com/openshift/api/operator/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -15,14 +14,13 @@ import (
 
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	"github.com/openshift/run-once-duration-override-operator/pkg/deploy"
-	"github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
 	operatorinformers "github.com/openshift/run-once-duration-override-operator/pkg/generated/informers/externalversions"
 	runoncedurationoverridev1listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/operator/operatorclient"
-	"github.com/openshift/run-once-duration-override-operator/pkg/operator/targetconfigcontroller/internal/condition"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 )
 
@@ -39,7 +37,7 @@ var (
 )
 
 func NewTargetConfigController(
-	operatorClient versioned.Interface,
+	operatorClient *operatorclient.RunOnceDurationOverrideClient,
 	kubeClient kubernetes.Interface,
 	runtimeContext operatorruntime.OperandContext,
 	informerFactory informers.SharedInformerFactory,
@@ -59,7 +57,7 @@ func NewTargetConfigController(
 
 	c := &runOnceDurationOverrideController{
 		lister:         operatorInformerFactory.RunOnceDurationOverride().V1().RunOnceDurationOverrides().Lister(),
-		client:         operatorClient,
+		operatorClient: operatorClient,
 		operandContext: runtimeContext,
 		handlers: []Handler{
 			NewAvailabilityHandler(operandAsset, deployInterface),
@@ -90,7 +88,7 @@ func NewTargetConfigController(
 
 type runOnceDurationOverrideController struct {
 	lister         runoncedurationoverridev1listers.RunOnceDurationOverrideLister
-	client         versioned.Interface
+	operatorClient *operatorclient.RunOnceDurationOverrideClient
 	handlers       []Handler
 	operandContext operatorruntime.OperandContext
 }
@@ -120,11 +118,14 @@ func (c *runOnceDurationOverrideController) sync(ctx context.Context, syncCtx fa
 	var requeueRequested bool
 	for _, handler := range c.handlers {
 		var result controllerreconciler.Result
-		current, result, err = handler.Handle(reconcileContext, modified)
-		if err != nil {
-			condition.NewBuilderWithStatus(&current.Status).WithError(err)
+		var handlerErr error
+		current, result, handlerErr = handler.Handle(reconcileContext, modified)
+
+		if handlerErr != nil {
+			err = handlerErr
 			break
 		}
+
 		if result.Requeue || result.RequeueAfter > 0 {
 			requeueRequested = true
 			break
@@ -132,7 +133,43 @@ func (c *runOnceDurationOverrideController) sync(ctx context.Context, syncCtx fa
 		modified = current
 	}
 
-	updateErr := c.updateStatus(original, current)
+	// Capture the complete status with all custom fields that handlers have set
+	statusToApply := current.Status.DeepCopy()
+
+	// Add/update conditions based on reconciliation result
+	if err != nil {
+		reason := GetReason(err)
+		if reason == "" {
+			reason = "ReconciliationError"
+		}
+
+		v1helpers.SetOperatorCondition(&statusToApply.OperatorStatus.Conditions, operatorv1.OperatorCondition{
+			Type:    GetConditionType(err),
+			Status:  GetStatus(err),
+			Reason:  reason,
+			Message: err.Error(),
+		})
+	} else {
+		v1helpers.SetOperatorCondition(&statusToApply.OperatorStatus.Conditions, operatorv1.OperatorCondition{
+			Type:   runoncedurationoverridev1.InstallReadinessFailure,
+			Status: operatorv1.ConditionFalse,
+		})
+		v1helpers.SetOperatorCondition(&statusToApply.OperatorStatus.Conditions, operatorv1.OperatorCondition{
+			Type:   "Available",
+			Status: operatorv1.ConditionTrue,
+		})
+	}
+
+	// Build status update function that applies the complete status including custom fields
+	statusUpdateFuncs := []operatorclient.UpdateRunOnceDurationOverrideStatusFunc{
+		func(status *runoncedurationoverridev1.RunOnceDurationOverrideStatus) error {
+			*status = *statusToApply
+			return nil
+		},
+	}
+
+	// Update status using custom UpdateStatus which handles retries and conflicts
+	_, _, updateErr := operatorclient.UpdateStatus(ctx, c.operatorClient, statusUpdateFuncs...)
 	if updateErr != nil {
 		klog.Errorf("[reconciler] key=%s failed to update status - %s", operatorclient.OperatorConfigName, updateErr.Error())
 
@@ -152,16 +189,4 @@ func (c *runOnceDurationOverrideController) sync(ctx context.Context, syncCtx fa
 	}
 
 	return nil
-}
-
-// updateStatus updates the status of a RunOnceDurationOverride resource.
-// If the status inside of the desired object is equal to that of the observed then
-// the function does not make an update call.
-func (c *runOnceDurationOverrideController) updateStatus(observed, desired *runoncedurationoverridev1.RunOnceDurationOverride) error {
-	if reflect.DeepEqual(&observed.Status, &desired.Status) {
-		return nil
-	}
-
-	_, err := c.client.RunOnceDurationOverrideV1().RunOnceDurationOverrides().UpdateStatus(context.TODO(), desired, metav1.UpdateOptions{})
-	return err
 }

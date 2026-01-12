@@ -13,7 +13,6 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/apis/reference"
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
-	"github.com/openshift/run-once-duration-override-operator/pkg/operator/targetconfigcontroller/internal/condition"
 )
 
 func NewServiceCertSecretHandler(client kubernetes.Interface, secretLister listerscorev1.SecretLister, asset *asset.Asset) *serviceCertSecretHandler {
@@ -38,7 +37,7 @@ func (c *serviceCertSecretHandler) Handle(ctx *ReconcileRequestContext, original
 
 	object, err := c.secretLister.Secrets(ctx.WebhookNamespace()).Get(secretName)
 	if err != nil {
-		handleErr = condition.NewInstallReadinessError(appsv1.CertNotAvailable, err)
+		handleErr = NewInstallReadinessError(appsv1.CertNotAvailable, err)
 
 		if k8serrors.IsNotFound(err) {
 			// We are still waiting for the server serving Secret object object to be
@@ -77,7 +76,7 @@ func (c *serviceCertSecretHandler) Handle(ctx *ReconcileRequestContext, original
 
 	newRef, err := reference.GetReference(object)
 	if err != nil {
-		handleErr = condition.NewInstallReadinessError(appsv1.CannotSetReference, err)
+		handleErr = NewInstallReadinessError(appsv1.CannotSetReference, err)
 		return
 	}
 

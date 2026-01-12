@@ -2,7 +2,6 @@ package targetconfigcontroller
 
 import (
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
-	"github.com/openshift/run-once-duration-override-operator/pkg/operator/targetconfigcontroller/internal/condition"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -18,7 +17,7 @@ func (c *validationHandler) Handle(context *ReconcileRequestContext, original *a
 
 	validationErr := original.Spec.RunOnceDurationOverrideConfig.Spec.Validate()
 	if validationErr != nil {
-		handleErr = condition.NewInstallReadinessError(appsv1.InvalidParameters, validationErr)
+		handleErr = NewInstallReadinessError(appsv1.InvalidParameters, validationErr)
 	}
 
 	return

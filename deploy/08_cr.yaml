@@ -3,6 +3,7 @@ kind: RunOnceDurationOverride
 metadata:
   name: cluster
 spec:
+  managementState: Managed
   runOnceDurationOverride:
     spec:
       activeDeadlineSeconds: 3600

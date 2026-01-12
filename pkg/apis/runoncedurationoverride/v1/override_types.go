@@ -11,14 +11,8 @@ const (
 	RunOnceDurationOverrideKind = "RunOnceDurationOverride"
 )
 
-type RunOnceDurationOverrideConditionType string
-
 const (
-	InstallReadinessFailure RunOnceDurationOverrideConditionType = "InstallReadinessFailure"
-	Available               RunOnceDurationOverrideConditionType = "Available"
-)
-
-const (
+	InstallReadinessFailure      = "InstallReadinessFailure"
 	InvalidParameters            = "InvalidParameters"
 	ConfigurationCheckFailed     = "ConfigurationCheckFailed"
 	CertNotAvailable             = "CertNotAvailable"
@@ -28,26 +22,6 @@ const (
 	AdmissionWebhookNotAvailable = "AdmissionWebhookNotAvailable"
 	DeploymentNotReady           = "DeploymentNotReady"
 )
-
-type RunOnceDurationOverrideCondition struct {
-	// Type is the type of RunOnceDurationOverride condition.
-	Type RunOnceDurationOverrideConditionType `json:"type" description:"type of RunOnceDurationOverride condition"`
-
-	// Status is the status of the condition, one of True, False, Unknown.
-	Status corev1.ConditionStatus `json:"status" description:"status of the condition, one of True, False, Unknown"`
-
-	// Reason is a one-word CamelCase reason for the condition's last transition.
-	// +optional
-	Reason string `json:"reason,omitempty" description:"one-word CamelCase reason for the condition's last transition"`
-
-	// Message is a human-readable message indicating details about last transition.
-	// +optional
-	Message string `json:"message,omitempty" description:"human-readable message indicating details about last transition"`
-
-	// LastTransitionTime is the last time the condition transit from one status to another
-	// +optional
-	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty" description:"last time the condition transit from one status to another" hash:"ignore"`
-}
 
 // +genclient
 // +genclient:nonNamespaced
@@ -68,8 +42,9 @@ type RunOnceDurationOverride struct {
 	Status RunOnceDurationOverrideStatus `json:"status,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type RunOnceDurationOverrideSpec struct {
+	operatorsv1.OperatorSpec `json:",inline"`
+
 	RunOnceDurationOverrideConfig RunOnceDurationOverrideConfig `json:"runOnceDurationOverride"`
 }
 
@@ -88,20 +63,16 @@ type RunOnceDurationOverrideConfigSpec struct {
 }
 
 type RunOnceDurationOverrideStatus struct {
+	operatorsv1.OperatorStatus `json:",inline"`
+
 	// Resources is a set of resources associated with the operand.
-	Resources  RunOnceDurationOverrideResources    `json:"resources,omitempty"`
-	Hash       RunOnceDurationOverrideResourceHash `json:"hash,omitempty"`
-	Conditions []RunOnceDurationOverrideCondition  `json:"conditions,omitempty" hash:"set"`
-	Version    string                              `json:"version,omitempty"`
-	Image      string                              `json:"image,omitempty"`
+	Resources RunOnceDurationOverrideResources    `json:"resources,omitempty"`
+	Hash      RunOnceDurationOverrideResourceHash `json:"hash,omitempty"`
+	Image     string                              `json:"image,omitempty"`
 
 	// CertsRotateAt is the time the serving certs will be rotated at.
 	// +optional
 	CertsRotateAt metav1.Time `json:"certsRotateAt,omitempty"`
-
-	// Generations tracks the resource generations for managed resources.
-	// +optional
-	Generations []operatorsv1.GenerationStatus `json:"generations,omitempty"`
 }
 
 type RunOnceDurationOverrideResourceHash struct {

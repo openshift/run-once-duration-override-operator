@@ -10,7 +10,6 @@ import (
 
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/cert"
-	"github.com/openshift/run-once-duration-override-operator/pkg/operator/targetconfigcontroller/internal/condition"
 )
 
 func NewCertReadyHandler(client kubernetes.Interface, secretLister listerscorev1.SecretLister, configMapLister listerscorev1.ConfigMapLister) *certReadyHandler {
@@ -34,13 +33,13 @@ func (c *certReadyHandler) Handle(context *ReconcileRequestContext, original *ap
 	if context.GetBundle() == nil {
 		secret, err := c.secretLister.Secrets(context.WebhookNamespace()).Get(resources.ServiceCertSecretRef.Name)
 		if err != nil {
-			handleErr = condition.NewInstallReadinessError(appsv1.CertNotAvailable, err)
+			handleErr = NewInstallReadinessError(appsv1.CertNotAvailable, err)
 			return
 		}
 
 		configmap, err := c.configMapLister.ConfigMaps(context.WebhookNamespace()).Get(resources.ServiceCAConfigMapRef.Name)
 		if err != nil {
-			handleErr = condition.NewInstallReadinessError(appsv1.CertNotAvailable, err)
+			handleErr = NewInstallReadinessError(appsv1.CertNotAvailable, err)
 			return
 		}
 
@@ -54,7 +53,7 @@ func (c *certReadyHandler) Handle(context *ReconcileRequestContext, original *ap
 		}
 
 		if err := bundle.Validate(); err != nil {
-			handleErr = condition.NewInstallReadinessError(appsv1.CertNotAvailable, fmt.Errorf("certs not populated - %s", err.Error()))
+			handleErr = NewInstallReadinessError(appsv1.CertNotAvailable, fmt.Errorf("certs not populated - %s", err.Error()))
 			return
 		}
 

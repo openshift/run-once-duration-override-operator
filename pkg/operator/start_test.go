@@ -6,10 +6,7 @@ import (
 	"testing"
 	"time"
 
-	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -17,17 +14,36 @@ import (
 	"k8s.io/client-go/informers"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	kubetesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/clock"
 
 	"github.com/openshift/library-go/pkg/operator/events"
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	fakeclientset "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned/fake"
 	operatorinformers "github.com/openshift/run-once-duration-override-operator/pkg/generated/informers/externalversions"
+	"github.com/openshift/run-once-duration-override-operator/pkg/operator/operatorclient"
 	"github.com/openshift/run-once-duration-override-operator/pkg/operator/targetconfigcontroller"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 )
 
 var daemonSetGVR = schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "daemonsets"}
+
+// fakeSyncContext implements factory.SyncContext for testing
+type fakeSyncContext struct {
+	recorder events.Recorder
+}
+
+func (f *fakeSyncContext) Queue() workqueue.RateLimitingInterface {
+	return nil
+}
+
+func (f *fakeSyncContext) QueueKey() string {
+	return operatorclient.OperatorConfigName
+}
+
+func (f *fakeSyncContext) Recorder() events.Recorder {
+	return f.recorder
+}
 
 type testOperatorSetup struct {
 	kubeClient              *kubefake.Clientset
@@ -46,19 +62,6 @@ func setupTestOperator(t *testing.T) *testOperatorSetup {
 	namespace := "test-namespace"
 	operatorName := "test-operator"
 	crName := DefaultCR
-
-	rodoo := &runoncedurationoverridev1.RunOnceDurationOverride{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: crName,
-		},
-		Spec: runoncedurationoverridev1.RunOnceDurationOverrideSpec{
-			RunOnceDurationOverrideConfig: runoncedurationoverridev1.RunOnceDurationOverrideConfig{
-				Spec: runoncedurationoverridev1.RunOnceDurationOverrideConfigSpec{
-					ActiveDeadlineSeconds: 3600,
-				},
-			},
-		},
-	}
 
 	fakeKubeClient := kubefake.NewSimpleClientset()
 
@@ -102,66 +105,59 @@ func setupTestOperator(t *testing.T) *testOperatorSetup {
 		return true, ds, err
 	})
 
-	fakeOperatorClient := fakeclientset.NewSimpleClientset(rodoo)
-
-	expectedNames := &expectedResourceNames{
-		deployment:                        operatorName,
-		daemonSet:                         operatorName,
-		service:                           operatorName,
-		serviceAccount:                    operatorName,
-		secret:                            "server-serving-cert-" + operatorName,
-		configMapConfiguration:            operatorName + "-configuration",
-		configMapCABundle:                 operatorName + "-service-serving",
-		mutatingWebhookConfiguration:      "runoncedurationoverrides.admission.runoncedurationoverride.openshift.io",
-		apiService:                        "v1.admission.runoncedurationoverride.openshift.io",
-		roleKubeSystem:                    "extension-apiserver-authentication-reader",
-		roleBindingKubeSystem:             "extension-server-authentication-reader-" + operatorName,
-		roleSCCHostNetwork:                operatorName + "-scc-hostnetwork-use",
-		roleBindingSCCHostNetwork:         operatorName + "-scc-hostnetwork-use",
-		clusterRoleRequester:              "system:" + operatorName + "-requester",
-		clusterRoleDefault:                "default-aggregated-apiserver-" + operatorName,
-		clusterRoleAnonymousAccess:        operatorName + "-anonymous-access",
-		clusterRoleBindingDefault:         "default-aggregated-apiserver-" + operatorName,
-		clusterRoleBindingAuthDelegator:   "auth-delegator-" + operatorName,
-		clusterRoleBindingAnonymousAccess: operatorName + "-anonymous-access",
-	}
-
-	scheme := runtime.NewScheme()
-	_ = runoncedurationoverridev1.AddToScheme(scheme)
-	_ = appsv1.AddToScheme(scheme)
-	_ = corev1.AddToScheme(scheme)
-	_ = admissionregistrationv1.AddToScheme(scheme)
-	_ = rbacv1.AddToScheme(scheme)
-
-	kubeInformerFactory := informers.NewSharedInformerFactoryWithOptions(
-		fakeKubeClient,
-		10*time.Minute,
-		informers.WithNamespace(namespace),
-	)
-
-	operatorInformerFactory := operatorinformers.NewSharedInformerFactory(
-		fakeOperatorClient,
-		DefaultResyncPeriodPrimaryResource,
-	)
+	fakeOperatorClient := fakeclientset.NewSimpleClientset(&runoncedurationoverridev1.RunOnceDurationOverride{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: crName,
+		},
+		Spec: runoncedurationoverridev1.RunOnceDurationOverrideSpec{
+			RunOnceDurationOverrideConfig: runoncedurationoverridev1.RunOnceDurationOverrideConfig{
+				Spec: runoncedurationoverridev1.RunOnceDurationOverrideConfigSpec{
+					ActiveDeadlineSeconds: 3600,
+				},
+			},
+		},
+	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 
-	runtimeContext := operatorruntime.NewOperandContext(operatorName, namespace, crName, "test-image:latest", "v1.0.0")
-
-	// create recorder for tests
-	recorder := events.NewLoggingEventRecorder(operatorName, clock.RealClock{})
-
 	return &testOperatorSetup{
-		kubeClient:              fakeKubeClient,
-		operatorClient:          fakeOperatorClient,
-		expectedNames:           expectedNames,
-		ctx:                     ctx,
-		cancel:                  cancel,
-		namespace:               namespace,
-		kubeInformerFactory:     kubeInformerFactory,
-		operatorInformerFactory: operatorInformerFactory,
-		runtimeContext:          runtimeContext,
-		recorder:                recorder,
+		kubeClient:     fakeKubeClient,
+		operatorClient: fakeOperatorClient,
+		expectedNames: &expectedResourceNames{
+			deployment:                        operatorName,
+			daemonSet:                         operatorName,
+			service:                           operatorName,
+			serviceAccount:                    operatorName,
+			secret:                            "server-serving-cert-" + operatorName,
+			configMapConfiguration:            operatorName + "-configuration",
+			configMapCABundle:                 operatorName + "-service-serving",
+			mutatingWebhookConfiguration:      "runoncedurationoverrides.admission.runoncedurationoverride.openshift.io",
+			apiService:                        "v1.admission.runoncedurationoverride.openshift.io",
+			roleKubeSystem:                    "extension-apiserver-authentication-reader",
+			roleBindingKubeSystem:             "extension-server-authentication-reader-" + operatorName,
+			roleSCCHostNetwork:                operatorName + "-scc-hostnetwork-use",
+			roleBindingSCCHostNetwork:         operatorName + "-scc-hostnetwork-use",
+			clusterRoleRequester:              "system:" + operatorName + "-requester",
+			clusterRoleDefault:                "default-aggregated-apiserver-" + operatorName,
+			clusterRoleAnonymousAccess:        operatorName + "-anonymous-access",
+			clusterRoleBindingDefault:         "default-aggregated-apiserver-" + operatorName,
+			clusterRoleBindingAuthDelegator:   "auth-delegator-" + operatorName,
+			clusterRoleBindingAnonymousAccess: operatorName + "-anonymous-access",
+		},
+		ctx:       ctx,
+		cancel:    cancel,
+		namespace: namespace,
+		kubeInformerFactory: informers.NewSharedInformerFactoryWithOptions(
+			fakeKubeClient,
+			10*time.Minute,
+			informers.WithNamespace(namespace),
+		),
+		operatorInformerFactory: operatorinformers.NewSharedInformerFactory(
+			fakeOperatorClient,
+			DefaultResyncPeriodPrimaryResource,
+		),
+		runtimeContext: operatorruntime.NewOperandContext(operatorName, namespace, crName, "test-image:latest", "v1.0.0"),
+		recorder:       events.NewLoggingEventRecorder(operatorName, clock.RealClock{}),
 	}
 }
 
@@ -182,8 +178,13 @@ func TestOperatorReconciliation(t *testing.T) {
 	setup := setupTestOperator(t)
 	defer setup.cancel()
 
-	c := targetconfigcontroller.NewTargetConfigController(
-		setup.operatorClient,
+	// Create controller first - this registers informers via factory.New().WithFilteredEventsInformers
+	controller := targetconfigcontroller.NewTargetConfigController(
+		&operatorclient.RunOnceDurationOverrideClient{
+			Ctx:                             setup.ctx,
+			RunOnceDurationOverrideInformer: setup.operatorInformerFactory.RunOnceDurationOverride().V1().RunOnceDurationOverrides(),
+			OperatorClient:                  setup.operatorClient.RunOnceDurationOverrideV1(),
+		},
 		setup.kubeClient,
 		setup.runtimeContext,
 		setup.kubeInformerFactory,
@@ -191,22 +192,28 @@ func TestOperatorReconciliation(t *testing.T) {
 		setup.recorder,
 	)
 
+	// Start informers and wait for caches to sync
 	setup.kubeInformerFactory.Start(setup.ctx.Done())
 	setup.operatorInformerFactory.Start(setup.ctx.Done())
+	setup.kubeInformerFactory.WaitForCacheSync(setup.ctx.Done())
+	setup.operatorInformerFactory.WaitForCacheSync(setup.ctx.Done())
 
 	verifyResources(t, setup.ctx, setup.kubeClient, setup.namespace, setup.expectedNames, true)
 
-	go c.Run(setup.ctx, DefaultWorkerCount)
+	for i := 0; i < 2; i++ {
+		if err := controller.Sync(setup.ctx, &fakeSyncContext{recorder: setup.recorder}); err != nil {
+			t.Logf("Sync %d returned error: %v", i+1, err)
+		} else {
+			t.Logf("Sync %d succeeded", i+1)
+		}
 
-	time.Sleep(1 * time.Second)
+		// Give watch events time to propagate to informers
+		time.Sleep(100 * time.Millisecond)
+	}
 
 	verifyResources(t, setup.ctx, setup.kubeClient, setup.namespace, setup.expectedNames, false)
 
-	setup.cancel()
-
-	// Give the controller time to stop gracefully
-	time.Sleep(500 * time.Millisecond)
-	t.Log("Controller stopped successfully")
+	t.Log("Controller sync sequence completed")
 }
 
 type expectedResourceNames struct {

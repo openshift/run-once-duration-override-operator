@@ -17,7 +17,6 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/apis/reference"
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
-	"github.com/openshift/run-once-duration-override-operator/pkg/operator/targetconfigcontroller/internal/condition"
 )
 
 func NewConfigurationHandler(client kubernetes.Interface, recorder events.Recorder, configMapLister listerscorev1.ConfigMapLister, asset *asset.Asset) *configurationHandler {
@@ -41,7 +40,7 @@ func (c *configurationHandler) Handle(context *ReconcileRequestContext, original
 
 	desired, err := c.NewConfiguration(context, original)
 	if err != nil {
-		handleErr = condition.NewInstallReadinessError(appsv1.ConfigurationCheckFailed, err)
+		handleErr = NewInstallReadinessError(appsv1.ConfigurationCheckFailed, err)
 		return
 	}
 
@@ -49,13 +48,13 @@ func (c *configurationHandler) Handle(context *ReconcileRequestContext, original
 	object, err := c.configMapLister.ConfigMaps(context.WebhookNamespace()).Get(name)
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
-			handleErr = condition.NewInstallReadinessError(appsv1.InternalError, err)
+			handleErr = NewInstallReadinessError(appsv1.InternalError, err)
 			return
 		}
 
 		cm, _, err := resourceapply.ApplyConfigMap(gocontext.TODO(), c.client.CoreV1(), c.recorder, desired)
 		if err != nil {
-			handleErr = condition.NewInstallReadinessError(appsv1.InternalError, err)
+			handleErr = NewInstallReadinessError(appsv1.InternalError, err)
 			return
 		}
 
@@ -79,7 +78,7 @@ func (c *configurationHandler) Handle(context *ReconcileRequestContext, original
 
 		cm, _, err := resourceapply.ApplyConfigMap(gocontext.TODO(), c.client.CoreV1(), c.recorder, desired)
 		if err != nil {
-			handleErr = condition.NewInstallReadinessError(appsv1.ConfigurationCheckFailed, err)
+			handleErr = NewInstallReadinessError(appsv1.ConfigurationCheckFailed, err)
 			return
 		}
 
@@ -88,7 +87,7 @@ func (c *configurationHandler) Handle(context *ReconcileRequestContext, original
 
 	newRef, err := reference.GetReference(object)
 	if err != nil {
-		handleErr = condition.NewInstallReadinessError(appsv1.CannotSetReference, err)
+		handleErr = NewInstallReadinessError(appsv1.CannotSetReference, err)
 		return
 	}
 

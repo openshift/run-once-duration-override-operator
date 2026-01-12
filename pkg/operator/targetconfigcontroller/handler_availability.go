@@ -3,14 +3,14 @@ package targetconfigcontroller
 import (
 	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
+	operatorv1 "github.com/openshift/api/operator/v1"
+	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	controllerreconciler "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	"github.com/openshift/run-once-duration-override-operator/pkg/deploy"
-	"github.com/openshift/run-once-duration-override-operator/pkg/operator/targetconfigcontroller/internal/condition"
 )
 
 func NewAvailabilityHandler(asset *asset.Asset, deploy deploy.Interface) *availabilityHandler {
@@ -27,19 +27,33 @@ type availabilityHandler struct {
 
 func (a *availabilityHandler) Handle(context *ReconcileRequestContext, original *appsv1.RunOnceDurationOverride) (current *appsv1.RunOnceDurationOverride, result controllerreconciler.Result, handleErr error) {
 	current = original
-	builder := condition.NewBuilderWithStatus(&current.Status)
 
 	available, err := a.deploy.IsAvailable()
 
 	switch {
 	case available:
-		builder.WithAvailable(corev1.ConditionTrue, "")
+		return
 	case err == nil:
-		builder.WithError(condition.NewAvailableError(appsv1.AdmissionWebhookNotAvailable, fmt.Errorf("name=%s deployment not complete", a.deploy.Name())))
+		v1helpers.SetOperatorCondition(&current.Status.Conditions, operatorv1.OperatorCondition{
+			Type:    "Available",
+			Status:  operatorv1.ConditionFalse,
+			Reason:  appsv1.AdmissionWebhookNotAvailable,
+			Message: fmt.Sprintf("name=%s deployment not complete", a.deploy.Name()),
+		})
 	case k8serrors.IsNotFound(err):
-		builder.WithError(condition.NewAvailableError(appsv1.AdmissionWebhookNotAvailable, err))
+		v1helpers.SetOperatorCondition(&current.Status.Conditions, operatorv1.OperatorCondition{
+			Type:    "Available",
+			Status:  operatorv1.ConditionFalse,
+			Reason:  appsv1.AdmissionWebhookNotAvailable,
+			Message: err.Error(),
+		})
 	default:
-		builder.WithError(condition.NewAvailableError(appsv1.InternalError, err))
+		v1helpers.SetOperatorCondition(&current.Status.Conditions, operatorv1.OperatorCondition{
+			Type:    "Available",
+			Status:  operatorv1.ConditionFalse,
+			Reason:  appsv1.InternalError,
+			Message: err.Error(),
+		})
 	}
 
 	return
