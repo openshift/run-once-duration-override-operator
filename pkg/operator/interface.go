@@ -7,20 +7,6 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// Interface defines an interface for the operator.
-type Interface interface {
-	// Run will start a new operator instance based on the given config
-	// Run starts the operator instance and waits indefinitely until the parent
-	// shutdown context is done.
-	// Run returns on any error encountered during initialization.
-	// Any error encountered during initialization is written to the errorCh channel
-	// specified so that the caller can take appropriate action.
-	Run(config *Config, errorCh chan<- error)
-
-	// Done returns a channel that's closed when the operator is done.
-	Done() <-chan struct{}
-}
-
 type Config struct {
 	// Name is the name of the operator. This name will be used to create kube resources.
 	// More info: http://kubernetes.io/docs/user-guide/identifiers#names.

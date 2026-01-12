@@ -101,14 +101,9 @@ func run(config *operator.Config) {
 	klog.V(1).Infof("[operator] configuration - %s", config)
 	klog.V(1).Info("[operator] starting")
 
-	errorCh := make(chan error, 0)
-	runner := operator.NewRunner()
-	go runner.Run(config, errorCh)
-	if err := <-errorCh; err != nil {
-		klog.V(1).Infof("error running operator - %s", err.Error())
+	if err := operator.RunOperator(config); err != nil {
+		klog.Errorf("error running operator - %s", err.Error())
+		os.Exit(1)
 	}
-
-	klog.Infof("[operator] operator is running, waiting for the operator to be done.")
-	<-runner.Done()
 	klog.Infof("process exiting.")
 }

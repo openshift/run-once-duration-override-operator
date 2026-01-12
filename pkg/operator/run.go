@@ -34,32 +34,17 @@ const (
 	DefaultResyncPeriodSecondaryResource = 15 * time.Hour
 )
 
-func NewRunner() Interface {
-	return &runner{
-		done: make(chan struct{}, 0),
-	}
-}
-
-type runner struct {
-	done chan struct{}
-}
-
-func (r *runner) Run(config *Config, errorCh chan<- error) {
-	defer func() {
-		close(r.done)
-		klog.V(1).Infof("[operator] exiting")
-	}()
+func RunOperator(config *Config) error {
+	defer klog.V(1).Infof("[operator] exiting")
 
 	operatorClient, err := versioned.NewForConfig(config.RestConfig)
 	if err != nil {
-		errorCh <- fmt.Errorf("failed to construct client for apps.openshift.io - %s", err.Error())
-		return
+		return fmt.Errorf("failed to construct client for apps.openshift.io - %s", err.Error())
 	}
 
 	kubeClient, err := kubernetes.NewForConfig(config.RestConfig)
 	if err != nil {
-		errorCh <- fmt.Errorf("failed to construct client for kubernetes - %s", err.Error())
-		return
+		return fmt.Errorf("failed to construct client for kubernetes - %s", err.Error())
 	}
 
 	context := runtime.NewOperandContext(config.Name, config.Namespace, DefaultCR, config.OperandImage, config.OperandVersion)
@@ -103,14 +88,10 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 	})
 	go http.ListenAndServe(":8080", healthMux)
 
-	errorCh <- nil
 	klog.V(1).Infof("operator is starting controller")
 
 	go c.Run(config.ShutdownContext, DefaultWorkerCount)
 
 	<-config.ShutdownContext.Done()
-}
-
-func (r *runner) Done() <-chan struct{} {
-	return r.done
+	return nil
 }
