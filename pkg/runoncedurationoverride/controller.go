@@ -238,22 +238,19 @@ func (c *runOnceDurationOverrideController) processNextWorkItem(shutdownCtx cont
 	return true
 }
 
-func (c *runOnceDurationOverrideController) Reconcile(ctx context.Context) (result controllerreconciler.Result, err error) {
+func (c *runOnceDurationOverrideController) Reconcile(ctx context.Context) (controllerreconciler.Result, error) {
 	klog.V(4).Infof("key=%s new request for reconcile", operatorclient.OperatorConfigName)
-
-	result = controllerreconciler.Result{}
 
 	original, getErr := c.lister.Get(operatorclient.OperatorConfigName)
 	if getErr != nil {
 		if k8serrors.IsNotFound(getErr) {
 			klog.Errorf("[reconciler] key=%s object has been deleted - %s", operatorclient.OperatorConfigName, getErr.Error())
-			return
+			return controllerreconciler.Result{}, nil
 		}
 
 		// Otherwise, we will requeue.
 		klog.Errorf("[reconciler] key=%s unexpected error - %s", operatorclient.OperatorConfigName, getErr.Error())
-		err = getErr
-		return
+		return controllerreconciler.Result{}, getErr
 	}
 
 	copy := original.DeepCopy()
@@ -262,6 +259,8 @@ func (c *runOnceDurationOverrideController) Reconcile(ctx context.Context) (resu
 	reconcileContext := NewReconcileRequestContext(c.operandContext)
 	modified := copy
 	var current *runoncedurationoverridev1.RunOnceDurationOverride
+	var result controllerreconciler.Result
+	var err error
 	for _, handler := range c.handlers {
 		current, result, err = handler.Handle(reconcileContext, modified)
 		if err != nil {
@@ -279,14 +278,13 @@ func (c *runOnceDurationOverrideController) Reconcile(ctx context.Context) (resu
 		klog.Errorf("[reconciler] key=%s failed to update status - %s", operatorclient.OperatorConfigName, updateErr.Error())
 
 		if err != nil {
-			err = fmt.Errorf("[reconciler] reconciliation error - %s -- update status error - %s", err.Error(), updateErr.Error())
-			return
+			return result, fmt.Errorf("[reconciler] reconciliation error - %s -- update status error - %s", err.Error(), updateErr.Error())
 		}
 
-		err = updateErr
+		return result, updateErr
 	}
 
-	return
+	return result, err
 }
 
 // updateStatus updates the status of a RunOnceDurationOverride resource.
