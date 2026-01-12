@@ -9,4 +9,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: run-once-duration-override-operator
-    namespace: run-once-duration-override-operator
+    namespace: openshift-run-once-duration-override-operator

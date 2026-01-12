@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: run-once-duration-override-operator
+  namespace: openshift-run-once-duration-override-operator
   name: run-once-duration-override-operator
   labels:
     runoncedurationoverride.operator: "true"

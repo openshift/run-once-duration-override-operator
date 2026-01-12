@@ -2,7 +2,7 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   name: runoncedurationoverrideoperator.v1.4.0
-  namespace: run-once-duration-override-operator
+  namespace: openshift-run-once-duration-override-operator
   annotations:
     alm-examples: |
       [
@@ -284,6 +284,18 @@ spec:
           resources:
             - daemonsets
             - deployments
+          verbs:
+            - create
+            - get
+            - update
+            - patch
+            - list
+            - watch
+        # to have the power to manage leader election leases
+        - apiGroups:
+            - coordination.k8s.io
+          resources:
+            - leases
           verbs:
             - create
             - get
