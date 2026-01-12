@@ -1,4 +1,4 @@
-package runoncedurationoverride
+package targetconfigcontroller
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 	operatorinformers "github.com/openshift/run-once-duration-override-operator/pkg/generated/informers/externalversions"
 	runoncedurationoverridev1listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/operator/operatorclient"
-	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
+	"github.com/openshift/run-once-duration-override-operator/pkg/operator/targetconfigcontroller/internal/condition"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 )
 
@@ -38,7 +38,7 @@ var (
 	}
 )
 
-func New(
+func NewTargetConfigController(
 	operatorClient versioned.Interface,
 	kubeClient kubernetes.Interface,
 	runtimeContext operatorruntime.OperandContext,

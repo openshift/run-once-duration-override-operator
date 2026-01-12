@@ -23,7 +23,7 @@ import (
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	fakeclientset "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned/fake"
 	operatorinformers "github.com/openshift/run-once-duration-override-operator/pkg/generated/informers/externalversions"
-	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride"
+	"github.com/openshift/run-once-duration-override-operator/pkg/operator/targetconfigcontroller"
 	operatorruntime "github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 )
 
@@ -276,7 +276,7 @@ func TestOperatorReconciliation(t *testing.T) {
 	setup := setupTestOperator(t)
 	defer setup.cancel()
 
-	c := runoncedurationoverride.New(
+	c := targetconfigcontroller.NewTargetConfigController(
 		setup.operatorClient,
 		setup.kubeClient,
 		setup.runtimeContext,

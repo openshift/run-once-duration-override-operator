@@ -1,4 +1,4 @@
-package runoncedurationoverride
+package targetconfigcontroller
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/deploy"
-	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride/internal/condition"
+	"github.com/openshift/run-once-duration-override-operator/pkg/operator/targetconfigcontroller/internal/condition"
 )
 
 func NewDeploymentReadyHandler(deploy deploy.Interface) *deploymentReadyHandler {

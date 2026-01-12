@@ -13,7 +13,7 @@ import (
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
 	operatorinformers "github.com/openshift/run-once-duration-override-operator/pkg/generated/informers/externalversions"
-	"github.com/openshift/run-once-duration-override-operator/pkg/runoncedurationoverride"
+	"github.com/openshift/run-once-duration-override-operator/pkg/operator/targetconfigcontroller"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 )
 
@@ -81,7 +81,7 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 	recorder := events.NewLoggingEventRecorder(config.Name, clock.RealClock{})
 
 	// start the controllers
-	c := runoncedurationoverride.New(
+	c := targetconfigcontroller.NewTargetConfigController(
 		operatorClient,
 		kubeClient,
 		context,

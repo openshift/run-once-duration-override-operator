@@ -1,4 +1,4 @@
-package runoncedurationoverride
+package targetconfigcontroller
 
 import (
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
