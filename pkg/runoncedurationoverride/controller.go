@@ -79,7 +79,7 @@ func New(
 
 	for _, informer := range informers {
 		// setup watches for secondary resources
-		_, err = informer.AddEventHandler(newResourceEventHandler(queue, operandAsset.Values().OwnerAnnotationKey))
+		_, err = informer.AddEventHandler(newResourceEventHandler(queue))
 		if err != nil {
 			return
 		}

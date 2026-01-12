@@ -59,7 +59,7 @@ func newEventHandler(queue workqueue.RateLimitingInterface) cache.ResourceEventH
 	}
 }
 
-func getOwnerName(ownerAnnotationKey string, object metav1.Object) string {
+func getOwnerName(object metav1.Object) string {
 	// We check for annotations and owner references
 	// If both exist, owner references takes precedence.
 	if ownerRef := metav1.GetControllerOf(object); ownerRef != nil && ownerRef.Kind == runoncedurationoverridev1.RunOnceDurationOverrideKind {
@@ -68,7 +68,7 @@ func getOwnerName(ownerAnnotationKey string, object metav1.Object) string {
 
 	annotations := object.GetAnnotations()
 	if len(annotations) > 0 {
-		owner, ok := annotations[ownerAnnotationKey]
+		owner, ok := annotations[operatorclient.OperatorOwnerAnnotation]
 		if ok && owner != "" {
 			return owner
 		}
@@ -77,7 +77,7 @@ func getOwnerName(ownerAnnotationKey string, object metav1.Object) string {
 	return ""
 }
 
-func newResourceEventHandler(queue workqueue.RateLimitingInterface, ownerAnnotationKey string) cache.ResourceEventHandler {
+func newResourceEventHandler(queue workqueue.RateLimitingInterface) cache.ResourceEventHandler {
 	enqueueOwner := func(obj interface{}, context string) {
 		metaObj, err := runtime.GetMetaObject(obj)
 		if err != nil {
@@ -85,7 +85,7 @@ func newResourceEventHandler(queue workqueue.RateLimitingInterface, ownerAnnotat
 			return
 		}
 
-		ownerName := getOwnerName(ownerAnnotationKey, metaObj)
+		ownerName := getOwnerName(metaObj)
 		if ownerName == "" {
 			klog.V(3).Infof("[secondarywatch] %s: could not find owner for %s/%s", context, metaObj.GetNamespace(), metaObj.GetName())
 			return
