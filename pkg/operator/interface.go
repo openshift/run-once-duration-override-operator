@@ -20,16 +20,10 @@ type Config struct {
 
 	// RestConfig is the rest.Config object to be used to build clients.
 	RestConfig *rest.Config
-
-	// OperandImage points to the operand image.
-	OperandImage string
-
-	// OperandVersion points to the operand version.
-	OperandVersion string
 }
 
 func (c *Config) String() string {
-	return fmt.Sprintf("name=%s namespace=%s operand-image=%s operand-version=%s", c.Name, c.Namespace, c.OperandImage, c.OperandVersion)
+	return fmt.Sprintf("name=%s namespace=%s", c.Name, c.Namespace)
 }
 
 func (c *Config) Validate() error {
@@ -43,14 +37,6 @@ func (c *Config) Validate() error {
 
 	if c.RestConfig == nil {
 		return errors.New("no rest.Config has been specified")
-	}
-
-	if c.OperandImage == "" {
-		return errors.New("no operand image has been specified")
-	}
-
-	if c.OperandVersion == "" {
-		return errors.New("no operand version has been specified")
 	}
 
 	return nil

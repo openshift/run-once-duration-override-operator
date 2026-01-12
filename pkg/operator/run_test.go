@@ -2,6 +2,7 @@ package operator
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -43,8 +44,6 @@ func TestConfig_Validate(t *testing.T) {
 				Namespace:       "test-namespace",
 				ShutdownContext: context.Background(),
 				RestConfig:      &rest.Config{},
-				OperandImage:    "test-image:latest",
-				OperandVersion:  "v1.0.0",
 			},
 			wantErr: false,
 		},
@@ -55,8 +54,6 @@ func TestConfig_Validate(t *testing.T) {
 				Namespace:       "",
 				ShutdownContext: context.Background(),
 				RestConfig:      &rest.Config{},
-				OperandImage:    "test-image:latest",
-				OperandVersion:  "v1.0.0",
 			},
 			wantErr: true,
 			errMsg:  "operator namespace must be specified",
@@ -68,8 +65,6 @@ func TestConfig_Validate(t *testing.T) {
 				Namespace:       "test-namespace",
 				ShutdownContext: context.Background(),
 				RestConfig:      &rest.Config{},
-				OperandImage:    "test-image:latest",
-				OperandVersion:  "v1.0.0",
 			},
 			wantErr: true,
 			errMsg:  "operator name must be specified",
@@ -81,37 +76,9 @@ func TestConfig_Validate(t *testing.T) {
 				Namespace:       "test-namespace",
 				ShutdownContext: context.Background(),
 				RestConfig:      nil,
-				OperandImage:    "test-image:latest",
-				OperandVersion:  "v1.0.0",
 			},
 			wantErr: true,
 			errMsg:  "no rest.Config has been specified",
-		},
-		{
-			name: "missing operand image",
-			config: &Config{
-				Name:            "test-operator",
-				Namespace:       "test-namespace",
-				ShutdownContext: context.Background(),
-				RestConfig:      &rest.Config{},
-				OperandImage:    "",
-				OperandVersion:  "v1.0.0",
-			},
-			wantErr: true,
-			errMsg:  "no operand image has been specified",
-		},
-		{
-			name: "missing operand version",
-			config: &Config{
-				Name:            "test-operator",
-				Namespace:       "test-namespace",
-				ShutdownContext: context.Background(),
-				RestConfig:      &rest.Config{},
-				OperandImage:    "test-image:latest",
-				OperandVersion:  "",
-			},
-			wantErr: true,
-			errMsg:  "no operand version has been specified",
 		},
 	}
 
@@ -272,6 +239,12 @@ func TestOperatorReconciliation(t *testing.T) {
 	// Set verbosity level (higher number = more verbose)
 	// 0 = errors only, 1-4 = info, 5-9 = debug, 10+ = trace
 	// flag.Set("v", "4")
+
+	// Set required environment variables for RunOperator
+	os.Setenv(OperandImageEnvName, "test-image:latest")
+	os.Setenv(OperandVersionEnvName, "v1.0.0")
+	defer os.Unsetenv(OperandImageEnvName)
+	defer os.Unsetenv(OperandVersionEnvName)
 
 	setup := setupTestOperator(t)
 	defer setup.cancel()

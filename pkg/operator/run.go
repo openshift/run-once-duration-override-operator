@@ -3,6 +3,7 @@ package operator
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"k8s.io/client-go/informers"
@@ -32,10 +33,26 @@ const (
 
 	// Default ResyncPeriod for all secondary resources that the operator manages.
 	DefaultResyncPeriodSecondaryResource = 15 * time.Hour
+
+	// OperandImageEnvName is the environment variable name for the operand image
+	OperandImageEnvName = "RELATED_IMAGE_OPERAND_IMAGE"
+
+	// OperandVersionEnvName is the environment variable name for the operand version
+	OperandVersionEnvName = "OPERAND_VERSION"
 )
 
 func RunOperator(config *Config) error {
 	defer klog.V(1).Infof("[operator] exiting")
+
+	operandImage := os.Getenv(OperandImageEnvName)
+	if operandImage == "" {
+		return fmt.Errorf("%s environment variable must be set", OperandImageEnvName)
+	}
+
+	operandVersion := os.Getenv(OperandVersionEnvName)
+	if operandVersion == "" {
+		return fmt.Errorf("%s environment variable must be set", OperandVersionEnvName)
+	}
 
 	operatorClient, err := versioned.NewForConfig(config.RestConfig)
 	if err != nil {
@@ -47,7 +64,7 @@ func RunOperator(config *Config) error {
 		return fmt.Errorf("failed to construct client for kubernetes - %s", err.Error())
 	}
 
-	context := runtime.NewOperandContext(config.Name, config.Namespace, DefaultCR, config.OperandImage, config.OperandVersion)
+	context := runtime.NewOperandContext(config.Name, config.Namespace, DefaultCR, operandImage, operandVersion)
 
 	// create informer factory for secondary resources
 	kubeInformerFactory := informers.NewSharedInformerFactoryWithOptions(

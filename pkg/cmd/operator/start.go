@@ -14,9 +14,7 @@ import (
 )
 
 const (
-	OperatorName          = "runoncedurationoverride"
-	OperandImageEnvName   = "RELATED_IMAGE_OPERAND_IMAGE"
-	OperandVersionEnvName = "OPERAND_VERSION"
+	OperatorName = "runoncedurationoverride"
 )
 
 func NewStartCommand() *cobra.Command {
@@ -52,18 +50,6 @@ func load(command *cobra.Command) (config *operator.Config, err error) {
 		return
 	}
 
-	operandImage := os.Getenv(OperandImageEnvName)
-	if operandImage == "" {
-		err = fmt.Errorf("%s=<empty> no operand image specified", OperandImageEnvName)
-		return
-	}
-
-	operandVersion := os.Getenv(OperandVersionEnvName)
-	if operandVersion == "" {
-		err = fmt.Errorf("%s=<empty> no operand version specified", OperandVersionEnvName)
-		return
-	}
-
 	restConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
 		err = fmt.Errorf("error building kubeconfig: %s", err.Error())
@@ -71,11 +57,9 @@ func load(command *cobra.Command) (config *operator.Config, err error) {
 	}
 
 	c := &operator.Config{
-		Namespace:      namespace,
-		Name:           OperatorName,
-		RestConfig:     restConfig,
-		OperandImage:   operandImage,
-		OperandVersion: operandVersion,
+		Namespace:  namespace,
+		Name:       OperatorName,
+		RestConfig: restConfig,
 	}
 	if validationError := c.Validate(); validationError != nil {
 		err = fmt.Errorf("invalid configuration: %s", validationError.Error())
