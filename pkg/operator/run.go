@@ -65,7 +65,7 @@ func RunOperator(config *Config) error {
 		return fmt.Errorf("failed to construct client for kubernetes - %s", err.Error())
 	}
 
-	context := runtime.NewOperandContext(config.Name, operatorclient.OperatorNamespace, DefaultCR, operandImage, operandVersion)
+	context := runtime.NewOperandContext(operatorclient.OperatorName, operatorclient.OperatorNamespace, DefaultCR, operandImage, operandVersion)
 
 	// create informer factory for secondary resources
 	kubeInformerFactory := informers.NewSharedInformerFactoryWithOptions(
@@ -81,7 +81,7 @@ func RunOperator(config *Config) error {
 	)
 
 	// create recorder for resource apply operations
-	recorder := events.NewLoggingEventRecorder(config.Name, clock.RealClock{})
+	recorder := events.NewLoggingEventRecorder(operatorclient.OperatorName, clock.RealClock{})
 
 	// start the controllers
 	c := targetconfigcontroller.NewTargetConfigController(

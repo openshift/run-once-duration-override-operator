@@ -13,10 +13,6 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/operator"
 )
 
-const (
-	OperatorName = "runoncedurationoverride"
-)
-
 func NewStartCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "start",
@@ -52,7 +48,6 @@ func load(command *cobra.Command) (config *operator.Config, err error) {
 	}
 
 	c := &operator.Config{
-		Name:       OperatorName,
 		RestConfig: restConfig,
 	}
 	if validationError := c.Validate(); validationError != nil {

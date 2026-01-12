@@ -40,26 +40,14 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "valid config",
 			config: &Config{
-				Name:            "test-operator",
 				ShutdownContext: context.Background(),
 				RestConfig:      &rest.Config{},
 			},
 			wantErr: false,
 		},
 		{
-			name: "missing name",
-			config: &Config{
-				Name:            "",
-				ShutdownContext: context.Background(),
-				RestConfig:      &rest.Config{},
-			},
-			wantErr: true,
-			errMsg:  "operator name must be specified",
-		},
-		{
 			name: "missing rest config",
 			config: &Config{
-				Name:            "test-operator",
 				ShutdownContext: context.Background(),
 				RestConfig:      nil,
 			},
