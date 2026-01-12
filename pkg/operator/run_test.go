@@ -41,28 +41,15 @@ func TestConfig_Validate(t *testing.T) {
 			name: "valid config",
 			config: &Config{
 				Name:            "test-operator",
-				Namespace:       "test-namespace",
 				ShutdownContext: context.Background(),
 				RestConfig:      &rest.Config{},
 			},
 			wantErr: false,
 		},
 		{
-			name: "missing namespace",
-			config: &Config{
-				Name:            "test-operator",
-				Namespace:       "",
-				ShutdownContext: context.Background(),
-				RestConfig:      &rest.Config{},
-			},
-			wantErr: true,
-			errMsg:  "operator namespace must be specified",
-		},
-		{
 			name: "missing name",
 			config: &Config{
 				Name:            "",
-				Namespace:       "test-namespace",
 				ShutdownContext: context.Background(),
 				RestConfig:      &rest.Config{},
 			},
@@ -73,7 +60,6 @@ func TestConfig_Validate(t *testing.T) {
 			name: "missing rest config",
 			config: &Config{
 				Name:            "test-operator",
-				Namespace:       "test-namespace",
 				ShutdownContext: context.Background(),
 				RestConfig:      nil,
 			},

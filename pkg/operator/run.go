@@ -14,6 +14,7 @@ import (
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
 	operatorinformers "github.com/openshift/run-once-duration-override-operator/pkg/generated/informers/externalversions"
+	"github.com/openshift/run-once-duration-override-operator/pkg/operator/operatorclient"
 	"github.com/openshift/run-once-duration-override-operator/pkg/operator/targetconfigcontroller"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 )
@@ -64,13 +65,13 @@ func RunOperator(config *Config) error {
 		return fmt.Errorf("failed to construct client for kubernetes - %s", err.Error())
 	}
 
-	context := runtime.NewOperandContext(config.Name, config.Namespace, DefaultCR, operandImage, operandVersion)
+	context := runtime.NewOperandContext(config.Name, operatorclient.OperatorNamespace, DefaultCR, operandImage, operandVersion)
 
 	// create informer factory for secondary resources
 	kubeInformerFactory := informers.NewSharedInformerFactoryWithOptions(
 		kubeClient,
 		DefaultResyncPeriodSecondaryResource,
-		informers.WithNamespace(config.Namespace),
+		informers.WithNamespace(operatorclient.OperatorNamespace),
 	)
 
 	// create informer factory for primary resource

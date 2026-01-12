@@ -12,9 +12,6 @@ type Config struct {
 	// More info: http://kubernetes.io/docs/user-guide/identifiers#names.
 	Name string
 
-	// Namespace is the namespace where the operator is installed.
-	Namespace string
-
 	// ShutdownContext is the parent context.
 	ShutdownContext context.Context
 
@@ -23,14 +20,10 @@ type Config struct {
 }
 
 func (c *Config) String() string {
-	return fmt.Sprintf("name=%s namespace=%s", c.Name, c.Namespace)
+	return fmt.Sprintf("name=%s", c.Name)
 }
 
 func (c *Config) Validate() error {
-	if c.Namespace == "" {
-		return errors.New("operator namespace must be specified")
-	}
-
 	if c.Name == "" {
 		return errors.New("operator name must be specified")
 	}

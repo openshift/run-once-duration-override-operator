@@ -45,11 +45,6 @@ func load(command *cobra.Command) (config *operator.Config, err error) {
 		return
 	}
 
-	namespace, err := command.Flags().GetString("namespace")
-	if err != nil {
-		return
-	}
-
 	restConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
 		err = fmt.Errorf("error building kubeconfig: %s", err.Error())
@@ -57,7 +52,6 @@ func load(command *cobra.Command) (config *operator.Config, err error) {
 	}
 
 	c := &operator.Config{
-		Namespace:  namespace,
 		Name:       OperatorName,
 		RestConfig: restConfig,
 	}
