@@ -25,6 +25,7 @@ import (
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	runoncedurationoverrideclient "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
 	runoncedurationoverridescheme "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned/scheme"
+	"github.com/openshift/run-once-duration-override-operator/pkg/operator/operatorclient"
 	"github.com/openshift/run-once-duration-override-operator/test/e2e/bindata"
 )
 
@@ -170,7 +171,7 @@ func TestMain(m *testing.M) {
 	// Wait until the run once duration override operator pod is running
 	if err := wait.PollImmediate(5*time.Second, 1*time.Minute, func() (bool, error) {
 		klog.Infof("Listing pods...")
-		podItems, err := kubeClient.CoreV1().Pods("run-once-duration-override-operator").List(ctx, metav1.ListOptions{})
+		podItems, err := kubeClient.CoreV1().Pods(operatorclient.OperatorNamespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			klog.Errorf("Unable to list pods: %v", err)
 			return false, nil
@@ -217,7 +218,7 @@ func TestMain(m *testing.M) {
 	// Wait until the webhook pods are running
 	if err := wait.PollImmediate(5*time.Second, time.Minute, func() (bool, error) {
 		klog.Infof("Listing pods...")
-		podItems, err := kubeClient.CoreV1().Pods("run-once-duration-override-operator").List(ctx, metav1.ListOptions{})
+		podItems, err := kubeClient.CoreV1().Pods(operatorclient.OperatorNamespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			klog.Errorf("Unable to list pods: %v", err)
 			return false, nil
