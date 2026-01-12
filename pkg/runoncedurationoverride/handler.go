@@ -9,7 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
-	runoncedurationoverridev1listers "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
+	"github.com/openshift/run-once-duration-override-operator/pkg/operator/operatorclient"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 )
 
@@ -77,7 +77,7 @@ func getOwnerName(ownerAnnotationKey string, object metav1.Object) string {
 	return ""
 }
 
-func newResourceEventHandler(queue workqueue.RateLimitingInterface, lister runoncedurationoverridev1listers.RunOnceDurationOverrideLister, ownerAnnotationKey string) cache.ResourceEventHandler {
+func newResourceEventHandler(queue workqueue.RateLimitingInterface, ownerAnnotationKey string) cache.ResourceEventHandler {
 	enqueueOwner := func(obj interface{}, context string) {
 		metaObj, err := runtime.GetMetaObject(obj)
 		if err != nil {
@@ -91,16 +91,10 @@ func newResourceEventHandler(queue workqueue.RateLimitingInterface, lister runon
 			return
 		}
 
-		cro, err := lister.Get(ownerName)
-		if err != nil {
-			klog.V(3).Infof("[secondarywatch] %s: ignoring request to enqueue - %s", context, err.Error())
-			return
-		}
-
 		request := reconcile.Request{
 			NamespacedName: types.NamespacedName{
-				Namespace: cro.GetNamespace(),
-				Name:      cro.GetName(),
+				Namespace: "",
+				Name:      operatorclient.OperatorConfigName,
 			},
 		}
 
