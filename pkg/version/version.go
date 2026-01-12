@@ -17,16 +17,25 @@ var (
 	minorFromGit string
 	// build date in ISO8601 format, output of $(date -u +'%Y-%m-%dT%H:%M:%SZ')
 	buildDate string
+
+	gitTreeState string
+	goVersion    string
+	compiler     string
+	platform     string
 )
 
 // Get returns the overall codebase version. It's for detecting
 // what code a binary was built from.
 func Get() version.Info {
 	return version.Info{
-		Major:      majorFromGit,
-		Minor:      minorFromGit,
-		GitCommit:  commitFromGit,
-		GitVersion: versionFromGit,
-		BuildDate:  buildDate,
+		Major:        majorFromGit,
+		Minor:        minorFromGit,
+		GitVersion:   versionFromGit,
+		GitCommit:    commitFromGit,
+		GitTreeState: gitTreeState,
+		BuildDate:    buildDate,
+		GoVersion:    goVersion,
+		Compiler:     compiler,
+		Platform:     platform,
 	}
 }
