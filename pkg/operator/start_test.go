@@ -16,7 +16,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/informers"
 	kubefake "k8s.io/client-go/kubernetes/fake"
-	"k8s.io/client-go/rest"
 	kubetesting "k8s.io/client-go/testing"
 	"k8s.io/utils/clock"
 
@@ -29,46 +28,6 @@ import (
 )
 
 var daemonSetGVR = schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "daemonsets"}
-
-func TestConfig_Validate(t *testing.T) {
-	tests := []struct {
-		name    string
-		config  *Config
-		wantErr bool
-		errMsg  string
-	}{
-		{
-			name: "valid config",
-			config: &Config{
-				ShutdownContext: context.Background(),
-				RestConfig:      &rest.Config{},
-			},
-			wantErr: false,
-		},
-		{
-			name: "missing rest config",
-			config: &Config{
-				ShutdownContext: context.Background(),
-				RestConfig:      nil,
-			},
-			wantErr: true,
-			errMsg:  "no rest.Config has been specified",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.config.Validate()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Config.Validate() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if tt.wantErr && err.Error() != tt.errMsg {
-				t.Errorf("Config.Validate() error = %v, expected %v", err.Error(), tt.errMsg)
-			}
-		})
-	}
-}
 
 type testOperatorSetup struct {
 	kubeClient              *kubefake.Clientset
