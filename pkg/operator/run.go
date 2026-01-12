@@ -81,8 +81,7 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 	recorder := events.NewLoggingEventRecorder(config.Name, clock.RealClock{})
 
 	// start the controllers
-	c, err := runoncedurationoverride.New(
-		DefaultWorkerCount,
+	c := runoncedurationoverride.New(
 		operatorClient,
 		kubeClient,
 		context,
@@ -90,28 +89,12 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 		operatorInformerFactory,
 		recorder,
 	)
-	if err != nil {
-		errorCh <- fmt.Errorf("failed to create controller - %s", err.Error())
-		return
-	}
 
 	// start informer factory for secondary resources
 	kubeInformerFactory.Start(config.ShutdownContext.Done())
 
-	// wait for informer caches to sync
-	for _, synced := range kubeInformerFactory.WaitForCacheSync(config.ShutdownContext.Done()) {
-		if !synced {
-			errorCh <- fmt.Errorf("failed to wait for informer caches to sync")
-			return
-		}
-	}
-
-	runnerErrorCh := make(chan error, 0)
-	go c.Run(config.ShutdownContext, runnerErrorCh)
-	if err := <-runnerErrorCh; err != nil {
-		errorCh <- err
-		return
-	}
+	// start informer factory for primary resource
+	operatorInformerFactory.Start(config.ShutdownContext.Done())
 
 	// Serve a simple HTTP health check.
 	healthMux := http.NewServeMux()
@@ -121,9 +104,11 @@ func (r *runner) Run(config *Config, errorCh chan<- error) {
 	go http.ListenAndServe(":8080", healthMux)
 
 	errorCh <- nil
-	klog.V(1).Infof("operator is waiting for controller(s) to be done")
+	klog.V(1).Infof("operator is starting controller")
 
-	<-c.Done()
+	go c.Run(config.ShutdownContext, DefaultWorkerCount)
+
+	<-config.ShutdownContext.Done()
 }
 
 func (r *runner) Done() <-chan struct{} {

@@ -1,55 +1,48 @@
 package runoncedurationoverride
 
 import (
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/util/workqueue"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/openshift/library-go/pkg/controller/factory"
+	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
+	"github.com/openshift/run-once-duration-override-operator/pkg/operator/operatorclient"
+	"github.com/openshift/run-once-duration-override-operator/pkg/runtime"
 )
 
-// newEventHandler returns a cache.ResourceEventHandler appropriate for
-// reconciliation of RunOnceDurationOverride object(s).
-func newEventHandler(queue workqueue.RateLimitingInterface) cache.ResourceEventHandler {
-	enqueue := func(key string) {
-		namespace, name, err := cache.SplitMetaNamespaceKey(key)
-		if err != nil {
-			return
-		}
-
-		request := reconcile.Request{
-			NamespacedName: types.NamespacedName{
-				Namespace: namespace,
-				Name:      name,
-			},
-		}
-
-		queue.Add(request)
+func isOwnedByOperator(obj interface{}) bool {
+	// Check if obj is a RunOnceDurationOverride
+	if rodoo, ok := obj.(*runoncedurationoverridev1.RunOnceDurationOverride); ok {
+		return rodoo.Name == operatorclient.OperatorConfigName
 	}
 
-	add := func(obj interface{}) {
-		key, err := cache.MetaNamespaceKeyFunc(obj)
-		if err != nil {
-			klog.Errorf("could not extract key, type=%T", obj)
-			return
-		}
-		enqueue(key)
+	// For other types, check if they are owned by the operator
+	metaObj, err := runtime.GetMetaObject(obj)
+	if err != nil {
+		klog.V(4).Infof("failed to get meta object: %v", err)
+		return false
 	}
 
-	return cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			add(obj)
-		},
-		UpdateFunc: func(oldObj, newObj interface{}) {
-			// We don't distinguish between an add and update.
-			add(newObj)
-		},
-		DeleteFunc: func(obj interface{}) {
-			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-			if err != nil {
-				return
-			}
-			enqueue(key)
-		},
+	ownerName := getOwnerName(metaObj)
+	return ownerName == operatorclient.OperatorConfigName
+}
+
+var _ factory.EventFilterFunc = isOwnedByOperator
+
+func getOwnerName(object metav1.Object) string {
+	// We check for annotations and owner references
+	// If both exist, owner references takes precedence.
+	if ownerRef := metav1.GetControllerOf(object); ownerRef != nil && ownerRef.Kind == runoncedurationoverridev1.RunOnceDurationOverrideKind {
+		return ownerRef.Name
 	}
+
+	annotations := object.GetAnnotations()
+	if len(annotations) > 0 {
+		owner, ok := annotations[operatorclient.OperatorOwnerAnnotation]
+		if ok && owner != "" {
+			return owner
+		}
+	}
+
+	return ""
 }

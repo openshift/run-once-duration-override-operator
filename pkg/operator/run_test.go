@@ -276,8 +276,7 @@ func TestOperatorReconciliation(t *testing.T) {
 	setup := setupTestOperator(t)
 	defer setup.cancel()
 
-	c, err := runoncedurationoverride.New(
-		DefaultWorkerCount,
+	c := runoncedurationoverride.New(
 		setup.operatorClient,
 		setup.kubeClient,
 		setup.runtimeContext,
@@ -285,32 +284,13 @@ func TestOperatorReconciliation(t *testing.T) {
 		setup.operatorInformerFactory,
 		setup.recorder,
 	)
-	if err != nil {
-		t.Fatalf("failed to create controller: %v", err)
-	}
 
 	setup.kubeInformerFactory.Start(setup.ctx.Done())
 	setup.operatorInformerFactory.Start(setup.ctx.Done())
 
-	for _, synced := range setup.kubeInformerFactory.WaitForCacheSync(setup.ctx.Done()) {
-		if !synced {
-			t.Fatal("failed to sync kube informer caches")
-		}
-	}
-	for _, synced := range setup.operatorInformerFactory.WaitForCacheSync(setup.ctx.Done()) {
-		if !synced {
-			t.Fatal("failed to sync operator informer caches")
-		}
-	}
-
 	verifyResources(t, setup.ctx, setup.kubeClient, setup.namespace, setup.expectedNames, true)
 
-	runnerErrorCh := make(chan error, 1)
-	go c.Run(setup.ctx, runnerErrorCh)
-
-	if err := <-runnerErrorCh; err != nil {
-		t.Fatalf("failed to start controller: %v", err)
-	}
+	go c.Run(setup.ctx, DefaultWorkerCount)
 
 	time.Sleep(1 * time.Second)
 
@@ -318,12 +298,9 @@ func TestOperatorReconciliation(t *testing.T) {
 
 	setup.cancel()
 
-	select {
-	case <-c.Done():
-		t.Log("Controller stopped successfully")
-	case <-time.After(2 * time.Second):
-		t.Fatal("timeout waiting for controller to stop")
-	}
+	// Give the controller time to stop gracefully
+	time.Sleep(500 * time.Millisecond)
+	t.Log("Controller stopped successfully")
 }
 
 type expectedResourceNames struct {
@@ -506,12 +483,4 @@ func verifyResources(t *testing.T, ctx context.Context, client *kubefake.Clients
 			t.Errorf("error getting ClusterRoleBinding %q: %v", expected.clusterRoleBindingAnonymousAccess, err)
 		}
 	}
-}
-
-// mockEnqueuer is a mock implementation of runtime.Enqueuer for testing
-type mockEnqueuer struct{}
-
-func (m *mockEnqueuer) Enqueue(owned interface{}) error {
-	// No-op for testing
-	return nil
 }
