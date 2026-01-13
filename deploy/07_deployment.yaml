@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: run-once-duration-override-operator
+  namespace: openshift-run-once-duration-override-operator
   name: run-once-duration-override-operator
   labels:
     runoncedurationoverride.operator: "true"
@@ -32,7 +32,7 @@ spec:
             capabilities:
               drop:
               - ALL
-          image: registry.ci.openshift.org/ocp/4.14:run-once-duration-override-operator
+          image: quay.io/jchaloup/run-once-duration-override-operator:4.22.0-0
           imagePullPolicy: Always
           command:
             - /usr/bin/run-once-duration-override-operator
@@ -50,9 +50,9 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: RELATED_IMAGE_OPERAND_IMAGE
-              value: registry.ci.openshift.org/ocp/4.14:run-once-duration-override-webhook
+              value: quay.io/jchaloup/run-once-duration-override:4.22.0-0
             - name: OPERAND_VERSION
-              value: 1.0.0
+              value: 1.4.0
           ports:
             - containerPort: 8080
           readinessProbe:
