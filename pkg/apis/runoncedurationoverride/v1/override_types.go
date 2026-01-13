@@ -76,8 +76,9 @@ type RunOnceDurationOverrideStatus struct {
 }
 
 type RunOnceDurationOverrideResourceHash struct {
-	Configuration string `json:"configuration,omitempty"`
-	ServingCert   string `json:"servingCert,omitempty"`
+	Configuration  string `json:"configuration,omitempty"`
+	ServingCert    string `json:"servingCert,omitempty"`
+	ObservedConfig string `json:"observedConfig,omitempty"`
 }
 
 type RunOnceDurationOverrideResources struct {

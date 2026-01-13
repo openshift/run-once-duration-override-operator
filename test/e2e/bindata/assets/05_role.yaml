@@ -16,17 +16,6 @@ rules:
       - patch
       - get
 
-  # to have the power to read prioritylevelconfigurations
-  - apiGroups:
-      - flowcontrol.apiserver.k8s.io
-    resources:
-      - prioritylevelconfigurations
-      - flowschemas
-    verbs:
-      - get
-      - list
-      - watch
-
   # to have the power to watch secondary resources
   - apiGroups:
       - ''

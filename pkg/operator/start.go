@@ -12,10 +12,15 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/utils/clock"
 
+	configclient "github.com/openshift/client-go/config/clientset/versioned"
+	configinformers "github.com/openshift/client-go/config/informers/externalversions"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/resourcesynccontroller"
+	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	"github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
 	operatorinformers "github.com/openshift/run-once-duration-override-operator/pkg/generated/informers/externalversions"
+	"github.com/openshift/run-once-duration-override-operator/pkg/operator/configobservation/configobservercontroller"
 	"github.com/openshift/run-once-duration-override-operator/pkg/operator/operatorclient"
 	"github.com/openshift/run-once-duration-override-operator/pkg/operator/targetconfigcontroller"
 	"github.com/openshift/run-once-duration-override-operator/pkg/runtime"
@@ -69,29 +74,56 @@ func RunOperator(ctx context.Context, cc *controllercmd.ControllerContext) error
 
 	operandContext := runtime.NewOperandContext(operatorclient.OperatorName, operatorclient.OperatorNamespace, DefaultCR, operandImage, operandVersion)
 
-	// create informer factory for secondary resources
 	kubeInformerFactory := informers.NewSharedInformerFactoryWithOptions(
 		kubeClient,
 		DefaultResyncPeriodSecondaryResource,
 		informers.WithNamespace(operatorclient.OperatorNamespace),
 	)
 
-	// create informer factory for primary resource
+	kubeInformersForNamespaces := v1helpers.NewKubeInformersForNamespaces(kubeClient,
+		"",
+		operatorclient.OperatorNamespace,
+	)
+
 	operatorInformerFactory := operatorinformers.NewSharedInformerFactory(
 		operatorClient,
 		DefaultResyncPeriodPrimaryResource,
 	)
 
-	// create recorder for resource apply operations
+	configClient, err := configclient.NewForConfig(cc.KubeConfig)
+	if err != nil {
+		return fmt.Errorf("failed to construct config client: %s", err.Error())
+	}
+	configInformers := configinformers.NewSharedInformerFactory(configClient, 10*time.Minute)
+
 	recorder := events.NewLoggingEventRecorder(operatorclient.OperatorName, clock.RealClock{})
 
-	// start the controllers
+	runOnceDurationOverrideClient := &operatorclient.RunOnceDurationOverrideClient{
+		Ctx:                             ctx,
+		RunOnceDurationOverrideInformer: operatorInformerFactory.RunOnceDurationOverride().V1().RunOnceDurationOverrides(),
+		OperatorClient:                  operatorClient.RunOnceDurationOverrideV1(),
+	}
+
+	operatorClientWrapper := operatorclient.NewOperatorClientWrapper(runOnceDurationOverrideClient)
+
+	resourceSyncController := resourcesynccontroller.NewResourceSyncController(
+		"RunOnceDurationOverrideOperator",
+		operatorClientWrapper,
+		kubeInformersForNamespaces,
+		kubeClient.CoreV1(),
+		kubeClient.CoreV1(),
+		recorder,
+	)
+
+	configObserver := configobservercontroller.NewConfigObserver(
+		operatorClientWrapper,
+		configInformers,
+		resourceSyncController,
+		recorder,
+	)
+
 	c := targetconfigcontroller.NewTargetConfigController(
-		&operatorclient.RunOnceDurationOverrideClient{
-			Ctx:                             ctx,
-			RunOnceDurationOverrideInformer: operatorInformerFactory.RunOnceDurationOverride().V1().RunOnceDurationOverrides(),
-			OperatorClient:                  operatorClient.RunOnceDurationOverrideV1(),
-		},
+		runOnceDurationOverrideClient,
 		kubeClient,
 		operandContext,
 		kubeInformerFactory,
@@ -99,11 +131,10 @@ func RunOperator(ctx context.Context, cc *controllercmd.ControllerContext) error
 		recorder,
 	)
 
-	// start informer factory for secondary resources
 	kubeInformerFactory.Start(ctx.Done())
-
-	// start informer factory for primary resource
+	kubeInformersForNamespaces.Start(ctx.Done())
 	operatorInformerFactory.Start(ctx.Done())
+	configInformers.Start(ctx.Done())
 
 	// Serve a simple HTTP health check.
 	healthMux := http.NewServeMux()
@@ -114,7 +145,8 @@ func RunOperator(ctx context.Context, cc *controllercmd.ControllerContext) error
 
 	klog.V(1).Infof("operator is starting controllers")
 
-	// start target config controller
+	go resourceSyncController.Run(ctx, 1)
+	go configObserver.Run(ctx, 1)
 	go c.Run(ctx, DefaultWorkerCount)
 
 	<-ctx.Done()

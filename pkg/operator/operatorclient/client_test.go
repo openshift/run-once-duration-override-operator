@@ -329,9 +329,11 @@ func TestUpdateOperatorSpec(t *testing.T) {
 
 	client, fakeClient := setupTestClient(ctx, t, existingCR)
 
-	updatedSpec := &operatorv1.OperatorSpec{
-		ManagementState: operatorv1.Managed,
-		LogLevel:        operatorv1.Debug,
+	updatedSpec := &runoncedurationoverridev1.RunOnceDurationOverrideSpec{
+		OperatorSpec: operatorv1.OperatorSpec{
+			ManagementState: operatorv1.Managed,
+			LogLevel:        operatorv1.Debug,
+		},
 	}
 
 	returnedSpec, newVersion, err := client.UpdateOperatorSpec(ctx, "1", updatedSpec)
@@ -339,8 +341,8 @@ func TestUpdateOperatorSpec(t *testing.T) {
 		t.Fatalf("UpdateOperatorSpec failed: %v", err)
 	}
 
-	if returnedSpec.LogLevel != operatorv1.Debug {
-		t.Errorf("Expected LogLevel Debug, got %s", returnedSpec.LogLevel)
+	if returnedSpec.OperatorSpec.LogLevel != operatorv1.Debug {
+		t.Errorf("Expected LogLevel Debug, got %s", returnedSpec.OperatorSpec.LogLevel)
 	}
 	if newVersion == "" {
 		t.Errorf("ResourceVersion should be set")

@@ -2,13 +2,18 @@ package targetconfigcontroller
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	k8sappsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
@@ -54,6 +59,15 @@ func (c *daemonSetHandler) Handle(context *ReconcileRequestContext, original *ap
 	}
 
 	values := c.asset.Values()
+
+	// Compute hash of ObservedConfig and store it in status
+	observedConfigHash := ""
+	if len(original.Spec.ObservedConfig.Raw) > 0 {
+		hash := sha256.Sum256(original.Spec.ObservedConfig.Raw)
+		observedConfigHash = hex.EncodeToString(hash[:])
+	}
+	current.Status.Hash.ObservedConfig = observedConfigHash
+
 	switch {
 	case k8serrors.IsNotFound(getErr):
 		ensure = true
@@ -62,6 +76,9 @@ func (c *daemonSetHandler) Handle(context *ReconcileRequestContext, original *ap
 		ensure = true
 	case accessor.GetAnnotations()[values.ServingCertHashAnnotationKey] != current.Status.Hash.ServingCert:
 		klog.V(2).Infof("key=%s resource=%T/%s serving cert hash mismatch", original.Name, object, accessor.GetName())
+		ensure = true
+	case accessor.GetAnnotations()[values.ObservedConfigHashAnnotationKey] != observedConfigHash:
+		klog.V(2).Infof("key=%s resource=%T/%s observed config hash mismatch", original.Name, object, accessor.GetName())
 		ensure = true
 	case values.OperandImage != object.(*k8sappsv1.DaemonSet).Spec.Template.Spec.Containers[0].Image:
 		klog.V(2).Infof("key=%s resource=%T/%s container image mismatch", original.Name, object, accessor.GetName())
@@ -122,6 +139,7 @@ func (c *daemonSetHandler) ApplyToDeploymentObject(context *ReconcileRequestCont
 
 		object.GetAnnotations()[values.ConfigurationHashAnnotationKey] = cro.Status.Hash.Configuration
 		object.GetAnnotations()[values.ServingCertHashAnnotationKey] = cro.Status.Hash.ServingCert
+		object.GetAnnotations()[values.ObservedConfigHashAnnotationKey] = cro.Status.Hash.ObservedConfig
 
 		context.ControllerSetter().Set(object, cro)
 	}
@@ -138,6 +156,53 @@ func (c *daemonSetHandler) ApplyToToPodTemplate(context *ReconcileRequestContext
 		object.GetAnnotations()[values.OwnerAnnotationKey] = cro.Name
 		object.GetAnnotations()[values.ConfigurationHashAnnotationKey] = cro.Status.Hash.Configuration
 		object.GetAnnotations()[values.ServingCertHashAnnotationKey] = cro.Status.Hash.ServingCert
+
+		podTemplate, ok := object.(*corev1.PodTemplateSpec)
+		if !ok {
+			klog.Warningf("object is not a PodTemplateSpec, got %T", object)
+			return
+		}
+
+		var observedConfig map[string]interface{}
+		if len(cro.Spec.ObservedConfig.Raw) > 0 {
+			if err := json.Unmarshal(cro.Spec.ObservedConfig.Raw, &observedConfig); err != nil {
+				klog.Warningf("failed to unmarshal the observedConfig: %v", err)
+				return
+			}
+		}
+
+		cipherSuites, cipherSuitesFound, err := unstructured.NestedStringSlice(observedConfig, "servingInfo", "cipherSuites")
+		if err != nil {
+			klog.Warningf("couldn't get the servingInfo.cipherSuites config from observedConfig: %v", err)
+		}
+
+		minTLSVersion, minTLSVersionFound, err := unstructured.NestedString(observedConfig, "servingInfo", "minTLSVersion")
+		if err != nil {
+			klog.Warningf("couldn't get the servingInfo.minTLSVersion config from observedConfig: %v", err)
+		}
+
+		if len(podTemplate.Spec.Containers) > 0 {
+			container := &podTemplate.Spec.Containers[0]
+
+			// Remove existing TLS-related args
+			filteredArgs := []string{}
+			for _, arg := range container.Args {
+				if !strings.HasPrefix(arg, "--tls-cipher-suites=") && !strings.HasPrefix(arg, "--tls-min-version=") {
+					filteredArgs = append(filteredArgs, arg)
+				}
+			}
+			container.Args = filteredArgs
+
+			if cipherSuitesFound && len(cipherSuites) > 0 {
+				tlsCipherArg := fmt.Sprintf("--tls-cipher-suites=%s", strings.Join(cipherSuites, ","))
+				container.Args = append(container.Args, tlsCipherArg)
+			}
+
+			if minTLSVersionFound && len(minTLSVersion) > 0 {
+				tlsMinVersionArg := fmt.Sprintf("--tls-min-version=%s", minTLSVersion)
+				container.Args = append(container.Args, tlsMinVersionArg)
+			}
+		}
 	}
 }
 

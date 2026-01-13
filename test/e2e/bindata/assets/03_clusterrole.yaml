@@ -15,12 +15,21 @@ rules:
       - update
       - patch
       - get
-
   # to have the power to read configmaps in the kube-system namespace
   - apiGroups:
       - ''
     resources:
       - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+
+  # to have the power to read cluster configuration for config observation
+  - apiGroups:
+      - config.openshift.io
+    resources:
+      - apiservers
     verbs:
       - get
       - list

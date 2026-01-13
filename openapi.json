@@ -34470,6 +34470,9 @@
         "configuration": {
           "type": "string"
         },
+        "observedConfig": {
+          "type": "string"
+        },
         "servingCert": {
           "type": "string"
         }

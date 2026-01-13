@@ -5,8 +5,9 @@ package v1
 // RunOnceDurationOverrideResourceHashApplyConfiguration represents a declarative configuration of the RunOnceDurationOverrideResourceHash type for use
 // with apply.
 type RunOnceDurationOverrideResourceHashApplyConfiguration struct {
-	Configuration *string `json:"configuration,omitempty"`
-	ServingCert   *string `json:"servingCert,omitempty"`
+	Configuration  *string `json:"configuration,omitempty"`
+	ServingCert    *string `json:"servingCert,omitempty"`
+	ObservedConfig *string `json:"observedConfig,omitempty"`
 }
 
 // RunOnceDurationOverrideResourceHashApplyConfiguration constructs a declarative configuration of the RunOnceDurationOverrideResourceHash type for use with
@@ -28,5 +29,13 @@ func (b *RunOnceDurationOverrideResourceHashApplyConfiguration) WithConfiguratio
 // If called multiple times, the ServingCert field is set to the value of the last call.
 func (b *RunOnceDurationOverrideResourceHashApplyConfiguration) WithServingCert(value string) *RunOnceDurationOverrideResourceHashApplyConfiguration {
 	b.ServingCert = &value
+	return b
+}
+
+// WithObservedConfig sets the ObservedConfig field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ObservedConfig field is set to the value of the last call.
+func (b *RunOnceDurationOverrideResourceHashApplyConfiguration) WithObservedConfig(value string) *RunOnceDurationOverrideResourceHashApplyConfiguration {
+	b.ObservedConfig = &value
 	return b
 }
