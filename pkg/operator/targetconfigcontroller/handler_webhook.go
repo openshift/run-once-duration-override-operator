@@ -14,7 +14,6 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/apis/reference"
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
-	"github.com/openshift/run-once-duration-override-operator/pkg/operator/targetconfigcontroller/internal/condition"
 )
 
 func NewWebhookConfigurationHandlerHandler(client kubernetes.Interface, recorder events.Recorder, webhookLister admissionregistrationv1.MutatingWebhookConfigurationLister, asset *asset.Asset) *webhookConfigurationHandler {
@@ -43,7 +42,7 @@ func (w *webhookConfigurationHandler) Handle(context *ReconcileRequestContext, o
 	object, err := w.webhookLister.Get(name)
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
-			handleErr = condition.NewInstallReadinessError(appsv1.CertNotAvailable, err)
+			handleErr = NewInstallReadinessError(appsv1.CertNotAvailable, err)
 			return
 		}
 
@@ -61,7 +60,7 @@ func (w *webhookConfigurationHandler) Handle(context *ReconcileRequestContext, o
 
 		webhook, _, err := resourceapply.ApplyMutatingWebhookConfigurationImproved(gocontext.TODO(), w.client.AdmissionregistrationV1(), w.recorder, desired, w.cache)
 		if err != nil {
-			handleErr = condition.NewInstallReadinessError(appsv1.CertNotAvailable, err)
+			handleErr = NewInstallReadinessError(appsv1.CertNotAvailable, err)
 			return
 		}
 
@@ -76,7 +75,7 @@ func (w *webhookConfigurationHandler) Handle(context *ReconcileRequestContext, o
 
 	newRef, err := reference.GetReference(object)
 	if err != nil {
-		handleErr = condition.NewInstallReadinessError(appsv1.CertNotAvailable, err)
+		handleErr = NewInstallReadinessError(appsv1.CertNotAvailable, err)
 		return
 	}
 

@@ -14,7 +14,6 @@ import (
 	"github.com/openshift/run-once-duration-override-operator/pkg/apis/reference"
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
-	"github.com/openshift/run-once-duration-override-operator/pkg/operator/targetconfigcontroller/internal/condition"
 )
 
 const (
@@ -47,7 +46,7 @@ func (c *serviceCAConfigMapHandler) Handle(context *ReconcileRequestContext, ori
 	object, err := c.configMapLister.ConfigMaps(context.WebhookNamespace()).Get(name)
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
-			handleErr = condition.NewInstallReadinessError(appsv1.CertNotAvailable, err)
+			handleErr = NewInstallReadinessError(appsv1.CertNotAvailable, err)
 			return
 		}
 
@@ -72,7 +71,7 @@ func (c *serviceCAConfigMapHandler) Handle(context *ReconcileRequestContext, ori
 
 		cm, _, err := resourceapply.ApplyConfigMap(gocontext.TODO(), c.client.CoreV1(), c.recorder, desired)
 		if err != nil {
-			handleErr = condition.NewInstallReadinessError(appsv1.CertNotAvailable, err)
+			handleErr = NewInstallReadinessError(appsv1.CertNotAvailable, err)
 			return
 		}
 
@@ -87,7 +86,7 @@ func (c *serviceCAConfigMapHandler) Handle(context *ReconcileRequestContext, ori
 
 	newRef, err := reference.GetReference(object)
 	if err != nil {
-		handleErr = condition.NewInstallReadinessError(appsv1.CertNotAvailable, err)
+		handleErr = NewInstallReadinessError(appsv1.CertNotAvailable, err)
 		return
 	}
 

@@ -47,6 +47,7 @@ rules:
       - runoncedurationoverrides/finalizers
     verbs:
       - update
+      - patch
       - get
       - list
       - watch

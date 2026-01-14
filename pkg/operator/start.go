@@ -87,7 +87,11 @@ func RunOperator(ctx context.Context, cc *controllercmd.ControllerContext) error
 
 	// start the controllers
 	c := targetconfigcontroller.NewTargetConfigController(
-		operatorClient,
+		&operatorclient.RunOnceDurationOverrideClient{
+			Ctx:                             ctx,
+			RunOnceDurationOverrideInformer: operatorInformerFactory.RunOnceDurationOverride().V1().RunOnceDurationOverrides(),
+			OperatorClient:                  operatorClient.RunOnceDurationOverrideV1(),
+		},
 		kubeClient,
 		operandContext,
 		kubeInformerFactory,
@@ -108,8 +112,9 @@ func RunOperator(ctx context.Context, cc *controllercmd.ControllerContext) error
 	})
 	go http.ListenAndServe(":8080", healthMux)
 
-	klog.V(1).Infof("operator is starting controller")
+	klog.V(1).Infof("operator is starting controllers")
 
+	// start target config controller
 	go c.Run(ctx, DefaultWorkerCount)
 
 	<-ctx.Done()

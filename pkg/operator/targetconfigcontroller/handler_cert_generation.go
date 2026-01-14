@@ -17,7 +17,6 @@ import (
 	appsv1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	"github.com/openshift/run-once-duration-override-operator/pkg/asset"
 	"github.com/openshift/run-once-duration-override-operator/pkg/cert"
-	"github.com/openshift/run-once-duration-override-operator/pkg/operator/targetconfigcontroller/internal/condition"
 )
 
 var (
@@ -56,14 +55,14 @@ func (c *certGenerationHandler) Handle(context *ReconcileRequestContext, origina
 	secretName := c.asset.ServiceServingSecret().Name()
 	currentSecret, secretGetErr := c.secretLister.Secrets(context.WebhookNamespace()).Get(secretName)
 	if secretGetErr != nil && !k8serrors.IsNotFound(secretGetErr) {
-		handleErr = condition.NewInstallReadinessError(appsv1.InternalError, secretGetErr)
+		handleErr = NewInstallReadinessError(appsv1.InternalError, secretGetErr)
 		return
 	}
 
 	configMapName := c.asset.CABundleConfigMap().Name()
 	currentConfigMap, configMapGetErr := c.configMapLister.ConfigMaps(context.WebhookNamespace()).Get(configMapName)
 	if configMapGetErr != nil && !k8serrors.IsNotFound(configMapGetErr) {
-		handleErr = condition.NewInstallReadinessError(appsv1.InternalError, configMapGetErr)
+		handleErr = NewInstallReadinessError(appsv1.InternalError, configMapGetErr)
 		return
 	}
 
@@ -81,7 +80,7 @@ func (c *certGenerationHandler) Handle(context *ReconcileRequestContext, origina
 		expiresAt := time.Now().Add(DefaultCertValidFor)
 		bundle, err := cert.GenerateWithLocalhostServing(expiresAt, Organization)
 		if err != nil {
-			handleErr = condition.NewInstallReadinessError(appsv1.CannotGenerateCert, err)
+			handleErr = NewInstallReadinessError(appsv1.CannotGenerateCert, err)
 			return
 		}
 
@@ -97,7 +96,7 @@ func (c *certGenerationHandler) Handle(context *ReconcileRequestContext, origina
 
 		secret, _, err := resourceapply.ApplySecret(gocontext.TODO(), c.client.CoreV1(), c.recorder, desiredSecret)
 		if err != nil {
-			handleErr = condition.NewInstallReadinessError(appsv1.CannotGenerateCert, err)
+			handleErr = NewInstallReadinessError(appsv1.CannotGenerateCert, err)
 			return
 		}
 
@@ -112,7 +111,7 @@ func (c *certGenerationHandler) Handle(context *ReconcileRequestContext, origina
 
 		configmap, _, err := resourceapply.ApplyConfigMap(gocontext.TODO(), c.client.CoreV1(), c.recorder, desiredConfigMap)
 		if err != nil {
-			handleErr = condition.NewInstallReadinessError(appsv1.CannotGenerateCert, err)
+			handleErr = NewInstallReadinessError(appsv1.CannotGenerateCert, err)
 			return
 		}
 
@@ -129,7 +128,7 @@ func (c *certGenerationHandler) Handle(context *ReconcileRequestContext, origina
 	if ref := current.Status.Resources.ServiceCertSecretRef; ref == nil || ref.ResourceVersion != currentSecret.ResourceVersion {
 		newRef, err := reference.GetReference(currentSecret)
 		if err != nil {
-			handleErr = condition.NewInstallReadinessError(appsv1.CannotSetReference, err)
+			handleErr = NewInstallReadinessError(appsv1.CannotSetReference, err)
 			return
 		}
 
@@ -141,7 +140,7 @@ func (c *certGenerationHandler) Handle(context *ReconcileRequestContext, origina
 	if ref := current.Status.Resources.ServiceCAConfigMapRef; ref == nil || ref.ResourceVersion != currentConfigMap.ResourceVersion {
 		newRef, err := reference.GetReference(currentConfigMap)
 		if err != nil {
-			handleErr = condition.NewInstallReadinessError(appsv1.CannotSetReference, err)
+			handleErr = NewInstallReadinessError(appsv1.CannotSetReference, err)
 			return
 		}
 

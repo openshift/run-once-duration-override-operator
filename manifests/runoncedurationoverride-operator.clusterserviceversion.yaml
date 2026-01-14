@@ -13,6 +13,7 @@ metadata:
             "name": "cluster"
           },
           "spec": {
+            "managementState": "Managed",
             "runOnceDurationOverride": {
               "spec": {
                 "activeDeadlineSeconds": 3600
@@ -165,6 +166,7 @@ spec:
             - runoncedurationoverrides/finalizers
           verbs:
             - update
+            - patch
             - get
             - list
             - watch
@@ -278,6 +280,15 @@ spec:
             - patch
             - list
             - watch
+        # to have the power to create events
+        - apiGroups:
+            - ''
+          resources:
+            - events
+          verbs:
+            - create
+            - update
+            - patch
         # to have the power to watch secondary resources
         - apiGroups:
             - apps
