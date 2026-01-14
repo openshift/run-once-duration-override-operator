@@ -146,6 +146,15 @@ spec:
             - get
             - list
             - watch
+        # to have the power to read cluster configuration for config observation
+        - apiGroups:
+            - config.openshift.io
+          resources:
+            - apiservers
+          verbs:
+            - get
+            - list
+            - watch
         # to have the power to ensure RBAC for the operand
         - apiGroups:
             - rbac.authorization.k8s.io

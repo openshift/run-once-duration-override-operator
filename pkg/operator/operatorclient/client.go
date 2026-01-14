@@ -15,7 +15,6 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/utils/clock"
 
-	operatorv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/library-go/pkg/apiserver/jsonpatch"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 
@@ -38,7 +37,7 @@ type RunOnceDurationOverrideOperatorClient interface {
 	GetObjectMeta() (meta *metav1.ObjectMeta, err error)
 	GetOperatorState() (spec *runoncedurationoverridev1.RunOnceDurationOverrideSpec, status *runoncedurationoverridev1.RunOnceDurationOverrideStatus, resourceVersion string, err error)
 	GetOperatorStateWithQuorum(ctx context.Context) (*runoncedurationoverridev1.RunOnceDurationOverrideSpec, *runoncedurationoverridev1.RunOnceDurationOverrideStatus, string, error)
-	UpdateOperatorSpec(ctx context.Context, oldResourceVersion string, in *operatorv1.OperatorSpec) (out *operatorv1.OperatorSpec, newResourceVersion string, err error)
+	UpdateOperatorSpec(ctx context.Context, oldResourceVersion string, in *runoncedurationoverridev1.RunOnceDurationOverrideSpec) (out *runoncedurationoverridev1.RunOnceDurationOverrideSpec, newResourceVersion string, err error)
 	UpdateOperatorStatus(ctx context.Context, oldResourceVersion string, in *runoncedurationoverridev1.RunOnceDurationOverrideStatus) (out *runoncedurationoverridev1.RunOnceDurationOverrideStatus, err error)
 	ApplyOperatorSpec(ctx context.Context, fieldManager string, applyConfiguration *applyconfiguration.OperatorSpecApplyConfiguration) (err error)
 	ApplyOperatorStatus(ctx context.Context, fieldManager string, applyConfiguration *applyconfiguration.OperatorStatusApplyConfiguration) (err error)
@@ -81,21 +80,21 @@ func (c RunOnceDurationOverrideClient) GetOperatorStateWithQuorum(ctx context.Co
 	return &instance.Spec, &instance.Status, instance.ResourceVersion, nil
 }
 
-func (c *RunOnceDurationOverrideClient) UpdateOperatorSpec(ctx context.Context, resourceVersion string, spec *operatorv1.OperatorSpec) (out *operatorv1.OperatorSpec, newResourceVersion string, err error) {
+func (c *RunOnceDurationOverrideClient) UpdateOperatorSpec(ctx context.Context, resourceVersion string, spec *runoncedurationoverridev1.RunOnceDurationOverrideSpec) (out *runoncedurationoverridev1.RunOnceDurationOverrideSpec, newResourceVersion string, err error) {
 	original, err := c.RunOnceDurationOverrideInformer.Lister().Get(OperatorConfigName)
 	if err != nil {
 		return nil, "", err
 	}
 	copy := original.DeepCopy()
 	copy.ResourceVersion = resourceVersion
-	copy.Spec.OperatorSpec = *spec
+	copy.Spec = *spec
 
 	ret, err := c.OperatorClient.RunOnceDurationOverrides().Update(ctx, copy, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, "", err
 	}
 
-	return &ret.Spec.OperatorSpec, ret.ResourceVersion, nil
+	return &ret.Spec, ret.ResourceVersion, nil
 }
 
 func (c *RunOnceDurationOverrideClient) UpdateOperatorStatus(ctx context.Context, resourceVersion string, status *runoncedurationoverridev1.RunOnceDurationOverrideStatus) (out *runoncedurationoverridev1.RunOnceDurationOverrideStatus, err error) {
@@ -303,13 +302,16 @@ func (c *RunOnceDurationOverrideClient) convertApplyConfigToFullStatus(
 	applyConfig := runoncedurationoverrideapplyconfiguration.RunOnceDurationOverrideStatus()
 	applyConfig.OperatorStatusApplyConfiguration = *desiredOperatorStatus
 
-	if currentStatus.Hash.Configuration != "" || currentStatus.Hash.ServingCert != "" {
+	if currentStatus.Hash.Configuration != "" || currentStatus.Hash.ServingCert != "" || currentStatus.Hash.ObservedConfig != "" {
 		hashApplyConfig := runoncedurationoverrideapplyconfiguration.RunOnceDurationOverrideResourceHash()
 		if currentStatus.Hash.Configuration != "" {
 			hashApplyConfig.WithConfiguration(currentStatus.Hash.Configuration)
 		}
 		if currentStatus.Hash.ServingCert != "" {
 			hashApplyConfig.WithServingCert(currentStatus.Hash.ServingCert)
+		}
+		if currentStatus.Hash.ObservedConfig != "" {
+			hashApplyConfig.WithObservedConfig(currentStatus.Hash.ObservedConfig)
 		}
 		applyConfig.WithHash(hashApplyConfig)
 	}
