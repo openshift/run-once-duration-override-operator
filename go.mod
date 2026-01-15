@@ -4,6 +4,7 @@ go 1.24.0
 
 require (
 	github.com/openshift-eng/openshift-tests-extension v0.0.0-20251205182537-ff5553e56f33
+	github.com/openshift/api v0.0.0-20251015095338-264e80a2b6e7
 	github.com/openshift/build-machinery-go v0.0.0-20251017080826-c3556e1a76a5
 	github.com/openshift/library-go v0.0.0-20251016115829-235f9f1a273e
 	github.com/spf13/cobra v1.9.1
@@ -63,7 +64,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/openshift/api v0.0.0-20251015095338-264e80a2b6e7 // indirect
 	github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect

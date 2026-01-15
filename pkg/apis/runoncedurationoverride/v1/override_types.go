@@ -1,6 +1,7 @@
 package v1
 
 import (
+	operatorv1 "github.com/openshift/api/operator/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -68,6 +69,10 @@ type RunOnceDurationOverride struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type RunOnceDurationOverrideSpec struct {
+	// managementState indicates whether and how the operator should manage the component
+	// +optional
+	ManagementState operatorv1.ManagementState `json:"managementState,omitempty"`
+
 	RunOnceDurationOverrideConfig RunOnceDurationOverrideConfig `json:"runOnceDurationOverride"`
 }
 
