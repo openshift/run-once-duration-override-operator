@@ -144,11 +144,15 @@ make build
 
 ```bash
 # Run a specific test suite or test
-./run-once-duration-override-operator-tests-ext run-suite openshift/run-once-duration-override-operator/all
+./run-once-duration-override-operator-tests-ext run-suite openshift/run-once-duration-override-operator/operator/serial
 ./run-once-duration-override-operator-tests-ext run-test "test-name"
 
+# To run serial suites cases serially, use the following command:
+./run-once-duration-override-operator-tests-ext run-suite openshift/run-once-duration-override-operator/operator/serial -c 1
+
 # Run with JUnit output
-./run-once-duration-override-operator-tests-ext run-suite openshift/run-once-duration-override-operator/all --junit-path "${ARTIFACT_DIR}/junit.xml"
+./run-once-duration-override-operator-tests-ext run-suite openshift/run-once-duration-override-operator/operator/serial --junit-path=/tmp/junit.xml
+./run-once-duration-override-operator-tests-ext run-test "test-name" --junit-path=/tmp/junit.xml
 ```
 
 ### Listing available tests and suites
@@ -158,7 +162,7 @@ make build
 ./run-once-duration-override-operator-tests-ext list suites
 
 # List tests in a suite
-./run-once-duration-override-operator-tests-ext list tests --suite=openshift/run-once-duration-override-operator/all
+./run-once-duration-override-operator-tests-ext list tests --suite=openshift/run-once-duration-override-operator/operator/serial
 ```
 
 For more information about the OTE framework, see the [openshift-tests-extension documentation](https://github.com/openshift-eng/openshift-tests-extension).
