@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -141,19 +142,36 @@ func setupOperator(t testing.TB) (context.Context, context.CancelFunc, *k8sclien
 			path: "assets/07_deployment.yaml",
 			readerAndApply: func(objBytes []byte) error {
 				required := resourceread.ReadDeploymentV1OrDie(objBytes)
-				// Override the operator image with the one built in CI
-				registry := strings.Split(os.Getenv("RELEASE_IMAGE_LATEST"), "/")[0]
-				required.Spec.Template.Spec.Containers[0].Image = registry + "/" + os.Getenv("NAMESPACE") + "/pipeline:run-once-duration-override-operator"
+
+				// Get cluster version by running oc command
+				cmd := exec.CommandContext(ctx, "oc", "get", "clusterversion", "-o", "jsonpath={.items[0].status.desired.version}")
+				versionOutput, err := cmd.Output()
+				if err != nil {
+					return fmt.Errorf("failed to get cluster version: %w", err)
+				}
+
+				// Extract major.minor version (e.g., "4.22" from "4.22.0-0.ci...")
+				versionStr := strings.TrimSpace(string(versionOutput))
+				versionParts := strings.Split(versionStr, ".")
+				if len(versionParts) < 2 {
+					return fmt.Errorf("unexpected version format: %s", versionStr)
+				}
+				ocpVersion := versionParts[0] + "." + versionParts[1]
+
+				klog.Infof("Detected OCP version: %s, using image tag: %s", versionStr, ocpVersion)
+
+				// Override the operator image using registry.ci.openshift.org and OCP version
+				required.Spec.Template.Spec.Containers[0].Image = fmt.Sprintf("registry.ci.openshift.org/ocp/%s:run-once-duration-override-operator", ocpVersion)
 
 				// Set RELATED_IMAGE_OPERAND_IMAGE env
 				for i, env := range required.Spec.Template.Spec.Containers[0].Env {
 					if env.Name == "RELATED_IMAGE_OPERAND_IMAGE" {
-						required.Spec.Template.Spec.Containers[0].Env[i].Value = "registry.ci.openshift.org/ocp/4.20:run-once-duration-override-webhook"
+						required.Spec.Template.Spec.Containers[0].Env[i].Value = fmt.Sprintf("registry.ci.openshift.org/ocp/%s:run-once-duration-override-webhook", ocpVersion)
 						break
 					}
 				}
 
-				_, _, err := resourceapply.ApplyDeployment(ctx, kubeClient.AppsV1(), eventRecorder, required, 1000)
+				_, _, err = resourceapply.ApplyDeployment(ctx, kubeClient.AppsV1(), eventRecorder, required, 1000)
 				return err
 			},
 		},
@@ -207,7 +225,7 @@ func setupOperator(t testing.TB) (context.Context, context.CancelFunc, *k8sclien
 	deadline = time.Now().Add(1 * time.Minute)
 	operatorRunning := false
 	for time.Now().Before(deadline) {
-		podItems, err := kubeClient.CoreV1().Pods("run-once-duration-override-operator").List(ctx, metav1.ListOptions{})
+		podItems, err := kubeClient.CoreV1().Pods("openshift-run-once-duration-override-operator").List(ctx, metav1.ListOptions{})
 		if err == nil {
 			for _, pod := range podItems.Items {
 				if !strings.HasPrefix(pod.Name, "run-once-duration-override-") {
@@ -247,7 +265,7 @@ func setupOperator(t testing.TB) (context.Context, context.CancelFunc, *k8sclien
 	deadline = time.Now().Add(1 * time.Minute)
 	webhooksReady := false
 	for time.Now().Before(deadline) {
-		podItems, err := kubeClient.CoreV1().Pods("run-once-duration-override-operator").List(ctx, metav1.ListOptions{})
+		podItems, err := kubeClient.CoreV1().Pods("openshift-run-once-duration-override-operator").List(ctx, metav1.ListOptions{})
 		if err == nil {
 			webhooksRunning := 0
 			for _, pod := range podItems.Items {
