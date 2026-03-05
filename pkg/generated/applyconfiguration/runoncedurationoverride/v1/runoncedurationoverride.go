@@ -16,8 +16,10 @@ import (
 type RunOnceDurationOverrideApplyConfiguration struct {
 	metav1.TypeMetaApplyConfiguration    `json:",inline"`
 	*metav1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Spec                                 *RunOnceDurationOverrideSpecApplyConfiguration   `json:"spec,omitempty"`
-	Status                               *RunOnceDurationOverrideStatusApplyConfiguration `json:"status,omitempty"`
+	// spec holds user settable values for configuration
+	Spec *RunOnceDurationOverrideSpecApplyConfiguration `json:"spec,omitempty"`
+	// status holds observed values from the cluster. They may not be overridden.
+	Status *RunOnceDurationOverrideStatusApplyConfiguration `json:"status,omitempty"`
 }
 
 // RunOnceDurationOverride constructs a declarative configuration of the RunOnceDurationOverride type for use with
@@ -30,29 +32,14 @@ func RunOnceDurationOverride(name string) *RunOnceDurationOverrideApplyConfigura
 	return b
 }
 
-// ExtractRunOnceDurationOverride extracts the applied configuration owned by fieldManager from
-// runOnceDurationOverride. If no managedFields are found in runOnceDurationOverride for fieldManager, a
-// RunOnceDurationOverrideApplyConfiguration is returned with only the Name, Namespace (if applicable),
-// APIVersion and Kind populated. It is possible that no managed fields were found for because other
-// field managers have taken ownership of all the fields previously owned by fieldManager, or because
-// the fieldManager never owned fields any fields.
+// ExtractRunOnceDurationOverrideFrom extracts the applied configuration owned by fieldManager from
+// runOnceDurationOverride for the specified subresource. Pass an empty string for subresource to extract
+// the main resource. Common subresources include "status", "scale", etc.
 // runOnceDurationOverride must be a unmodified RunOnceDurationOverride API object that was retrieved from the Kubernetes API.
-// ExtractRunOnceDurationOverride provides a way to perform a extract/modify-in-place/apply workflow.
+// ExtractRunOnceDurationOverrideFrom provides a way to perform a extract/modify-in-place/apply workflow.
 // Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
 // applied if another fieldManager has updated or force applied any of the previously applied fields.
-// Experimental!
-func ExtractRunOnceDurationOverride(runOnceDurationOverride *runoncedurationoverridev1.RunOnceDurationOverride, fieldManager string) (*RunOnceDurationOverrideApplyConfiguration, error) {
-	return extractRunOnceDurationOverride(runOnceDurationOverride, fieldManager, "")
-}
-
-// ExtractRunOnceDurationOverrideStatus is the same as ExtractRunOnceDurationOverride except
-// that it extracts the status subresource applied configuration.
-// Experimental!
-func ExtractRunOnceDurationOverrideStatus(runOnceDurationOverride *runoncedurationoverridev1.RunOnceDurationOverride, fieldManager string) (*RunOnceDurationOverrideApplyConfiguration, error) {
-	return extractRunOnceDurationOverride(runOnceDurationOverride, fieldManager, "status")
-}
-
-func extractRunOnceDurationOverride(runOnceDurationOverride *runoncedurationoverridev1.RunOnceDurationOverride, fieldManager string, subresource string) (*RunOnceDurationOverrideApplyConfiguration, error) {
+func ExtractRunOnceDurationOverrideFrom(runOnceDurationOverride *runoncedurationoverridev1.RunOnceDurationOverride, fieldManager string, subresource string) (*RunOnceDurationOverrideApplyConfiguration, error) {
 	b := &RunOnceDurationOverrideApplyConfiguration{}
 	err := managedfields.ExtractInto(runOnceDurationOverride, internal.Parser().Type("com.github.openshift.run-once-duration-override-operator.pkg.apis.runoncedurationoverride.v1.RunOnceDurationOverride"), fieldManager, b, subresource)
 	if err != nil {
@@ -64,6 +51,27 @@ func extractRunOnceDurationOverride(runOnceDurationOverride *runoncedurationover
 	b.WithAPIVersion("operator.openshift.io/v1")
 	return b, nil
 }
+
+// ExtractRunOnceDurationOverride extracts the applied configuration owned by fieldManager from
+// runOnceDurationOverride. If no managedFields are found in runOnceDurationOverride for fieldManager, a
+// RunOnceDurationOverrideApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
+// runOnceDurationOverride must be a unmodified RunOnceDurationOverride API object that was retrieved from the Kubernetes API.
+// ExtractRunOnceDurationOverride provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractRunOnceDurationOverride(runOnceDurationOverride *runoncedurationoverridev1.RunOnceDurationOverride, fieldManager string) (*RunOnceDurationOverrideApplyConfiguration, error) {
+	return ExtractRunOnceDurationOverrideFrom(runOnceDurationOverride, fieldManager, "")
+}
+
+// ExtractRunOnceDurationOverrideStatus extracts the applied configuration owned by fieldManager from
+// runOnceDurationOverride for the status subresource.
+func ExtractRunOnceDurationOverrideStatus(runOnceDurationOverride *runoncedurationoverridev1.RunOnceDurationOverride, fieldManager string) (*RunOnceDurationOverrideApplyConfiguration, error) {
+	return ExtractRunOnceDurationOverrideFrom(runOnceDurationOverride, fieldManager, "status")
+}
+
 func (b RunOnceDurationOverrideApplyConfiguration) IsApplyConfiguration() {}
 
 // WithKind sets the Kind field in the declarative configuration to the given value
