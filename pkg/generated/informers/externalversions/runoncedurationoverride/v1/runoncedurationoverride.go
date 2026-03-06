@@ -40,7 +40,7 @@ func NewRunOnceDurationOverrideInformer(client versioned.Interface, resyncPeriod
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredRunOnceDurationOverrideInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
+		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
@@ -65,7 +65,7 @@ func NewFilteredRunOnceDurationOverrideInformer(client versioned.Interface, resy
 				}
 				return client.RunOnceDurationOverrideV1().RunOnceDurationOverrides().Watch(ctx, options)
 			},
-		},
+		}, client),
 		&apisrunoncedurationoverridev1.RunOnceDurationOverride{},
 		resyncPeriod,
 		indexers,

@@ -11,10 +11,12 @@ import (
 // with apply.
 type RunOnceDurationOverrideStatusApplyConfiguration struct {
 	operatorv1.OperatorStatusApplyConfiguration `json:",inline"`
-	Resources                                   *RunOnceDurationOverrideResourcesApplyConfiguration    `json:"resources,omitempty"`
-	Hash                                        *RunOnceDurationOverrideResourceHashApplyConfiguration `json:"hash,omitempty"`
-	Image                                       *string                                                `json:"image,omitempty"`
-	CertsRotateAt                               *metav1.Time                                           `json:"certsRotateAt,omitempty"`
+	// Resources is a set of resources associated with the operand.
+	Resources *RunOnceDurationOverrideResourcesApplyConfiguration    `json:"resources,omitempty"`
+	Hash      *RunOnceDurationOverrideResourceHashApplyConfiguration `json:"hash,omitempty"`
+	Image     *string                                                `json:"image,omitempty"`
+	// CertsRotateAt is the time the serving certs will be rotated at.
+	CertsRotateAt *metav1.Time `json:"certsRotateAt,omitempty"`
 }
 
 // RunOnceDurationOverrideStatusApplyConfiguration constructs a declarative configuration of the RunOnceDurationOverrideStatus type for use with

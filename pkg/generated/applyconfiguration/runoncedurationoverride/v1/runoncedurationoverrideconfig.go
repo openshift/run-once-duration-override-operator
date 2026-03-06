@@ -8,6 +8,9 @@ import (
 
 // RunOnceDurationOverrideConfigApplyConfiguration represents a declarative configuration of the RunOnceDurationOverrideConfig type for use
 // with apply.
+//
+// RunOnceDurationOverrideConfig is the configuration for the admission controller which
+// overrides activeDeadlineSeconds for pods with restartPolicy set to Never or OnFailure.
 type RunOnceDurationOverrideConfigApplyConfiguration struct {
 	metav1.TypeMetaApplyConfiguration `json:",inline"`
 	Spec                              *RunOnceDurationOverrideConfigSpecApplyConfiguration `json:"spec,omitempty"`
@@ -21,6 +24,7 @@ func RunOnceDurationOverrideConfig() *RunOnceDurationOverrideConfigApplyConfigur
 	b.WithAPIVersion("operator.openshift.io/v1")
 	return b
 }
+
 func (b RunOnceDurationOverrideConfigApplyConfiguration) IsApplyConfiguration() {}
 
 // WithKind sets the Kind field in the declarative configuration to the given value

@@ -5,6 +5,8 @@ package v1
 // RunOnceDurationOverrideConfigSpecApplyConfiguration represents a declarative configuration of the RunOnceDurationOverrideConfigSpec type for use
 // with apply.
 type RunOnceDurationOverrideConfigSpecApplyConfiguration struct {
+	// ActiveDeadlineSeconds (if > 0) overrides activeDeadlineSeconds field of pod;
+	// if pod's restartPolicy is set to Never or OnFailure.
 	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
 }
 

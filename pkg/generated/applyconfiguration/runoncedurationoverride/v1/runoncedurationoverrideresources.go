@@ -9,12 +9,28 @@ import (
 // RunOnceDurationOverrideResourcesApplyConfiguration represents a declarative configuration of the RunOnceDurationOverrideResources type for use
 // with apply.
 type RunOnceDurationOverrideResourcesApplyConfiguration struct {
-	ConfigurationRef                *corev1.ObjectReference `json:"configurationRef,omitempty"`
-	ServiceCAConfigMapRef           *corev1.ObjectReference `json:"serviceCAConfigMapRef,omitempty"`
-	ServiceRef                      *corev1.ObjectReference `json:"serviceRef,omitempty"`
-	ServiceCertSecretRef            *corev1.ObjectReference `json:"serviceCertSecretRef,omitempty"`
-	DeploymentRef                   *corev1.ObjectReference `json:"deploymentRef,omitempty"`
-	APiServiceRef                   *corev1.ObjectReference `json:"apiServiceRef,omitempty"`
+	// ConfigurationRef points to the ConfigMap that contains the parameters for
+	// RunOnceDurationOverride admission webhook.
+	ConfigurationRef *corev1.ObjectReference `json:"configurationRef,omitempty"`
+	// ServiceCAConfigMapRef points to the ConfigMap that is injected with a
+	// data item (key "service-ca.crt") containing the PEM-encoded CA signing bundle.
+	ServiceCAConfigMapRef *corev1.ObjectReference `json:"serviceCAConfigMapRef,omitempty"`
+	// ServiceRef points to the Service object that exposes the RunOnceDurationOverride
+	// webhook admission server to the cluster.
+	// This service is annotated with `service.beta.openshift.io/serving-cert-secret-name`
+	// so that service-ca operator can issue a signed serving certificate/key pair.
+	ServiceRef *corev1.ObjectReference `json:"serviceRef,omitempty"`
+	// ServiceCertSecretRef points to the Secret object which is created by the
+	// service-ca operator and contains the signed serving certificate/key pair.
+	ServiceCertSecretRef *corev1.ObjectReference `json:"serviceCertSecretRef,omitempty"`
+	// DeploymentRef points to the Deployment object of the RunOnceDurationOverride
+	// admission webhook server.
+	DeploymentRef *corev1.ObjectReference `json:"deploymentRef,omitempty"`
+	// APiServiceRef points to the APIService object related to the RunOnceDurationOverride
+	// admission webhook server.
+	APiServiceRef *corev1.ObjectReference `json:"apiServiceRef,omitempty"`
+	// APiServiceRef points to the APIService object related to the RunOnceDurationOverride
+	// admission webhook server.
 	MutatingWebhookConfigurationRef *corev1.ObjectReference `json:"mutatingWebhookConfigurationRef,omitempty"`
 }
 
