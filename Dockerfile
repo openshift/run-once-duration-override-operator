@@ -3,7 +3,7 @@ WORKDIR /go/src/github.com/openshift/run-once-duration-override-operator
 COPY . .
 RUN make build --warn-undefined-variables
 
-FROM registry.redhat.io/rhel9-4-els/rhel-minimal:9.4
+FROM registry.redhat.io/rhel9-4-els/rhel-minimal:9.4-1769661357
 COPY --from=builder /go/src/github.com/openshift/run-once-duration-override-operator/run-once-duration-override-operator /usr/bin/
 RUN mkdir /licenses
 COPY --from=builder /go/src/github.com/openshift/run-once-duration-override-operator/LICENSE /licenses/.
