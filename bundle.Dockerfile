@@ -21,7 +21,7 @@ ARG REPLACED_OPERAND_IMG=registry-proxy.engineering.redhat.com/rh-osbs/run-once-
 RUN hack/replace-image.sh manifests ${REPLACED_OPERATOR_IMG} ${OPERATOR_IMAGE}
 RUN hack/replace-image.sh manifests ${REPLACED_OPERAND_IMG} ${OPERAND_IMAGE}
 
-FROM registry.redhat.io/rhel9-2-els/rhel-minimal:9.2
+FROM registry.redhat.io/rhel9-2-els/rhel-minimal:9.2-1773894626
 
 COPY --from=builder /go/src/github.com/openshift/run-once-duration-override-operator/manifests /manifests
 COPY --from=builder /go/src/github.com/openshift/run-once-duration-override-operator/metadata /metadata
