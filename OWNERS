@@ -1,7 +1,5 @@
 approvers:
-- ardaguclu
-- ingvagabund
+- control-plane-approvers
 reviewers:
-- ardaguclu
-- ingvagabund
+- control-plane-approvers
 component: "run-once-duration-override"
