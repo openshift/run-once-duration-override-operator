@@ -7,15 +7,14 @@ To initiliaze catalog-template.json
 ```sh
 $ opm migrate registry.redhat.io/redhat/redhat-operator-index:v4.13 ./catalog-migrate
 $ mkdir -p v4.13/catalog/run-once-duration-override-operator
-$ opm alpha convert-template basic ./catalog-migrate/run-once-duration-override-operator/catalog.json > v4.13/catalog-template.json
+$ opm alpha convert-template basic -o yaml ./catalog-migrate/run-once-duration-override-operator/catalog.json > v4.13/catalog-template.yaml
 ```
 
 To update the catalog
 
 ```
-$ cd v4.13
 $ export REGISTRY_AUTH_FILE=...
-$ opm alpha render-template basic catalog-template.json > catalog/run-once-duration-override-operator/catalog.json
+$ opm alpha render-template basic v4.13/catalog-template.yaml > v4.13/catalog/run-once-duration-override-operator/catalog.json
 ```
 
 ## Releases
