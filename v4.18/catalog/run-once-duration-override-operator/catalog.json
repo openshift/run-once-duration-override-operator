@@ -924,16 +924,16 @@
     ],
     "relatedImages": [
         {
+            "name": "",
+            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:9d9d030a074de3bfda4ebcf1cb6771f58f33fd77e12dd8a6b59d223bb1735599"
+        },
+        {
             "name": "run-once-duration-override-operator",
             "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9-operator@sha256:d28c615312b91477390bd3d07a56546edb3100f88024bd3d602665d42aa7a788"
         },
         {
             "name": "run-once-duration-override-operand",
             "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9@sha256:b898f4d8b9b82987fb0f802f882f249ec57e1c9c06c2a14bd61a89dd5cceef6f"
-        },
-        {
-            "name": "",
-            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:9d9d030a074de3bfda4ebcf1cb6771f58f33fd77e12dd8a6b59d223bb1735599"
         }
     ]
 }
@@ -1425,16 +1425,16 @@
     ],
     "relatedImages": [
         {
+            "name": "",
+            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:ad4a176cbd498ab2785ccf99a4081ae74c1a0f69dc144d6975d751037f5aa6a6"
+        },
+        {
             "name": "run-once-duration-override-operator",
             "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9-operator@sha256:b33fbd7cdf2af7221b9ceffbd15017e778912cb2f5e887eebf7ac424e15d58e2"
         },
         {
             "name": "run-once-duration-override-operand",
             "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9@sha256:36e304ebdae80201691f648152f2a6ef8cd7dc2a96ce186de64448c429282aa1"
-        },
-        {
-            "name": "",
-            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:ad4a176cbd498ab2785ccf99a4081ae74c1a0f69dc144d6975d751037f5aa6a6"
         }
     ]
 }

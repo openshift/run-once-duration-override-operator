@@ -228,16 +228,16 @@
     ],
     "relatedImages": [
         {
+            "name": "",
+            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:88713351f35edfcc8ea38e7d9b1dad293e6105fc30a60865ea49126912fe8318"
+        },
+        {
             "name": "run-once-duration-override-operator",
             "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9-operator@sha256:a7ee496f51ee22248b6483636ee75e4ea71d7d0787713e3959f19fc8ce4cfe07"
         },
         {
             "name": "run-once-duration-override-operand",
             "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9@sha256:b891d46814c3113a4258e664a86c35ed3ee0c34846015cc3ba726a68ac69fb4a"
-        },
-        {
-            "name": "",
-            "image": "registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:88713351f35edfcc8ea38e7d9b1dad293e6105fc30a60865ea49126912fe8318"
         }
     ]
 }
