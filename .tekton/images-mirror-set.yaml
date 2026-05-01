@@ -2,7 +2,7 @@
 apiVersion: operator.openshift.io/v1alpha1
 kind: ImageDigestMirrorSet
 metadata:
-  name: mirror-set-run-once-duration-override-operator-4-21
+  name: mirror-set-run-once-duration-override-operator
 spec:
   imageDigestMirrors:
     - mirrors:
@@ -10,34 +10,64 @@ spec:
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-bundle-4-20
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-bundle-4-19
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-bundle-4-18
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-bundle-4-17
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-bundle-4-16
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-bundle-4-15
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-bundle-4-14
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-bundle-4-13
       source: registry.stage.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle
     - mirrors:
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-bundle-4-21
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-bundle-4-20
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-bundle-4-19
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-bundle-4-18
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-bundle-4-17
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-bundle-4-16
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-bundle-4-15
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-bundle-4-14
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-bundle-4-13
       source: registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle
     - mirrors:
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-21
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-20
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-19
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-18
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-17
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-16
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-15
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-14
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-13
       source: registry.stage.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9-operator
     - mirrors:
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-21
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-20
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-19
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-18
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-17
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-16
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-15
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-14
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-operator-4-13
       source: registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9-operator
     - mirrors:
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-21
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-20
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-19
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-18
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-17
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-16
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-15
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-14
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-13
       source: registry.stage.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9
     - mirrors:
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-21
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-20
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-19
         - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-18
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-17
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-16
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-15
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-14
+        - quay.io/redhat-user-workloads/rodoo-workloads-tenant/run-once-duration-override-4-13
       source: registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9
