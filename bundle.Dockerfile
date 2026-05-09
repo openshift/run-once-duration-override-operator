@@ -14,7 +14,7 @@ ARG OPERATOR_IMAGE=registry.redhat.io/run-once-duration-override-operator/run-on
 #
 #
 #
-ARG OPERAND_IMAGE=registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9@sha256:761d39debdb748ed4cad8e64327daac1f04338f240493cacdaf9f825d26b31d2
+ARG OPERAND_IMAGE=registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9@sha256:2c2ccb9a64a6e7b026f06cb8d669fa495145d586818b7d7c58ac308f337485a9
 ARG REPLACED_OPERATOR_IMG=registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel9-operator:latest
 ARG REPLACED_OPERAND_IMG=registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel-9:latest
 
