@@ -38,6 +38,6 @@ entries:
 - image: registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:39e18ed0818c4f9ec2f7de87fb1f839e99769307789d1d97d71abbf9467d3e86
   schema: olm.bundle
 # runoncedurationoverrideoperator.v1.4.1
-- image: registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:24ff22a29659032ae1c726d8c098561c1805a1d9bd94e0434f7e9486d3abdf63
+- image: registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:1aadc7d571c18883fb8894e817179af75ff627809144398ce109da6b6bc03c08
   schema: olm.bundle
 schema: olm.template.basic
