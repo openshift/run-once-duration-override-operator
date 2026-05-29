@@ -1,0 +1,11 @@
+apiVersion: operator.openshift.io/v1
+kind: RunOnceDurationOverride
+metadata:
+  name: cluster
+spec:
+  managementState: Managed
+  runOnceDurationOverride:
+    apiVersion: operator.openshift.io/v1
+    kind: RunOnceDurationOverride
+    spec:
+      activeDeadlineSeconds: 3600
