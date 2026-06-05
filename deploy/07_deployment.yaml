@@ -13,6 +13,8 @@ spec:
   template:
     metadata:
       name: runoncedurationoverride
+      annotations:
+        openshift.io/required-scc: restricted-v2
       labels:
         runoncedurationoverride.operator: "true"
     spec:
@@ -26,6 +28,7 @@ spec:
         emptyDir: {}
       containers:
         - name: run-once-duration-override-operator
+          terminationMessagePolicy: FallbackToLogsOnError
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

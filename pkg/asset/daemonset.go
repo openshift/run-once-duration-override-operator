@@ -46,6 +46,9 @@ func (d *daemonset) New() *appsv1.DaemonSet {
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: d.Name(),
+					Annotations: map[string]string{
+						"openshift.io/required-scc": "hostnetwork-v2",
+					},
 					Labels: map[string]string{
 						values.SelectorLabelKey: values.SelectorLabelValue,
 						values.OwnerLabelKey:    values.OwnerLabelValue,
@@ -59,9 +62,10 @@ func (d *daemonset) New() *appsv1.DaemonSet {
 					ServiceAccountName: values.ServiceAccountName,
 					Containers: []corev1.Container{
 						{
-							Name:            d.Name(),
-							Image:           values.OperandImage,
-							ImagePullPolicy: corev1.PullAlways,
+							Name:                     d.Name(),
+							Image:                    values.OperandImage,
+							ImagePullPolicy:          corev1.PullAlways,
+							TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
 							Command: []string{
 								"/usr/bin/run-once-duration-override",
 							},
