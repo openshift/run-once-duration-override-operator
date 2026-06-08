@@ -146,7 +146,7 @@ spec:
     # Task 4: install-rodoo-operator (from SNAPSHOT bundle via operator-sdk)
     # ──────────────────────────────────────────────────────────────────────────
     - name: install-rodoo-operator
-      timeout: "5m"
+      timeout: "10m"
       runAfter:
         - provision-cluster
       when:
