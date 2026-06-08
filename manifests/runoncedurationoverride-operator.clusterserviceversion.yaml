@@ -334,6 +334,8 @@ spec:
             template:
               metadata:
                 name: runoncedurationoverride
+                annotations:
+                  openshift.io/required-scc: restricted-v2
                 labels:
                   runoncedurationoverride.operator: "true"
               spec:
