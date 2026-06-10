@@ -110,7 +110,7 @@ spec:
                   value: stepactions/eaas-get-latest-openshift-version-by-prefix/0.1/eaas-get-latest-openshift-version-by-prefix.yaml
             params:
               - name: prefix
-                value: "4.20."
+                value: "4.21."
           - name: create-cluster
             ref:
               resolver: git
@@ -210,17 +210,6 @@ spec:
               echo "BUNDLE_IMAGE: ${BUNDLE_IMAGE}"
 
               oc create namespace openshift-run-once-duration-override-operator || true
-
-              echo "Waiting for ImageDigestMirrorSet to be applied on ephemeral cluster..."
-              for i in $(seq 1 30); do
-                if oc get imagedigestmirrorset -o name 2>/dev/null | grep -q .; then
-                  echo "IDMS found, waiting 30s for node config to reconcile..."
-                  sleep 30
-                  break
-                fi
-                echo "Attempt $i/30: IDMS not yet available, waiting 10s..."
-                sleep 10
-              done
 
               operator-sdk run bundle --timeout=10m \
                 --namespace openshift-run-once-duration-override-operator \
