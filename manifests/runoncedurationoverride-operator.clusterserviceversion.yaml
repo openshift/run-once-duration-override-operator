@@ -3,6 +3,11 @@ kind: ClusterServiceVersion
 metadata:
   name: runoncedurationoverrideoperator.v1.0.0
   namespace: run-once-duration-override-operator
+  labels:
+    operatorframework.io/arch.amd64: supported
+    operatorframework.io/arch.arm64: supported
+    operatorframework.io/arch.ppc64le: supported
+    operatorframework.io/arch.s390x: supported
   annotations:
     alm-examples: |
       [
