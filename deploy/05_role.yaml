@@ -69,3 +69,17 @@ rules:
       - patch
       - list
       - watch
+
+  # to have the power to manage NetworkPolicy for the operand
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - networkpolicies
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
