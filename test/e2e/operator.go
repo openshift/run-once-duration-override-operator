@@ -176,6 +176,27 @@ func setupOperator(t testing.TB) (context.Context, context.CancelFunc, *k8sclien
 				return err
 			},
 		},
+		{
+			path: "assets/networkpolicy-operator.yaml",
+			readerAndApply: func(objBytes []byte) error {
+				_, _, err := resourceapply.ApplyNetworkPolicy(ctx, kubeClient.NetworkingV1(), eventRecorder, resourceread.ReadNetworkPolicyV1OrDie(objBytes), nil)
+				return err
+			},
+		},
+		{
+			path: "assets/networkpolicy-operand.yaml",
+			readerAndApply: func(objBytes []byte) error {
+				_, _, err := resourceapply.ApplyNetworkPolicy(ctx, kubeClient.NetworkingV1(), eventRecorder, resourceread.ReadNetworkPolicyV1OrDie(objBytes), nil)
+				return err
+			},
+		},
+		{
+			path: "assets/networkpolicy-default-deny-all.yaml",
+			readerAndApply: func(objBytes []byte) error {
+				_, _, err := resourceapply.ApplyNetworkPolicy(ctx, kubeClient.NetworkingV1(), eventRecorder, resourceread.ReadNetworkPolicyV1OrDie(objBytes), nil)
+				return err
+			},
+		},
 	}
 
 	// Apply all assets
