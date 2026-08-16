@@ -23,6 +23,7 @@ This operator manages OpenShift `RunOnceDurationOverride` Admission Webhook Serv
 | 1.3.1         | 4.19, 4.20  | 1.33        | 1.24   |
 | 1.4.0         | 4.21, 4.22  | 1.34        | 1.24   |
 | 1.4.1         | 4.21, 4.22  | 1.35        | 1.25   |
+| 1.5.0         | 4.23, 4.24  | 1.36        | 1.26   |
 
 ## Deploy the Operator
 
