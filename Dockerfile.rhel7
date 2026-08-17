@@ -1,11 +1,11 @@
-FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.25-openshift-4.22 AS builder
+FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.26-openshift-5.0 AS builder
 WORKDIR /go/src/github.com/openshift/run-once-duration-override-operator
 COPY . .
 
 RUN make build --warn-undefined-variables \
     && gzip run-once-duration-override-operator-tests-ext
 
-FROM registry.ci.openshift.org/ocp/4.22:base-rhel9
+FROM registry.ci.openshift.org/ocp/5.0:base-rhel9
 COPY --from=builder /go/src/github.com/openshift/run-once-duration-override-operator/run-once-duration-override-operator /usr/bin/
 COPY --from=builder /go/src/github.com/openshift/run-once-duration-override-operator/run-once-duration-override-operator-tests-ext.gz /usr/bin/
 # Upstream bundle and index images does not support versioning so
@@ -16,8 +16,8 @@ LABEL io.k8s.display-name="OpenShift Run Once Duration Override Operator" \
       io.k8s.description="Manages Run Once Duration Override mutating admission webhook" \
       io.openshift.tags="openshift,mutating-admission,run-once" \
       com.redhat.delivery.appregistry=true \
-      release="1.4.1" \
-      version="1.4.1" \
+      release="1.5.0" \
+      version="1.5.0" \
       url="https://github.com/openshift/run-once-duration-override-operator" \
       vendor="Red Hat, Inc." \
       maintainer="AOS workloads team, <aos-workloads@redhat.com>"
