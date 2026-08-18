@@ -1,4 +1,4 @@
-FROM brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.25 as builder
+FROM brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_golang_1.26 as builder
 WORKDIR /go/src/github.com/openshift/run-once-duration-override-operator
 COPY . .
 RUN make build --warn-undefined-variables
@@ -13,9 +13,9 @@ LABEL io.k8s.display-name="Run Once Duration Override Operator based on RHEL 9" 
       distribution-scope="public" \
       com.redhat.component="run-once-duration-override-operator-container" \
       name="run-once-duration-override-operator/run-once-duration-override-rhel9-operator" \
-      cpe="cpe:/a:redhat:run_once_duration_override_operator:1.4::el9" \
-      release="1.4.1" \
-      version="1.4.1" \
+      cpe="cpe:/a:redhat:run_once_duration_override_operator:1.5::el9" \
+      release="1.5.0" \
+      version="1.5.0" \
       url="https://github.com/openshift/run-once-duration-override-operator" \
       vendor="Red Hat, Inc." \
       summary="run-once-duration-override-operator" \
