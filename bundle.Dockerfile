@@ -5,7 +5,7 @@ COPY . .
 RUN mkdir licenses
 COPY ./LICENSE licenses/.
 
-ARG OPERATOR_IMAGE=registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9-operator@sha256:b5c58e330c72e75d7dead39e523b5f0a122a9a0fcf59d85d840e9b4dd5425367
+ARG OPERATOR_IMAGE=registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-rhel9-operator@sha256:b25aceaefeebac29c863975737f3c8bc364230a54bb0a56168dc65acf43ed778
 # artificial distance to avoid rebase conflicts when the operand and the operator image gets updated at the same time
 #
 #
