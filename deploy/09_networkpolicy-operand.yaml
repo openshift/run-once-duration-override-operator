@@ -1,0 +1,34 @@
+# NOTE: The operand DaemonSet uses hostNetwork: true and binds to 127.0.0.1,
+# so NetworkPolicy has no effect on it (NetworkPolicy only applies to
+# pod-network traffic). This resource is provided for documentation purposes
+# and as a safeguard in case the networking mode changes in the future.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: run-once-duration-override-operand
+  namespace: openshift-run-once-duration-override-operator
+spec:
+  podSelector:
+    matchLabels:
+      runoncedurationoverride: "true"
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # kube-apiserver -> webhook admission endpoint on port 9448 (TLS)
+    - ports:
+        - protocol: TCP
+          port: 9448
+  egress:
+    # DNS
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: openshift-dns
+      ports:
+      - protocol: TCP
+        port: 5353
+      - protocol: UDP
+        port: 5353
+    # Kubernetes API server (read-only: namespaces, webhook configs, flowcontrol)
+    - {}

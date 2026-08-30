@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: run-once-duration-override-operator
+  namespace: openshift-run-once-duration-override-operator
+spec:
+  podSelector:
+    matchLabels:
+      runoncedurationoverride.operator: "true"
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # kubelet health probes (readiness + liveness) on /healthz
+    - ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    # DNS
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: openshift-dns
+      ports:
+      - protocol: TCP
+        port: 5353
+      - protocol: UDP
+        port: 5353
+    # Kubernetes and OpenShift API server (watches, CRUD on operand resources)
+    - {}
