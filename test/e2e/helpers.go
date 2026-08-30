@@ -5,6 +5,7 @@ import (
 
 	o "github.com/onsi/gomega"
 	apiextclientv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/client-go/dynamic"
 	k8sclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -38,6 +39,18 @@ func GetApiExtensionClient() *apiextclientv1.Clientset {
 
 	client, err := apiextclientv1.NewForConfig(config)
 	o.Expect(err).NotTo(o.HaveOccurred(), "should create API extension client")
+
+	return client
+}
+
+// GetDynamicClient returns a dynamic client or fails the test
+func GetDynamicClient() dynamic.Interface {
+	kubeconfig := os.Getenv("KUBECONFIG")
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	o.Expect(err).NotTo(o.HaveOccurred(), "should build kubeconfig")
+
+	client, err := dynamic.NewForConfig(config)
+	o.Expect(err).NotTo(o.HaveOccurred(), "should create dynamic client")
 
 	return client
 }
