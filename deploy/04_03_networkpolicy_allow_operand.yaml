@@ -1,0 +1,40 @@
+# Network Policy for the run-once-duration-override webhook admission server (operand)
+#
+# IMPORTANT NOTE: This operand DaemonSet uses hostNetwork=true and binds to 127.0.0.1:9448.
+# NetworkPolicy does NOT apply to pods using hostNetwork - they bypass NetworkPolicy enforcement.
+# The kube-apiserver accesses the webhook via the node's localhost:9448 using hostPort.
+#
+# This NetworkPolicy is included for documentation and consistency but will not actively
+# restrict traffic for hostNetwork pods. The security boundary is enforced through:
+# - hostNetwork binding to localhost only (127.0.0.1)
+# - TLS certificate authentication for webhook
+# - RBAC permissions
+# - Pod Security Standards (hostnetwork-v2 SCC)
+#
+# If the operand is modified to NOT use hostNetwork in the future, this policy provides:
+# - Ingress: Port 9448 for webhook admission traffic from kube-apiserver (unrestricted source due to host networking)
+# - Egress: Unrestricted for API server communication
+#
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: run-once-duration-override-allow-operand
+  namespace: openshift-run-once-duration-override-operator
+spec:
+  podSelector:
+    matchLabels:
+      runoncedurationoverride: "true"
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow admission webhook traffic from kube-apiserver
+    # Source unrestricted: kube-apiserver runs with hostNetwork and does not match pod/namespace selectors
+    # TLS and certificate validation provide the security boundary
+    - ports:
+        - protocol: TCP
+          port: 9448
+  egress:
+    # Allow all egress
+    # Required for API server communication (same justification as operator)
+    - {}
