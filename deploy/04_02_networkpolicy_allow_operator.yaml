@@ -1,0 +1,56 @@
+# Allow network traffic for the run-once-duration-override-operator pod
+#
+# Ingress:
+#   - Port 8080: Health checks (liveness/readiness probes) from same namespace
+#   - Port 8080: Metrics scraping from OpenShift monitoring namespaces
+#
+# Egress:
+#   - Unrestricted: Required for Kubernetes API server communication
+#     Security Trade-off: API server uses host networking with dynamic node IPs
+#     across cloud environments, making targeted CIDR-based egress rules infeasible.
+#     This is a known limitation in NetworkPolicy for operators that need API access.
+#
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: run-once-duration-override-allow-operator
+  namespace: openshift-run-once-duration-override-operator
+spec:
+  podSelector:
+    matchLabels:
+      runoncedurationoverride.operator: "true"
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow health check probes and metrics from same namespace (including E2E test pods)
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8080
+    # Allow metrics scraping from OpenShift monitoring
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-monitoring
+      ports:
+        - protocol: TCP
+          port: 8080
+    # Allow metrics scraping from user workload monitoring
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-user-workload-monitoring
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    # Allow all egress
+    # Justification: Kubernetes API server communication requirement
+    # The API server runs with hostNetwork=true and its endpoints vary by:
+    # - Cloud provider (AWS, Azure, GCP, bare-metal)
+    # - Node IP addresses (which change during cluster operations)
+    # - No stable service ClusterIP for API server in many environments
+    # This broad egress rule is a necessary architectural trade-off for operator functionality.
+    - {}
