@@ -15,10 +15,12 @@ entries:
   - name: runoncedurationoverrideoperator.v1.0.3
     replaces: runoncedurationoverrideoperator.v1.0.0
     skipRange: '>=0.0.0 <1.0.3'
+  - name: runoncedurationoverrideoperator.v1.0.4
     skips:
     - runoncedurationoverrideoperator.v1.0.0
     - runoncedurationoverrideoperator.v1.0.1
     - runoncedurationoverrideoperator.v1.0.2
+    - runoncedurationoverrideoperator.v1.0.3
   name: stable
   package: run-once-duration-override-operator
   schema: olm.channel
@@ -33,5 +35,8 @@ entries:
   schema: olm.bundle
 # runoncedurationoverrideoperator.v1.0.3
 - image: registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:88713351f35edfcc8ea38e7d9b1dad293e6105fc30a60865ea49126912fe8318
+  schema: olm.bundle
+# runoncedurationoverrideoperator.v1.0.4
+- image: registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle@sha256:fe2bf31b8fad3b7a91416f346f3d22df9c579fbb73624a2eec54284d6e8698c0
   schema: olm.bundle
 schema: olm.template.basic
