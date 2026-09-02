@@ -1,14 +1,20 @@
 name: registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle
 csvname: runoncedurationoverrideoperator
 bundles:
+- release: 1.4.2
+  sha256: 1fb763d75407a27c99f97a4216002d860b72a14061aa8bda37e28b7726b9a304
 - release: 1.4.1
   sha256: 1aadc7d571c18883fb8894e817179af75ff627809144398ce109da6b6bc03c08
 - release: 1.4.0
   sha256: 39e18ed0818c4f9ec2f7de87fb1f839e99769307789d1d97d71abbf9467d3e86
+- release: 1.3.2
+  sha256: cbb5b6a8fbff4633cee061239e232cf013e036de91bb1f0952558ff445ffb0bb
 - release: 1.3.1
   sha256: 783c2df43ece311bcbaaf30f33c081608e996a0f651895ec0509bb73a6a1f590
 - release: 1.3.0
   sha256: 1fd96befffa2475efa28bf83a7beff4f1df5343644b8a203feb44ff03657280b
+- release: 1.2.4
+  sha256: 4f639023f0db783dab98512398d6f263f39d75ecd95d9113c0c1f80b51d29ee7
 - release: 1.2.3
   sha256: ad4a176cbd498ab2785ccf99a4081ae74c1a0f69dc144d6975d751037f5aa6a6
 - release: 1.2.2
@@ -17,6 +23,8 @@ bundles:
   sha256: 75066a651c950ae906bf44fd69391965719556a9640c0cba9f0d3c7da65f8fa5
 - release: 1.2.0
   sha256: 68178c1bdb8ea36faf602d639af290096b40d796aaf8f0e66bff1f6de1ec036a
+- release: 1.1.4
+  sha256: 5217d3e770e0ba387d8b857d43b29499da5d21d7166cd1103ed968e828326855
 - release: 1.1.3
   sha256: 9d9d030a074de3bfda4ebcf1cb6771f58f33fd77e12dd8a6b59d223bb1735599
 - release: 1.1.2
@@ -25,6 +33,8 @@ bundles:
   sha256: ec2ad9acac7336403094c3387975d653a23abf203ba0d5dae0338d62e55f407b
 - release: 1.1.0
   sha256: 0cf817432277977ae75e28b95be321ff92600fb57f89b54533272657430d16f2
+- release: 1.0.4
+  sha256: fe2bf31b8fad3b7a91416f346f3d22df9c579fbb73624a2eec54284d6e8698c0
 - release: 1.0.3
   sha256: 88713351f35edfcc8ea38e7d9b1dad293e6105fc30a60865ea49126912fe8318
 - release: 1.0.2

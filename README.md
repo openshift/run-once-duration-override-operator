@@ -16,3 +16,18 @@ To update the latest catalog
 $ export REGISTRY_AUTH_FILE=...
 $ opm alpha render-template basic v4.21/catalog-template.yaml --migrate-level bundle-object-to-csv-metadata > v4.21/catalog/run-once-duration-override-operator/catalog.json
 ```
+
+## Configure mirroring for opm
+
+Under `/etc/containers/registries.conf` (or drop a file inside /etc/containers/registries.conf.d/):
+```
+[[registry]]
+prefix = "registry.redhat.io/run-once-duration-override-operator"
+location = "registry.redhat.io/run-once-duration-override-operator"
+insecure = true
+
+[[registry.mirror]]
+prefix = "registry.redhat.io/run-once-duration-override-operator"
+location = "registry.stage.redhat.io/run-once-duration-override-operator"
+insecure = true
+```
