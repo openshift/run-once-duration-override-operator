@@ -8,10 +8,8 @@ import (
 	"testing"
 	"time"
 
-	g "github.com/onsi/ginkgo/v2"
-	o "github.com/onsi/gomega"
-
 	corev1 "k8s.io/api/core/v1"
+	apiextclientv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sclient "k8s.io/client-go/kubernetes"
@@ -24,65 +22,19 @@ import (
 	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
 
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
+	rodooclient "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
 	runoncedurationoverridescheme "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned/scheme"
 	"github.com/openshift/run-once-duration-override-operator/test/e2e/bindata"
 )
 
-// Ginkgo test specs - calls the shared test functions
-var _ = g.Describe("[sig-scheduling][Operator][Serial] RunOnceDurationOverride Operator", g.Ordered, func() {
-	var (
-		ctx           context.Context
-		cancelFnc     context.CancelFunc
-		kubeClient    *k8sclient.Clientset
-		testNamespace string
-	)
-
-	g.BeforeAll(func() {
-		g.By("Setting up the operator")
-		var err error
-		ctx, cancelFnc, kubeClient, err = setupOperator(g.GinkgoTB())
-		o.Expect(err).NotTo(o.HaveOccurred())
-	})
-
-	g.AfterAll(func() {
-		if cancelFnc != nil {
-			cancelFnc()
-		}
-	})
-
-	g.Context("when webhook is active", func() {
-		g.It("should set ActiveDeadlineSeconds on pods in labeled namespaces [Suite:openshift/run-once-duration-override-operator/operator/serial]", func() {
-			g.By("Creating test namespace and verifying webhook sets ActiveDeadlineSeconds")
-			testNamespace = testActiveDeadlineSecondsWebhook(g.GinkgoTB(), ctx, kubeClient)
-			g.DeferCleanup(func() {
-				g.By("Cleaning up test namespace")
-				cleanupTestNamespace(g.GinkgoTB(), ctx, kubeClient, testNamespace)
-			})
-		})
-	})
-})
-
 // setupOperator sets up the operator and waits for it to be ready.
 // This function works with both standard Go testing and Ginkgo.
-func setupOperator(t testing.TB) (context.Context, context.CancelFunc, *k8sclient.Clientset, error) {
-	ctx, cancelFnc := context.WithCancel(context.Background())
-
-	// Verify required environment variables
-	if os.Getenv("KUBECONFIG") == "" {
-		return ctx, cancelFnc, nil, fmt.Errorf("KUBECONFIG environment variable must be set")
-	}
-	if os.Getenv("RELEASE_IMAGE_LATEST") == "" {
-		return ctx, cancelFnc, nil, fmt.Errorf("RELEASE_IMAGE_LATEST environment variable must be set")
-	}
-	if os.Getenv("NAMESPACE") == "" {
-		return ctx, cancelFnc, nil, fmt.Errorf("NAMESPACE environment variable must be set")
-	}
-
-	// Initialize clients
-	kubeClient := GetKubeClient()
-	apiExtClient := GetApiExtensionClient()
-	runOnceDurationOverrideClient := GetRunOnceDurationOverrideClient()
-
+func setupOperator(
+	ctx context.Context,
+	kubeClient *k8sclient.Clientset,
+	runOnceDurationOverrideClient *rodooclient.Clientset,
+	apiExtClient *apiextclientv1.Clientset,
+) error {
 	eventRecorder := events.NewKubeRecorder(
 		kubeClient.CoreV1().Events("default"),
 		"test-e2e",
@@ -141,14 +93,25 @@ func setupOperator(t testing.TB) (context.Context, context.CancelFunc, *k8sclien
 			path: "assets/07_deployment.yaml",
 			readerAndApply: func(objBytes []byte) error {
 				required := resourceread.ReadDeploymentV1OrDie(objBytes)
-				// Override the operator image with the one built in CI
-				registry := strings.Split(os.Getenv("RELEASE_IMAGE_LATEST"), "/")[0]
-				required.Spec.Template.Spec.Containers[0].Image = registry + "/" + os.Getenv("NAMESPACE") + "/pipeline:run-once-duration-override-operator"
 
-				// Set RELATED_IMAGE_OPERAND_IMAGE env
+				var operatorImage, operandImage string
+				if os.Getenv("OPERATOR_IMAGE") != "" {
+					operatorImage = os.Getenv("OPERATOR_IMAGE")
+				} else {
+					registry := strings.Split(os.Getenv("RELEASE_IMAGE_LATEST"), "/")[0]
+					operatorImage = registry + "/" + os.Getenv("NAMESPACE") + "/pipeline:run-once-duration-override-operator"
+				}
+
+				if os.Getenv("OPERAND_IMAGE") != "" {
+					operandImage = os.Getenv("OPERAND_IMAGE")
+				} else {
+					operandImage = "quay.io/jchaloup/run-once-duration-override:4.22.0"
+				}
+
+				required.Spec.Template.Spec.Containers[0].Image = operatorImage
 				for i, env := range required.Spec.Template.Spec.Containers[0].Env {
 					if env.Name == "RELATED_IMAGE_OPERAND_IMAGE" {
-						required.Spec.Template.Spec.Containers[0].Env[i].Value = "quay.io/jchaloup/run-once-duration-override:4.22.0"
+						required.Spec.Template.Spec.Containers[0].Env[i].Value = operandImage
 						break
 					}
 				}
@@ -198,7 +161,7 @@ func setupOperator(t testing.TB) (context.Context, context.CancelFunc, *k8sclien
 		if time.Now().Before(deadline) {
 			time.Sleep(1 * time.Second)
 		} else if lastErr != nil {
-			return ctx, cancelFnc, nil, fmt.Errorf("failed to create assets: %w", lastErr)
+			return fmt.Errorf("failed to create assets: %w", lastErr)
 		}
 	}
 
@@ -226,14 +189,14 @@ func setupOperator(t testing.TB) (context.Context, context.CancelFunc, *k8sclien
 		time.Sleep(5 * time.Second)
 	}
 	if !operatorRunning {
-		return ctx, cancelFnc, nil, fmt.Errorf("operator pod not running after timeout")
+		return fmt.Errorf("operator pod not running after timeout")
 	}
 
 	// Count master nodes for webhook verification
 	klog.Infof("Counting master nodes")
 	nodeItems, err := kubeClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return ctx, cancelFnc, nil, fmt.Errorf("failed to list nodes: %w", err)
+		return fmt.Errorf("failed to list nodes: %w", err)
 	}
 	webhooksExpected := 0
 	for _, node := range nodeItems.Items {
@@ -267,7 +230,7 @@ func setupOperator(t testing.TB) (context.Context, context.CancelFunc, *k8sclien
 		time.Sleep(5 * time.Second)
 	}
 	if !webhooksReady {
-		return ctx, cancelFnc, nil, fmt.Errorf("webhook pods not ready after timeout")
+		return fmt.Errorf("webhook pods not ready after timeout")
 	}
 
 	// Wait for mutating webhook configuration to be created
@@ -290,11 +253,11 @@ func setupOperator(t testing.TB) (context.Context, context.CancelFunc, *k8sclien
 		time.Sleep(5 * time.Second)
 	}
 	if !webhookConfigured {
-		return ctx, cancelFnc, nil, fmt.Errorf("mutating webhook configuration not found after timeout")
+		return fmt.Errorf("mutating webhook configuration not found after timeout")
 	}
 
 	klog.Infof("All operator components are running and ready")
-	return ctx, cancelFnc, kubeClient, nil
+	return nil
 }
 
 // testActiveDeadlineSecondsWebhook tests that the webhook sets ActiveDeadlineSeconds on pods.
