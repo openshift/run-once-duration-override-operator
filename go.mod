@@ -3,7 +3,6 @@ module github.com/openshift/run-once-duration-override-operator
 go 1.25.0
 
 require (
-	github.com/blang/semver/v4 v4.0.0
 	github.com/google/go-cmp v0.7.0
 	github.com/onsi/ginkgo/v2 v2.27.2
 	github.com/onsi/gomega v1.38.3
@@ -33,6 +32,7 @@ require (
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coreos/go-semver v0.3.1 // indirect
@@ -145,5 +145,4 @@ require (
 replace github.com/onsi/ginkgo/v2 => github.com/openshift/onsi-ginkgo/v2 v2.6.1-0.20251001123353-fd5b1fb35db1
 
 // Use library-go branch with OLM test helpers (PR #2336)
-// TODO: Update to use merged version once https://github.com/openshift/library-go/pull/2336 is merged
 replace github.com/openshift/library-go => github.com/sandeepknd/library-go v0.0.0-20260710192029-bd3dd5da2eaa

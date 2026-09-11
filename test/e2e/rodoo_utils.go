@@ -6,8 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver/v4"
-
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -15,30 +13,131 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	k8sclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
 
+	o "github.com/onsi/gomega"
+
 	operatorsv1api "github.com/openshift/api/operator/v1"
 	olmlib "github.com/openshift/library-go/test/library/olm"
-	rodov1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
-	rodoclient "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
+	rodoov1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
+	rodooclient "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
 )
 
-// createOLMOperatorGroup creates an OperatorGroup for the operator
-func createOLMOperatorGroup(ctx context.Context, dynamicClient dynamic.Interface, og *operatorsv1.OperatorGroup) error {
+func installOperatorWithSubscription(
+	ctx context.Context,
+	kubeClient *k8sclient.Clientset,
+	rodooClient *rodooclient.Clientset,
+	dynamicClient dynamic.Interface,
+	rodooNamespace string,
+) error {
+	klog.Infof("Creating the operator namespace")
+	namespaceObj := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: rodooNamespace,
+			Labels: map[string]string{
+				"openshift.io/cluster-monitoring": "true",
+			},
+		},
+	}
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, namespaceObj, metav1.CreateOptions{})
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		return err
+	}
+
+	klog.Infof("Setting up OperatorGroup")
+	og := &operatorsv1.OperatorGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rodoo-og",
+			Namespace: namespaceObj.Name,
+		},
+		Spec: operatorsv1.OperatorGroupSpec{
+			TargetNamespaces: []string{namespaceObj.Name},
+		},
+	}
+
+	klog.Infof("Fetching subscription details from packagemanifest")
+	sub, err := packagemanifestRODOO(ctx, dynamicClient, "run-once-duration-override-operator", namespaceObj.Name, []string{"redhat-operators"})
+	if err != nil {
+		return err
+	}
+
+	klog.Infof("Creating OperatorGroup")
+	err = createOperatorGroup(ctx, dynamicClient, og)
+	if err != nil {
+		return err
+	}
+
+	klog.Infof("Creating Subscription")
+	err = createSubscription(ctx, dynamicClient, sub)
+	if err != nil {
+		return err
+	}
+
+	klog.Infof("Waiting for RODOO operator deployment")
+	err = waitForDeploymentReady(ctx, kubeClient, namespaceObj.Name, "run-once-duration-override-operator")
+	o.Expect(err).NotTo(o.HaveOccurred())
+
+	klog.Infof("Waiting for CSV to succeed")
+	var csvName string
+	err = wait.PollUntilContextTimeout(ctx, 5*time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
+		name, err := getCSVName(ctx, dynamicClient, namespaceObj.Name, "")
+		if err != nil {
+			klog.V(2).Infof("CSV not yet available: %v", err)
+			return false, nil
+		}
+		csvName = name
+		return true, nil
+	})
+	if err != nil {
+		return err
+	}
+	err = waitForCSVSucceeded(ctx, dynamicClient, namespaceObj.Name, csvName)
+	if err != nil {
+		return err
+	}
+
+	klog.Infof("RODOO operator successfully installed via OLM, CSV: %s", csvName)
+
+	klog.Infof("Creating RunOnceDurationOverride CR")
+	err = createRunOnceDurationOverride(ctx, rodooClient, 60)
+	if err != nil {
+		return err
+	}
+
+	klog.Infof("Waiting for DaemonSet to be ready")
+	err = waitForDaemonSetReady(ctx, kubeClient, namespaceObj.Name, "runoncedurationoverride")
+	if err != nil {
+		return err
+	}
+
+	klog.Infof("Waiting for all DS pods to be running")
+	err = waitForDaemonSetPodsRunning(ctx, kubeClient, namespaceObj.Name, rodooDSLabel)
+	if err != nil {
+		return err
+	}
+
+	klog.Infof("RODOO operator fully operational with activeDeadlineSeconds=60")
+	return nil
+}
+
+// createOperatorGroup creates an OperatorGroup for the operator
+func createOperatorGroup(ctx context.Context, dynamicClient dynamic.Interface, og *operatorsv1.OperatorGroup) error {
 	klog.Infof("Creating OperatorGroup %s in namespace %s", og.Name, og.Namespace)
 
-	og.SetGroupVersionKind(operatorsv1.SchemeGroupVersion.WithKind("OperatorGroup"))
 	unstructuredOG, err := runtime.DefaultUnstructuredConverter.ToUnstructured(og)
 	if err != nil {
 		return fmt.Errorf("failed to convert OperatorGroup to unstructured: %w", err)
 	}
 
-	err = olmlib.CreateOperatorGroup(ctx, dynamicClient, &unstructured.Unstructured{Object: unstructuredOG})
+	u := &unstructured.Unstructured{Object: unstructuredOG}
+	u.SetAPIVersion("operators.coreos.com/v1")
+	u.SetKind("OperatorGroup")
+
+	err = olmlib.CreateOperatorGroup(ctx, dynamicClient, u)
 	if err != nil {
 		return fmt.Errorf("failed to create OperatorGroup %s: %w", og.Name, err)
 	}
@@ -47,17 +146,20 @@ func createOLMOperatorGroup(ctx context.Context, dynamicClient dynamic.Interface
 	return nil
 }
 
-// deleteOLMOperatorGroup deletes the OperatorGroup
-func deleteOLMOperatorGroup(ctx context.Context, dynamicClient dynamic.Interface, og *operatorsv1.OperatorGroup) error {
+// deleteOperatorGroup deletes the OperatorGroup
+func deleteOperatorGroup(ctx context.Context, dynamicClient dynamic.Interface, og *operatorsv1.OperatorGroup) error {
 	klog.Infof("Deleting OperatorGroup %s in namespace %s", og.Name, og.Namespace)
 
-	og.SetGroupVersionKind(operatorsv1.SchemeGroupVersion.WithKind("OperatorGroup"))
 	unstructuredOG, err := runtime.DefaultUnstructuredConverter.ToUnstructured(og)
 	if err != nil {
 		return fmt.Errorf("failed to convert OperatorGroup to unstructured: %w", err)
 	}
 
-	err = olmlib.DeleteOperatorGroup(ctx, dynamicClient, &unstructured.Unstructured{Object: unstructuredOG})
+	u := &unstructured.Unstructured{Object: unstructuredOG}
+	u.SetAPIVersion("operators.coreos.com/v1")
+	u.SetKind("OperatorGroup")
+
+	err = olmlib.DeleteOperatorGroup(ctx, dynamicClient, u)
 	if err != nil {
 		return fmt.Errorf("failed to delete OperatorGroup %s: %w", og.Name, err)
 	}
@@ -66,17 +168,20 @@ func deleteOLMOperatorGroup(ctx context.Context, dynamicClient dynamic.Interface
 	return nil
 }
 
-// createOLMSubscription creates a Subscription for the operator
-func createOLMSubscription(ctx context.Context, dynamicClient dynamic.Interface, sub *operatorsv1alpha1.Subscription) error {
+// createSubscription creates a Subscription for the operator
+func createSubscription(ctx context.Context, dynamicClient dynamic.Interface, sub *operatorsv1alpha1.Subscription) error {
 	klog.Infof("Creating Subscription %s in namespace %s", sub.Name, sub.Namespace)
 
-	sub.SetGroupVersionKind(operatorsv1alpha1.SchemeGroupVersion.WithKind("Subscription"))
 	unstructuredSub, err := runtime.DefaultUnstructuredConverter.ToUnstructured(sub)
 	if err != nil {
 		return fmt.Errorf("failed to convert Subscription to unstructured: %w", err)
 	}
 
-	err = olmlib.CreateSubscription(ctx, dynamicClient, &unstructured.Unstructured{Object: unstructuredSub})
+	u := &unstructured.Unstructured{Object: unstructuredSub}
+	u.SetAPIVersion("operators.coreos.com/v1alpha1")
+	u.SetKind("Subscription")
+
+	err = olmlib.CreateSubscription(ctx, dynamicClient, u)
 	if err != nil {
 		return fmt.Errorf("failed to create Subscription %s: %w", sub.Name, err)
 	}
@@ -85,17 +190,20 @@ func createOLMSubscription(ctx context.Context, dynamicClient dynamic.Interface,
 	return nil
 }
 
-// deleteOLMSubscription deletes the Subscription
-func deleteOLMSubscription(ctx context.Context, dynamicClient dynamic.Interface, sub *operatorsv1alpha1.Subscription) error {
+// deleteSubscription deletes the Subscription
+func deleteSubscription(ctx context.Context, dynamicClient dynamic.Interface, sub *operatorsv1alpha1.Subscription) error {
 	klog.Infof("Deleting Subscription %s in namespace %s", sub.Name, sub.Namespace)
 
-	sub.SetGroupVersionKind(operatorsv1alpha1.SchemeGroupVersion.WithKind("Subscription"))
 	unstructuredSub, err := runtime.DefaultUnstructuredConverter.ToUnstructured(sub)
 	if err != nil {
 		return fmt.Errorf("failed to convert Subscription to unstructured: %w", err)
 	}
 
-	err = olmlib.DeleteSubscription(ctx, dynamicClient, &unstructured.Unstructured{Object: unstructuredSub})
+	u := &unstructured.Unstructured{Object: unstructuredSub}
+	u.SetAPIVersion("operators.coreos.com/v1alpha1")
+	u.SetKind("Subscription")
+
+	err = olmlib.DeleteSubscription(ctx, dynamicClient, u)
 	if err != nil {
 		return fmt.Errorf("failed to delete Subscription %s: %w", sub.Name, err)
 	}
@@ -104,145 +212,56 @@ func deleteOLMSubscription(ctx context.Context, dynamicClient dynamic.Interface,
 	return nil
 }
 
-var packageManifestGVR = schema.GroupVersionResource{
-	Group:    "packages.operators.coreos.com",
-	Version:  "v1",
-	Resource: "packagemanifests",
-}
+// packagemanifestRODOO fetches packagemanifest values dynamically for run-once-duration-override-operator
+func packagemanifestRODOO(ctx context.Context, dynamicClient dynamic.Interface, packageName, namespace string, catalogNames []string) (*operatorsv1alpha1.Subscription, error) {
+	klog.Infof("Fetching packagemanifest values for %s", packageName)
 
-// packagemanifestRODO queries packagemanifest values for run-once-duration-override-operator
-// from specific catalog sources. It filters by catalog label and verifies the expected version
-// before returning a matching subscription.
-func packagemanifestRODO(ctx context.Context, dynamicClient dynamic.Interface, packageName, namespace, expectedVersion string, catalogNames []string) (*operatorsv1alpha1.Subscription, error) {
-	klog.Infof("Fetching packagemanifest values for %s with expected version %s", packageName, expectedVersion)
-
-	var lastErr error
-	for _, catalogName := range catalogNames {
-		klog.Infof("Checking catalog: %s", catalogName)
-
-		err := olmlib.CatalogSourceExists(ctx, dynamicClient, catalogName, namespace)
-		if err != nil {
-			klog.Infof("Catalog source %s not available: %v", catalogName, err)
-			lastErr = err
-			continue
-		}
-
-		pmList, err := dynamicClient.Resource(packageManifestGVR).Namespace(namespace).List(ctx, metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("catalog=%s", catalogName),
-		})
-		if err != nil {
-			klog.Infof("Failed to list packagemanifests for catalog %s: %v", catalogName, err)
-			lastErr = err
-			continue
-		}
-
-		var found *unstructured.Unstructured
-		for i := range pmList.Items {
-			if pmList.Items[i].GetName() == packageName {
-				found = &pmList.Items[i]
-				break
-			}
-		}
-
-		if found == nil {
-			klog.Infof("Package %s not found in catalog %s", packageName, catalogName)
-			lastErr = fmt.Errorf("package %s not found in catalog %s", packageName, catalogName)
-			continue
-		}
-
-		defaultChannel, found2, err := unstructured.NestedString(found.Object, "status", "defaultChannel")
-		if err != nil {
-			lastErr = fmt.Errorf("package %s in catalog %s: failed to read defaultChannel: %w", packageName, catalogName, err)
-			continue
-		}
-		if !found2 || defaultChannel == "" {
-			lastErr = fmt.Errorf("package %s in catalog %s has no defaultChannel", packageName, catalogName)
-			continue
-		}
-
-		channels, found2, err := unstructured.NestedSlice(found.Object, "status", "channels")
-		if err != nil {
-			lastErr = fmt.Errorf("package %s in catalog %s: failed to read channels: %w", packageName, catalogName, err)
-			continue
-		}
-		if !found2 {
-			lastErr = fmt.Errorf("package %s in catalog %s has no channels", packageName, catalogName)
-			continue
-		}
-		var startingCSV string
-		for _, ch := range channels {
-			chMap, ok := ch.(map[string]interface{})
-			if !ok {
-				continue
-			}
-			name, _, err := unstructured.NestedString(chMap, "name")
-			if err != nil {
-				continue
-			}
-			if name == defaultChannel {
-				startingCSV, _, err = unstructured.NestedString(chMap, "currentCSV")
-				if err != nil {
-					lastErr = fmt.Errorf("package %s in catalog %s: failed to read currentCSV: %w", packageName, catalogName, err)
-					break
-				}
-				break
-			}
-		}
-
-		if startingCSV == "" {
-			lastErr = fmt.Errorf("package %s in catalog %s has no currentCSV for channel %s", packageName, catalogName, defaultChannel)
-			continue
-		}
-
-		if !csvVersionEquals(startingCSV, expectedVersion) {
-			klog.Infof("Package %s in catalog %s has version %s, expected %s, trying next catalog", packageName, catalogName, startingCSV, expectedVersion)
-			lastErr = fmt.Errorf("package %s in catalog %s has version %s, expected %s", packageName, catalogName, startingCSV, expectedVersion)
-			continue
-		}
-
-		klog.Infof("Found matching package manifest in catalog %s: channel=%s, startingCSV=%s", catalogName, defaultChannel, startingCSV)
-
-		sub := &operatorsv1alpha1.Subscription{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      packageName,
-				Namespace: namespace,
-			},
-			Spec: &operatorsv1alpha1.SubscriptionSpec{
-				CatalogSource:          catalogName,
-				CatalogSourceNamespace: namespace,
-				Package:                packageName,
-				Channel:                defaultChannel,
-				StartingCSV:            startingCSV,
-			},
-		}
-
-		return sub, nil
+	unstructuredSub, err := olmlib.BuildSubscriptionFromPackageManifest(ctx, dynamicClient, packageName, namespace)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get packagemanifest %s: %w", packageName, err)
 	}
 
-	return nil, fmt.Errorf("package %s with version %s not found in any of the specified catalogs %v: %w", packageName, expectedVersion, catalogNames, lastErr)
+	sub := &operatorsv1alpha1.Subscription{}
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredSub.Object, sub)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert Subscription from unstructured: %w", err)
+	}
+
+	// The unstructured Subscription uses "package" for the package name field,
+	// but the typed Subscription struct maps Package to JSON tag "name".
+	// FromUnstructured looks for "name" in spec and finds nothing, leaving
+	// Spec.Package empty. Set it explicitly from the known packageName.
+	if sub.Spec.Package == "" {
+		sub.Spec.Package = packageName
+	}
+
+	klog.Infof("Found package manifest: channel=%s, source=%s, startingCSV=%s",
+		sub.Spec.Channel, sub.Spec.CatalogSource, sub.Spec.StartingCSV)
+
+	return sub, nil
 }
 
 // createRunOnceDurationOverride creates a RunOnceDurationOverride CR
-func createRunOnceDurationOverride(ctx context.Context, rodoClient *rodoclient.Clientset, activeDeadlineSeconds int64) error {
+func createRunOnceDurationOverride(ctx context.Context, rodooClient *rodooclient.Clientset, activeDeadlineSeconds int64) error {
 	klog.Infof("Creating RunOnceDurationOverride CR with activeDeadlineSeconds=%d", activeDeadlineSeconds)
 
-	cr := &rodov1.RunOnceDurationOverride{
+	cr := &rodoov1.RunOnceDurationOverride{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "cluster",
 		},
-		Spec: rodov1.RunOnceDurationOverrideSpec{
+		Spec: rodoov1.RunOnceDurationOverrideSpec{
 			OperatorSpec: operatorsv1api.OperatorSpec{
 				ManagementState: operatorsv1api.Managed,
 			},
-			RunOnceDurationOverrideConfig: rodov1.RunOnceDurationOverrideConfig{
-				Spec: rodov1.RunOnceDurationOverrideConfigSpec{
+			RunOnceDurationOverrideConfig: rodoov1.RunOnceDurationOverrideConfig{
+				Spec: rodoov1.RunOnceDurationOverrideConfigSpec{
 					ActiveDeadlineSeconds: activeDeadlineSeconds,
 				},
 			},
 		},
 	}
 
-	_, err := rodoClient.RunOnceDurationOverrideV1().RunOnceDurationOverrides().Create(ctx, cr, metav1.CreateOptions{})
+	_, err := rodooClient.RunOnceDurationOverrideV1().RunOnceDurationOverrides().Create(ctx, cr, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create RunOnceDurationOverride CR: %w", err)
 	}
@@ -252,10 +271,10 @@ func createRunOnceDurationOverride(ctx context.Context, rodoClient *rodoclient.C
 }
 
 // deleteRunOnceDurationOverride deletes the RunOnceDurationOverride CR
-func deleteRunOnceDurationOverride(ctx context.Context, rodoClient *rodoclient.Clientset, name string) error {
+func deleteRunOnceDurationOverride(ctx context.Context, rodooClient *rodooclient.Clientset, name string) error {
 	klog.Infof("Deleting RunOnceDurationOverride CR %s", name)
 
-	err := rodoClient.RunOnceDurationOverrideV1().RunOnceDurationOverrides().Delete(ctx, name, metav1.DeleteOptions{})
+	err := rodooClient.RunOnceDurationOverrideV1().RunOnceDurationOverrides().Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to delete RunOnceDurationOverride CR %s: %w", name, err)
 	}
@@ -265,18 +284,18 @@ func deleteRunOnceDurationOverride(ctx context.Context, rodoClient *rodoclient.C
 }
 
 // patchRunOnceDurationOverrideADS patches the RunOnceDurationOverride CR to change activeDeadlineSeconds
-func patchRunOnceDurationOverrideADS(ctx context.Context, rodoClient *rodoclient.Clientset, name string, newADS int64) error {
+func patchRunOnceDurationOverrideADS(ctx context.Context, rodooClient *rodooclient.Clientset, name string, newADS int64) error {
 	klog.Infof("Patching RunOnceDurationOverride CR %s with activeDeadlineSeconds=%d", name, newADS)
 
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		cr, err := rodoClient.RunOnceDurationOverrideV1().RunOnceDurationOverrides().Get(ctx, name, metav1.GetOptions{})
+		cr, err := rodooClient.RunOnceDurationOverrideV1().RunOnceDurationOverrides().Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to get RunOnceDurationOverride CR: %w", err)
 		}
 
 		cr.Spec.RunOnceDurationOverrideConfig.Spec.ActiveDeadlineSeconds = newADS
 
-		_, err = rodoClient.RunOnceDurationOverrideV1().RunOnceDurationOverrides().Update(ctx, cr, metav1.UpdateOptions{})
+		_, err = rodooClient.RunOnceDurationOverrideV1().RunOnceDurationOverrides().Update(ctx, cr, metav1.UpdateOptions{})
 		return err
 	})
 	if err != nil {
@@ -287,9 +306,9 @@ func patchRunOnceDurationOverrideADS(ctx context.Context, rodoClient *rodoclient
 	return nil
 }
 
-// waitForRODODeploymentReady waits for a deployment to have the expected number of ready replicas
-func waitForRODODeploymentReady(ctx context.Context, kubeClient *k8sclient.Clientset, namespace, name string) error {
-	return wait.PollUntilContextTimeout(ctx, 5*time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
+// waitForDeploymentReady waits for a deployment to have the expected number of ready replicas
+func waitForDeploymentReady(ctx context.Context, kubeClient *k8sclient.Clientset, namespace, name string) error {
+	return wait.PollUntilContextTimeout(ctx, 5*time.Second, 3*time.Minute, true, func(ctx context.Context) (bool, error) {
 		deployment, err := kubeClient.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			klog.Warningf("Failed to get deployment %s/%s: %v", namespace, name, err)
@@ -297,7 +316,7 @@ func waitForRODODeploymentReady(ctx context.Context, kubeClient *k8sclient.Clien
 		}
 
 		if deployment.Spec.Replicas == nil {
-			return false, nil
+			return false, fmt.Errorf("deployment %s/%s has nil Spec.Replicas", namespace, name)
 		}
 
 		if deployment.Status.ReadyReplicas >= *deployment.Spec.Replicas {
@@ -415,38 +434,52 @@ func waitForPodActiveDeadlineSeconds(ctx context.Context, kubeClient *k8sclient.
 	})
 }
 
-// getRODOCSVName gets the CSV name for the operator
-func getRODOCSVName(ctx context.Context, dynamicClient dynamic.Interface, namespace, labelSelector string) (string, error) {
+// getCSVName gets the CSV name for the operator using label selector
+func getCSVName(ctx context.Context, dynamicClient dynamic.Interface, namespace, labelSelector string) (string, error) {
 	csvName, err := olmlib.GetTheLatestCSVName(ctx, dynamicClient, namespace, labelSelector)
 	if err != nil {
-		return "", fmt.Errorf("failed to get CSV name: %w", err)
+		return "", fmt.Errorf("failed to list CSVs: %w", err)
 	}
 
 	klog.Infof("Found CSV: %s", csvName)
 	return csvName, nil
 }
 
-// getRODOCSVRelatedImages gets the relatedImages from a CSV
-func getRODOCSVRelatedImages(ctx context.Context, dynamicClient dynamic.Interface, namespace, csvName string) ([]olmlib.RelatedImage, error) {
+// RelatedImage represents an image referenced in a CSV
+type RelatedImage struct {
+	Name  string
+	Image string
+}
+
+// getCSVRelatedImages gets the relatedImages from a CSV
+func getCSVRelatedImages(ctx context.Context, dynamicClient dynamic.Interface, namespace, csvName string) ([]RelatedImage, error) {
 	csvUnstructured, err := dynamicClient.Resource(olmlib.CSVGVR()).Namespace(namespace).Get(ctx, csvName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get CSV %s: %w", csvName, err)
 	}
 
-	images, err := olmlib.GetCSVRelatedImages(csvUnstructured)
+	libImages, err := olmlib.GetCSVRelatedImages(csvUnstructured)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get CSV related images: %w", err)
+	}
+
+	images := make([]RelatedImage, len(libImages))
+	for i, img := range libImages {
+		images[i] = RelatedImage{
+			Name:  img.Name,
+			Image: img.Image,
+		}
 	}
 
 	klog.Infof("Found %d related images in CSV %s", len(images), csvName)
 	return images, nil
 }
 
-// waitForRODOCSVSucceeded waits for CSV to reach Succeeded phase
-func waitForRODOCSVSucceeded(ctx context.Context, dynamicClient dynamic.Interface, namespace, csvName string) error {
+// waitForCSVSucceeded waits for CSV to reach Succeeded phase
+func waitForCSVSucceeded(ctx context.Context, dynamicClient dynamic.Interface, namespace, csvName string) error {
 	klog.Infof("Waiting for CSV %s/%s to succeed", namespace, csvName)
 
-	err := wait.PollUntilContextTimeout(ctx, 10*time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
+	err := wait.PollUntilContextTimeout(ctx, 10*time.Second, 3*time.Minute, true, func(ctx context.Context) (bool, error) {
 		csv, err := dynamicClient.Resource(olmlib.CSVGVR()).Namespace(namespace).Get(ctx, csvName, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
@@ -483,22 +516,6 @@ func waitForRODOCSVSucceeded(ctx context.Context, dynamicClient dynamic.Interfac
 	return nil
 }
 
-// waitForNamespaceDeletion waits for a namespace to be fully deleted
-func waitForNamespaceDeletion(ctx context.Context, kubeClient *k8sclient.Clientset, namespace string) error {
-	return wait.PollUntilContextTimeout(ctx, 5*time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
-		_, err := kubeClient.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
-		if apierrors.IsNotFound(err) {
-			klog.Infof("Namespace %s fully deleted", namespace)
-			return true, nil
-		}
-		if err != nil {
-			return false, err
-		}
-		klog.Infof("Waiting for namespace %s to be deleted...", namespace)
-		return false, nil
-	})
-}
-
 // verifyPodDeadlineExceeded checks that a pod has status reason DeadlineExceeded
 func verifyPodDeadlineExceeded(ctx context.Context, kubeClient *k8sclient.Clientset, namespace, podName string) error {
 	pod, err := kubeClient.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
@@ -519,28 +536,4 @@ func verifyPodDeadlineExceeded(ctx context.Context, kubeClient *k8sclient.Client
 	}
 
 	return fmt.Errorf("pod %s does not have DeadlineExceeded reason, status reason: %s, phase: %s", podName, pod.Status.Reason, pod.Status.Phase)
-}
-
-// csvVersionEquals extracts the semver from a CSV name (e.g. "operator.v1.4.1")
-// and compares it against an expected version string (e.g. "v1.4.1" or "1.4.1").
-func csvVersionEquals(csvName, expectedVersion string) bool {
-	csvVer := csvName
-	if idx := strings.LastIndex(csvName, ".v"); idx >= 0 {
-		csvVer = csvName[idx+2:]
-	} else {
-		csvVer = strings.TrimPrefix(csvVer, "v")
-	}
-
-	expected := strings.TrimPrefix(expectedVersion, "v")
-
-	csvSemver, err := semver.Parse(csvVer)
-	if err != nil {
-		return false
-	}
-	expectedSemver, err := semver.Parse(expected)
-	if err != nil {
-		return false
-	}
-
-	return csvSemver.EQ(expectedSemver)
 }
