@@ -19,7 +19,8 @@ ARG REPLACED_OPERATOR_IMG=registry-proxy.engineering.redhat.com/rh-osbs/run-once
 ARG REPLACED_OPERAND_IMG=registry-proxy.engineering.redhat.com/rh-osbs/run-once-duration-override-rhel-9:latest
 
 RUN hack/replace-image.sh manifests ${REPLACED_OPERATOR_IMG} ${OPERATOR_IMAGE}
-RUN hack/replace-image.sh manifests ${REPLACED_OPERAND_IMG}  ${OPERAND_IMAGE}
+RUN hack/replace-image.sh manifests ${REPLACED_OPERAND_IMG} ${OPERAND_IMAGE}
+RUN sed -i "s/createdAt: \".*\"/createdAt: \"$(date -I)\"/" manifests/runoncedurationoverride-operator.clusterserviceversion.yaml
 
 FROM registry.redhat.io/rhel9-2-els/rhel-minimal:9.2-1789004760
 
