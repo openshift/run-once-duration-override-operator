@@ -8,15 +8,15 @@ This operator manages OpenShift `RunOnceDurationOverride` Admission Webhook Serv
 ```yaml
 releases:
 - {version: "1.0.0",       ocp: "4.13, 4.14", k8s: "1.26", go: "1.20", release_branch: "4.13"}
-- {version: "1.0.1-1.0.3", ocp: "4.13, 4.14", k8s: "1.27", go: "1.20", release_branch: "4.14"}
+- {version: "1.0.1-1.0.4", ocp: "4.13, 4.14", k8s: "1.27", go: "1.20", release_branch: "4.14"}
 - {version: "1.1.0",       ocp: "4.15, 4.16", k8s: "1.28", go: "1.20", release_branch: "4.15"}
-- {version: "1.1.1-1.1.3", ocp: "4.15, 4.16", k8s: "1.29", go: "1.21", release_branch: "4.16"}
+- {version: "1.1.1-1.1.4", ocp: "4.15, 4.16", k8s: "1.29", go: "1.21", release_branch: "4.16"}
 - {version: "1.2.0",       ocp: "4.17, 4.18", k8s: "1.30", go: "1.22", release_branch: "4.17"}
-- {version: "1.2.1-1.2.3", ocp: "4.17, 4.18", k8s: "1.31", go: "1.22", release_branch: "4.18"}
+- {version: "1.2.1-1.2.4", ocp: "4.17, 4.18", k8s: "1.31", go: "1.22", release_branch: "4.18"}
 - {version: "1.3.0",       ocp: "4.19, 4.20", k8s: "1.32", go: "1.23", release_branch: "4.19"}
-- {version: "1.3.1",       ocp: "4.19, 4.20", k8s: "1.33", go: "1.24", release_branch: "4.20"}
+- {version: "1.3.1-1.3.2", ocp: "4.19, 4.20", k8s: "1.33", go: "1.24", release_branch: "4.20"}
 - {version: "1.4.0",       ocp: "4.21, 4.22", k8s: "1.34", go: "1.24", release_branch: "4.21"}
-- {version: "1.4.1",       ocp: "4.21, 4.22", k8s: "1.35", go: "1.25", release_branch: "4.22"}
+- {version: "1.4.1-1.4.2", ocp: "4.21, 4.22", k8s: "1.35", go: "1.25", release_branch: "4.22"}
 - {version: "1.5.0",       ocp: "5.0",        k8s: "1.36", go: "1.26", release_branch: "5.0"}
 ```
 
