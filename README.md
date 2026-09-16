@@ -5,7 +5,7 @@ This operator manages OpenShift `RunOnceDurationOverride` Admission Webhook Serv
 
 ## Releases
 
-```yaml
+```
 releases:
 - {version: "1.0.0",       ocp: "4.13, 4.14", k8s: "1.26", go: "1.20", release_branch: "4.13"}
 - {version: "1.0.1-1.0.4", ocp: "4.13, 4.14", k8s: "1.27", go: "1.20", release_branch: "4.14"}
