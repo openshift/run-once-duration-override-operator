@@ -68,6 +68,7 @@ func NewTargetConfigController(
 			NewDaemonSetHandler(kubeClient, recorder, operandAsset, deployInterface),
 			NewDeploymentReadyHandler(deployInterface),
 			NewWebhookConfigurationHandlerHandler(kubeClient, recorder, informerFactory.Admissionregistration().V1().MutatingWebhookConfigurations().Lister(), operandAsset),
+			NewNetworkPolicyDefaultDenyHandler(kubeClient, recorder, operandAsset),
 			NewAvailabilityHandler(operandAsset, deployInterface),
 		},
 	}
@@ -83,6 +84,8 @@ func NewTargetConfigController(
 		informerFactory.Core().V1().Secrets().Informer(),
 		informerFactory.Core().V1().ServiceAccounts().Informer(),
 		informerFactory.Admissionregistration().V1().MutatingWebhookConfigurations().Informer(),
+		// Watch NetworkPolicies so the controller reacts to deletion or modification.
+		informerFactory.Networking().V1().NetworkPolicies().Informer(),
 	).WithSync(c.sync).ToController(ControllerName, recorder)
 }
 
