@@ -12,8 +12,12 @@ import (
 	o "github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	k8sclient "k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 	clocktesting "k8s.io/utils/clock/testing"
@@ -26,6 +30,15 @@ import (
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
 	runoncedurationoverridescheme "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned/scheme"
 	"github.com/openshift/run-once-duration-override-operator/test/e2e/bindata"
+)
+
+const (
+	operatorNamespace = "openshift-run-once-duration-override-operator"
+	operatorSAName    = "run-once-duration-override-operator"
+	testSAName        = "rodo-e2e-test"
+	netpolName        = "run-once-duration-override-operand"
+	curlImage         = "curlimages/curl"
+	httpServerImage   = "registry.access.redhat.com/ubi9/ubi:latest"
 )
 
 // Ginkgo test specs - calls the shared test functions
@@ -58,6 +71,136 @@ var _ = g.Describe("[sig-scheduling][Operator][Serial] RunOnceDurationOverride O
 				g.By("Cleaning up test namespace")
 				cleanupTestNamespace(g.GinkgoTB(), ctx, kubeClient, testNamespace)
 			})
+		})
+	})
+
+	g.Context("NetworkPolicy Traffic Blocking", func() {
+		g.It("should allow traffic to unlabeled pods (positive control) [Suite:openshift/run-once-duration-override-operator/operator/serial]", func() {
+			var targetName, curlName string
+			g.DeferCleanup(func() {
+				fd := metav1.DeleteOptions{GracePeriodSeconds: utilpointer.Int64Ptr(0)}
+				if targetName != "" {
+					_ = kubeClient.CoreV1().Pods(operatorNamespace).Delete(ctx, targetName, fd)
+				}
+				if curlName != "" {
+					_ = kubeClient.CoreV1().Pods(operatorNamespace).Delete(ctx, curlName, fd)
+				}
+			})
+			pod := newHTTPServerPod("netpol-control-", operatorNamespace, nil, "")
+			createdTarget, err := kubeClient.CoreV1().Pods(operatorNamespace).Create(ctx, pod, metav1.CreateOptions{})
+			o.Expect(err).NotTo(o.HaveOccurred())
+			targetName = createdTarget.Name
+			podIP := waitForPodReady(ctx, kubeClient, operatorNamespace, targetName)
+			cmd := []string{"curl", "-sk", "--connect-timeout", "5", "-o", "/dev/null", "-w", "%{http_code}", fmt.Sprintf("http://%s:8080", podIP)}
+			curlPod := newNetpolTestPod("netpol-curl-", operatorNamespace, curlImage, cmd, nil, "")
+			createdCurl, err := kubeClient.CoreV1().Pods(operatorNamespace).Create(ctx, curlPod, metav1.CreateOptions{})
+			o.Expect(err).NotTo(o.HaveOccurred())
+			curlName = createdCurl.Name
+			result := waitForCurlResult(ctx, kubeClient, operatorNamespace, curlName)
+			o.Expect(result).NotTo(o.Equal("000"), "traffic to unlabeled pod should not be blocked")
+		})
+		g.It("should block ingress from the same namespace [Suite:openshift/run-once-duration-override-operator/operator/serial]", func() {
+			assertTrafficBlocked(ctx, kubeClient, true, operatorNamespace, nil)
+		})
+		g.It("should block ingress from a different namespace [Suite:openshift/run-once-duration-override-operator/operator/serial]", func() {
+			assertTrafficBlocked(ctx, kubeClient, true, "default", nil)
+		})
+		g.It("should block egress to the API server [Suite:openshift/run-once-duration-override-operator/operator/serial]", func() {
+			assertTrafficBlocked(ctx, kubeClient, false, operatorNamespace,
+				utilpointer.StringPtr("https://kubernetes.default.svc.cluster.local/healthz"))
+		})
+		g.It("should block egress to external IPs [Suite:openshift/run-once-duration-override-operator/operator/serial]", func() {
+			assertTrafficBlocked(ctx, kubeClient, false, operatorNamespace,
+				utilpointer.StringPtr("https://1.1.1.1"))
+		})
+	})
+
+	g.Context("NetworkPolicy Reconciliation", func() {
+		g.It("should revert patched ingress rules [Suite:openshift/run-once-duration-override-operator/operator/serial]", func() {
+			patchAndExpectRevert(ctx, kubeClient, func(np *networkingv1.NetworkPolicy) {
+				np.Spec.Ingress = []networkingv1.NetworkPolicyIngressRule{{Ports: []networkingv1.NetworkPolicyPort{
+					{Protocol: protocolPtr(corev1.ProtocolTCP), Port: portPtr(9999)},
+				}}}
+			}, func(np *networkingv1.NetworkPolicy) bool { return len(np.Spec.Ingress) == 0 })
+		})
+		g.It("should revert patched egress rules [Suite:openshift/run-once-duration-override-operator/operator/serial]", func() {
+			patchAndExpectRevert(ctx, kubeClient, func(np *networkingv1.NetworkPolicy) {
+				np.Spec.Egress = []networkingv1.NetworkPolicyEgressRule{
+					{To: []networkingv1.NetworkPolicyPeer{{IPBlock: &networkingv1.IPBlock{CIDR: "0.0.0.0/0"}}}},
+				}
+			}, func(np *networkingv1.NetworkPolicy) bool { return len(np.Spec.Egress) == 0 })
+		})
+		g.It("should revert patched podSelector [Suite:openshift/run-once-duration-override-operator/operator/serial]", func() {
+			patchAndExpectRevert(ctx, kubeClient, func(np *networkingv1.NetworkPolicy) {
+				np.Spec.PodSelector.MatchLabels["runoncedurationoverride"] = "false"
+			}, func(np *networkingv1.NetworkPolicy) bool {
+				return np.Spec.PodSelector.MatchLabels["runoncedurationoverride"] == "true"
+			})
+		})
+		g.It("should restore removed policyTypes [Suite:openshift/run-once-duration-override-operator/operator/serial]", func() {
+			patchAndExpectRevert(ctx, kubeClient, func(np *networkingv1.NetworkPolicy) {
+				np.Spec.PolicyTypes = []networkingv1.PolicyType{}
+			}, func(np *networkingv1.NetworkPolicy) bool { return len(np.Spec.PolicyTypes) == 2 })
+		})
+		g.It("should recreate a deleted NetworkPolicy [Suite:openshift/run-once-duration-override-operator/operator/serial]", func() {
+			err := kubeClient.NetworkingV1().NetworkPolicies(operatorNamespace).Delete(ctx, netpolName, metav1.DeleteOptions{})
+			o.Expect(err).NotTo(o.HaveOccurred())
+			o.Eventually(func() error {
+				_, err := kubeClient.NetworkingV1().NetworkPolicies(operatorNamespace).Get(ctx, netpolName, metav1.GetOptions{})
+				return err
+			}, 30*time.Second, 2*time.Second).Should(o.Succeed())
+		})
+		g.It("should recreate the NetworkPolicy with the correct spec [Suite:openshift/run-once-duration-override-operator/operator/serial]", func() {
+			verifyExpectedNetworkPolicySpec(ctx, kubeClient)
+		})
+	})
+
+	g.Context("NetworkPolicy Config Drift Recovery", func() {
+		g.It("should reconcile a tampered policy after operator restart [Suite:openshift/run-once-duration-override-operator/operator/serial]", func() {
+			g.DeferCleanup(func() {
+				cleanupCtx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+				defer cancel()
+				scaleOperator(cleanupCtx, kubeClient, 1)
+			})
+
+			g.By("Scaling operator to zero replicas")
+			scaleOperator(ctx, kubeClient, 0)
+			o.Eventually(func() bool {
+				pods, err := kubeClient.CoreV1().Pods(operatorNamespace).List(ctx, metav1.ListOptions{
+					LabelSelector: "runoncedurationoverride.operator=true",
+				})
+				if err != nil {
+					return false
+				}
+				return len(pods.Items) == 0
+			}, 2*time.Minute, 2*time.Second).Should(o.BeTrue())
+
+			g.By("Tampering with the NetworkPolicy while operator is down")
+			patchNetworkPolicy(ctx, kubeClient, func(np *networkingv1.NetworkPolicy) {
+				np.Spec.Ingress = []networkingv1.NetworkPolicyIngressRule{{Ports: []networkingv1.NetworkPolicyPort{
+					{Protocol: protocolPtr(corev1.ProtocolTCP), Port: portPtr(9999)},
+				}}}
+				np.Spec.Egress = []networkingv1.NetworkPolicyEgressRule{
+					{To: []networkingv1.NetworkPolicyPeer{{IPBlock: &networkingv1.IPBlock{CIDR: "0.0.0.0/0"}}}},
+				}
+			})
+
+			g.By("Scaling operator back up")
+			scaleOperator(ctx, kubeClient, 1)
+			o.Eventually(func() int32 {
+				deploy, err := kubeClient.AppsV1().Deployments(operatorNamespace).Get(ctx, "run-once-duration-override-operator", metav1.GetOptions{})
+				if err != nil {
+					return 0
+				}
+				return deploy.Status.ReadyReplicas
+			}, 2*time.Minute, 2*time.Second).Should(o.BeNumerically(">=", int32(1)))
+
+			g.By("Verifying operator reconciled the policy back to deny-all")
+			o.Eventually(func() bool {
+				np, err := kubeClient.NetworkingV1().NetworkPolicies(operatorNamespace).Get(ctx, netpolName, metav1.GetOptions{})
+				return err == nil && len(np.Spec.Ingress) == 0 && len(np.Spec.Egress) == 0
+			}, 2*time.Minute, 2*time.Second).Should(o.BeTrue())
+			verifyExpectedNetworkPolicySpec(ctx, kubeClient)
 		})
 	})
 })
@@ -173,6 +316,9 @@ func setupOperator(t testing.TB) (context.Context, context.CancelFunc, *k8sclien
 				}
 				requiredSS := requiredObj.(*runoncedurationoverridev1.RunOnceDurationOverride)
 				_, err = runOnceDurationOverrideClient.RunOnceDurationOverrideV1().RunOnceDurationOverrides().Create(ctx, requiredSS, metav1.CreateOptions{})
+				if errors.IsAlreadyExists(err) {
+					return nil
+				}
 				return err
 			},
 		},
@@ -207,7 +353,7 @@ func setupOperator(t testing.TB) (context.Context, context.CancelFunc, *k8sclien
 	deadline = time.Now().Add(1 * time.Minute)
 	operatorRunning := false
 	for time.Now().Before(deadline) {
-		podItems, err := kubeClient.CoreV1().Pods("openshift-run-once-duration-override-operator").List(ctx, metav1.ListOptions{})
+		podItems, err := kubeClient.CoreV1().Pods(operatorNamespace).List(ctx, metav1.ListOptions{})
 		if err == nil {
 			for _, pod := range podItems.Items {
 				if !strings.HasPrefix(pod.Name, "run-once-duration-override-") {
@@ -247,7 +393,7 @@ func setupOperator(t testing.TB) (context.Context, context.CancelFunc, *k8sclien
 	deadline = time.Now().Add(1 * time.Minute)
 	webhooksReady := false
 	for time.Now().Before(deadline) {
-		podItems, err := kubeClient.CoreV1().Pods("openshift-run-once-duration-override-operator").List(ctx, metav1.ListOptions{})
+		podItems, err := kubeClient.CoreV1().Pods(operatorNamespace).List(ctx, metav1.ListOptions{})
 		if err == nil {
 			webhooksRunning := 0
 			for _, pod := range podItems.Items {
@@ -293,9 +439,197 @@ func setupOperator(t testing.TB) (context.Context, context.CancelFunc, *k8sclien
 		return ctx, cancelFnc, nil, fmt.Errorf("mutating webhook configuration not found after timeout")
 	}
 
+	klog.Infof("Waiting for %s NetworkPolicy to be created by operator", netpolName)
+	deadline = time.Now().Add(2 * time.Minute)
+	netpolReady := false
+	for time.Now().Before(deadline) {
+		_, err = kubeClient.NetworkingV1().NetworkPolicies(operatorNamespace).Get(ctx, netpolName, metav1.GetOptions{})
+		if err == nil {
+			klog.Infof("%s NetworkPolicy found", netpolName)
+			netpolReady = true
+			break
+		}
+		time.Sleep(5 * time.Second)
+	}
+	if !netpolReady {
+		return ctx, cancelFnc, nil, fmt.Errorf("%s NetworkPolicy not created by operator after timeout", netpolName)
+	}
+
 	klog.Infof("All operator components are running and ready")
 	return ctx, cancelFnc, kubeClient, nil
 }
+
+func verifyExpectedNetworkPolicySpec(ctx context.Context, kubeClient *k8sclient.Clientset) {
+	np, err := kubeClient.NetworkingV1().NetworkPolicies(operatorNamespace).Get(ctx, netpolName, metav1.GetOptions{})
+	o.Expect(err).NotTo(o.HaveOccurred())
+	o.Expect(np.Spec.PolicyTypes).To(o.ConsistOf(networkingv1.PolicyTypeIngress, networkingv1.PolicyTypeEgress))
+	o.Expect(np.Spec.PodSelector.MatchLabels).To(o.HaveKeyWithValue("runoncedurationoverride", "true"))
+	o.Expect(np.Spec.Ingress).To(o.BeEmpty())
+	o.Expect(np.Spec.Egress).To(o.BeEmpty())
+}
+
+func assertTrafficBlocked(ctx context.Context, kubeClient *k8sclient.Clientset, needsTarget bool, curlNamespace string, url *string) {
+	if curlNamespace != operatorNamespace {
+		ensureTestServiceAccount(ctx, kubeClient, curlNamespace)
+	}
+
+	cm, err := kubeClient.CoreV1().ConfigMaps(operatorNamespace).Create(ctx, &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{GenerateName: "netpol-test-owner-", Namespace: operatorNamespace},
+		Data:       map[string]string{"purpose": "fake owner for netpol test pods"},
+	}, metav1.CreateOptions{})
+	o.Expect(err).NotTo(o.HaveOccurred())
+	ownerUID := cm.UID
+
+	var targetName, curlName string
+	g.DeferCleanup(func() {
+		fd := metav1.DeleteOptions{GracePeriodSeconds: utilpointer.Int64Ptr(0)}
+		if targetName != "" {
+			_ = kubeClient.CoreV1().Pods(operatorNamespace).Delete(ctx, targetName, fd)
+		}
+		if curlName != "" {
+			_ = kubeClient.CoreV1().Pods(curlNamespace).Delete(ctx, curlName, fd)
+		}
+		_ = kubeClient.CoreV1().ConfigMaps(operatorNamespace).Delete(ctx, cm.Name, metav1.DeleteOptions{})
+		if curlNamespace != operatorNamespace {
+			_ = kubeClient.CoreV1().ServiceAccounts(curlNamespace).Delete(ctx, testSAName, metav1.DeleteOptions{})
+		}
+	})
+
+	curlURL := ""
+	if needsTarget {
+		pod := newHTTPServerPod("netpol-target-", operatorNamespace, &ownerUID, cm.Name)
+		created, createErr := kubeClient.CoreV1().Pods(operatorNamespace).Create(ctx, pod, metav1.CreateOptions{})
+		o.Expect(createErr).NotTo(o.HaveOccurred())
+		targetName = created.Name
+		podIP := waitForPodReady(ctx, kubeClient, operatorNamespace, targetName)
+		curlURL = fmt.Sprintf("http://%s:8080", podIP)
+	} else {
+		curlURL = *url
+	}
+
+	var curlOwner *types.UID
+	if !needsTarget {
+		curlOwner = &ownerUID
+	}
+	cmd := []string{"curl", "-sk", "--connect-timeout", "5", "-o", "/dev/null", "-w", "%{http_code}", curlURL}
+	curlPod := newNetpolTestPod("netpol-curl-", curlNamespace, curlImage, cmd, curlOwner, cm.Name)
+	created, err := kubeClient.CoreV1().Pods(curlNamespace).Create(ctx, curlPod, metav1.CreateOptions{})
+	o.Expect(err).NotTo(o.HaveOccurred())
+	curlName = created.Name
+	result := waitForCurlResult(ctx, kubeClient, curlNamespace, curlName)
+	o.Expect(result).To(o.Equal("000"), "traffic should be blocked (expected curl output '000')")
+}
+
+func newNetpolTestPod(prefix, namespace, image string, command []string, ownerUID *types.UID, ownerCMName string) *corev1.Pod {
+	saName := testSAName
+	if namespace == operatorNamespace {
+		saName = operatorSAName
+	}
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: prefix,
+			Namespace:    namespace,
+			Annotations:  map[string]string{"openshift.io/required-scc": "nonroot-v2"},
+		},
+		Spec: corev1.PodSpec{
+			ServiceAccountName: saName,
+			SecurityContext: &corev1.PodSecurityContext{
+				RunAsNonRoot: utilpointer.BoolPtr(true), RunAsUser: utilpointer.Int64Ptr(1000),
+				SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
+			},
+			Containers: []corev1.Container{{
+				Name: "test", Image: image, Command: command,
+				TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
+				SecurityContext: &corev1.SecurityContext{
+					AllowPrivilegeEscalation: utilpointer.BoolPtr(false),
+					Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
+				},
+			}},
+			RestartPolicy: corev1.RestartPolicyNever,
+		},
+	}
+	if ownerUID != nil {
+		pod.Labels = map[string]string{"runoncedurationoverride": "true"}
+		pod.OwnerReferences = []metav1.OwnerReference{{
+			APIVersion: "v1", Kind: "ConfigMap", Name: ownerCMName, UID: *ownerUID,
+			Controller: utilpointer.BoolPtr(true), BlockOwnerDeletion: utilpointer.BoolPtr(false),
+		}}
+	}
+	return pod
+}
+
+func newHTTPServerPod(prefix, namespace string, ownerUID *types.UID, ownerCMName string) *corev1.Pod {
+	pod := newNetpolTestPod(prefix, namespace, httpServerImage, []string{"python3", "-m", "http.server", "8080"}, ownerUID, ownerCMName)
+	pod.Spec.Containers[0].Ports = []corev1.ContainerPort{{ContainerPort: 8080}}
+	pod.Spec.Containers[0].ReadinessProbe = &corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			HTTPGet: &corev1.HTTPGetAction{Path: "/", Port: intstr.FromInt32(8080)},
+		},
+	}
+	return pod
+}
+
+func waitForPodReady(ctx context.Context, kubeClient *k8sclient.Clientset, namespace, name string) string {
+	var podIP string
+	o.Eventually(func() bool {
+		p, err := kubeClient.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
+		if err != nil || len(p.Status.ContainerStatuses) == 0 || !p.Status.ContainerStatuses[0].Ready {
+			return false
+		}
+		podIP = p.Status.PodIP
+		return true
+	}, 2*time.Minute, 2*time.Second).Should(o.BeTrue())
+	return podIP
+}
+
+func waitForCurlResult(ctx context.Context, kubeClient *k8sclient.Clientset, namespace, name string) string {
+	var logs []byte
+	o.Eventually(func() bool {
+		p, err := kubeClient.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
+		if err != nil || (p.Status.Phase != corev1.PodSucceeded && p.Status.Phase != corev1.PodFailed) {
+			return false
+		}
+		logs, _ = kubeClient.CoreV1().Pods(namespace).GetLogs(name, &corev1.PodLogOptions{}).Do(ctx).Raw()
+		return true
+	}, 90*time.Second, 2*time.Second).Should(o.BeTrue())
+	return string(logs)
+}
+
+func patchAndExpectRevert(ctx context.Context, kubeClient *k8sclient.Clientset, mutate func(*networkingv1.NetworkPolicy), check func(*networkingv1.NetworkPolicy) bool) {
+	patchNetworkPolicy(ctx, kubeClient, mutate)
+	o.Eventually(func() bool {
+		np, err := kubeClient.NetworkingV1().NetworkPolicies(operatorNamespace).Get(ctx, netpolName, metav1.GetOptions{})
+		return err == nil && check(np)
+	}, 30*time.Second, 2*time.Second).Should(o.BeTrue())
+}
+
+func patchNetworkPolicy(ctx context.Context, kubeClient *k8sclient.Clientset, mutate func(*networkingv1.NetworkPolicy)) {
+	np, err := kubeClient.NetworkingV1().NetworkPolicies(operatorNamespace).Get(ctx, netpolName, metav1.GetOptions{})
+	o.Expect(err).NotTo(o.HaveOccurred())
+	mutate(np)
+	_, err = kubeClient.NetworkingV1().NetworkPolicies(operatorNamespace).Update(ctx, np, metav1.UpdateOptions{})
+	o.Expect(err).NotTo(o.HaveOccurred())
+}
+
+func ensureTestServiceAccount(ctx context.Context, kubeClient *k8sclient.Clientset, namespace string) {
+	_, err := kubeClient.CoreV1().ServiceAccounts(namespace).Create(ctx, &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{Name: testSAName, Namespace: namespace},
+	}, metav1.CreateOptions{})
+	if err != nil && !errors.IsAlreadyExists(err) {
+		o.Expect(err).NotTo(o.HaveOccurred())
+	}
+}
+
+func scaleOperator(ctx context.Context, kubeClient *k8sclient.Clientset, replicas int32) {
+	scale, err := kubeClient.AppsV1().Deployments(operatorNamespace).GetScale(ctx, "run-once-duration-override-operator", metav1.GetOptions{})
+	o.Expect(err).NotTo(o.HaveOccurred())
+	scale.Spec.Replicas = replicas
+	_, err = kubeClient.AppsV1().Deployments(operatorNamespace).UpdateScale(ctx, "run-once-duration-override-operator", scale, metav1.UpdateOptions{})
+	o.Expect(err).NotTo(o.HaveOccurred())
+}
+
+func protocolPtr(p corev1.Protocol) *corev1.Protocol { return &p }
+func portPtr(port int) *intstr.IntOrString           { v := intstr.FromInt32(int32(port)); return &v }
 
 // testActiveDeadlineSecondsWebhook tests that the webhook sets ActiveDeadlineSeconds on pods.
 // This function works with both standard Go testing and Ginkgo.
@@ -318,14 +652,18 @@ func testActiveDeadlineSecondsWebhook(t testing.TB, ctx context.Context, kubeCli
 		t.Fatalf("Failed to create test namespace: %v", err)
 	}
 
+	ensureTestServiceAccount(ctx, kubeClient, testNamespace)
+
 	// Create a test pod
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: testNamespace,
-			Name:      "test-mutating-admission-pod",
+			Namespace:   testNamespace,
+			Name:        "test-mutating-admission-pod",
+			Annotations: map[string]string{"openshift.io/required-scc": "nonroot-v2"},
 		},
 		Spec: corev1.PodSpec{
-			RestartPolicy: corev1.RestartPolicyOnFailure,
+			ServiceAccountName: testSAName,
+			RestartPolicy:      corev1.RestartPolicyOnFailure,
 			SecurityContext: &corev1.PodSecurityContext{
 				RunAsNonRoot: utilpointer.BoolPtr(true),
 				SeccompProfile: &corev1.SeccompProfile{
@@ -339,10 +677,11 @@ func testActiveDeadlineSecondsWebhook(t testing.TB, ctx context.Context, kubeCli
 						Drop: []corev1.Capability{"ALL"},
 					},
 				},
-				Name:            "pause",
-				ImagePullPolicy: "Always",
-				Image:           "kubernetes/pause",
-				Ports:           []corev1.ContainerPort{{ContainerPort: 80}},
+				Name:                     "pause",
+				ImagePullPolicy:          "Always",
+				Image:                    "kubernetes/pause",
+				Ports:                    []corev1.ContainerPort{{ContainerPort: 80}},
+				TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
 			}},
 		},
 	}
