@@ -34,12 +34,12 @@ func TestManageNetworkPolicyDefaultDeny(t *testing.T) {
 		t.Fatalf("failed to apply network policy: %v", err)
 	}
 
-	// Verify the default-deny policy was created
-	expectedName := "default-deny"
+	// Verify the operand NetworkPolicy was created
+	expectedName := "run-once-duration-override-operand"
 	policy, err := kubeClient.NetworkingV1().NetworkPolicies(testAsset.Values().Namespace).Get(
 		context.TODO(), expectedName, metav1.GetOptions{})
 	if err != nil {
-		t.Fatalf("expected default-deny policy to exist: %v", err)
+		t.Fatalf("expected operand NetworkPolicy to exist: %v", err)
 	}
 	if policy.Name != expectedName {
 		t.Errorf("expected policy name %q, got %q", expectedName, policy.Name)
