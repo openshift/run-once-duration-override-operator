@@ -14,7 +14,7 @@ func (a *Asset) NetworkPolicyDefaultDeny() *networkingv1.NetworkPolicy {
 			APIVersion: "networking.k8s.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "default-deny",
+			Name:      "run-once-duration-override-operand",
 			Namespace: a.values.Namespace,
 			Annotations: map[string]string{
 				"include.release.openshift.io/self-managed-high-availability": "true",
