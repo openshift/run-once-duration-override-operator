@@ -1,6 +1,8 @@
 name: registry.redhat.io/run-once-duration-override-operator/run-once-duration-override-operator-bundle
 csvname: runoncedurationoverrideoperator
 bundles:
+- release: 1.5.0
+  sha256: 1287e4078e76f770c524b88284b64bf611036797e789342cda4a3898c9778c89
 - release: 1.4.2
   sha256: 1fb763d75407a27c99f97a4216002d860b72a14061aa8bda37e28b7726b9a304
 - release: 1.4.1
