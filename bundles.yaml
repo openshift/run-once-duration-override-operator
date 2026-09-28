@@ -44,6 +44,10 @@ bundles:
 - release: 1.0.0
   sha256: 49f474250adfc7057dc84de25d50ecf6b990f3dcf9874eddfd42477493d50e6c
 releases:
+- operator: 1.5
+  ocp:
+  - 5.0
+  - 4.23
 - operator: 1.4
   ocp:
   - 4.21
