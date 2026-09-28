@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
-
 	corev1 "k8s.io/api/core/v1"
+	apiextclientv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
 	k8sclient "k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 	clocktesting "k8s.io/utils/clock/testing"
@@ -24,65 +24,19 @@ import (
 	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
 
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
+	rodooclient "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
 	runoncedurationoverridescheme "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned/scheme"
 	"github.com/openshift/run-once-duration-override-operator/test/e2e/bindata"
 )
 
-// Ginkgo test specs - calls the shared test functions
-var _ = g.Describe("[sig-scheduling][Operator][Serial] RunOnceDurationOverride Operator", g.Ordered, func() {
-	var (
-		ctx           context.Context
-		cancelFnc     context.CancelFunc
-		kubeClient    *k8sclient.Clientset
-		testNamespace string
-	)
-
-	g.BeforeAll(func() {
-		g.By("Setting up the operator")
-		var err error
-		ctx, cancelFnc, kubeClient, err = setupOperator(g.GinkgoTB())
-		o.Expect(err).NotTo(o.HaveOccurred())
-	})
-
-	g.AfterAll(func() {
-		if cancelFnc != nil {
-			cancelFnc()
-		}
-	})
-
-	g.Context("when webhook is active", func() {
-		g.It("should set ActiveDeadlineSeconds on pods in labeled namespaces [Suite:openshift/run-once-duration-override-operator/operator/serial]", func() {
-			g.By("Creating test namespace and verifying webhook sets ActiveDeadlineSeconds")
-			testNamespace = testActiveDeadlineSecondsWebhook(g.GinkgoTB(), ctx, kubeClient)
-			g.DeferCleanup(func() {
-				g.By("Cleaning up test namespace")
-				cleanupTestNamespace(g.GinkgoTB(), ctx, kubeClient, testNamespace)
-			})
-		})
-	})
-})
-
 // setupOperator sets up the operator and waits for it to be ready.
 // This function works with both standard Go testing and Ginkgo.
-func setupOperator(t testing.TB) (context.Context, context.CancelFunc, *k8sclient.Clientset, error) {
-	ctx, cancelFnc := context.WithCancel(context.Background())
-
-	// Verify required environment variables
-	if os.Getenv("KUBECONFIG") == "" {
-		return ctx, cancelFnc, nil, fmt.Errorf("KUBECONFIG environment variable must be set")
-	}
-	if os.Getenv("RELEASE_IMAGE_LATEST") == "" {
-		return ctx, cancelFnc, nil, fmt.Errorf("RELEASE_IMAGE_LATEST environment variable must be set")
-	}
-	if os.Getenv("NAMESPACE") == "" {
-		return ctx, cancelFnc, nil, fmt.Errorf("NAMESPACE environment variable must be set")
-	}
-
-	// Initialize clients
-	kubeClient := GetKubeClient()
-	apiExtClient := GetApiExtensionClient()
-	runOnceDurationOverrideClient := GetRunOnceDurationOverrideClient()
-
+func setupOperator(
+	ctx context.Context,
+	kubeClient *k8sclient.Clientset,
+	runOnceDurationOverrideClient *rodooclient.Clientset,
+	apiExtClient *apiextclientv1.Clientset,
+) error {
 	eventRecorder := events.NewKubeRecorder(
 		kubeClient.CoreV1().Events("default"),
 		"test-e2e",
@@ -141,14 +95,25 @@ func setupOperator(t testing.TB) (context.Context, context.CancelFunc, *k8sclien
 			path: "assets/07_deployment.yaml",
 			readerAndApply: func(objBytes []byte) error {
 				required := resourceread.ReadDeploymentV1OrDie(objBytes)
-				// Override the operator image with the one built in CI
-				registry := strings.Split(os.Getenv("RELEASE_IMAGE_LATEST"), "/")[0]
-				required.Spec.Template.Spec.Containers[0].Image = registry + "/" + os.Getenv("NAMESPACE") + "/pipeline:run-once-duration-override-operator"
 
-				// Set RELATED_IMAGE_OPERAND_IMAGE env
+				var operatorImage, operandImage string
+				if os.Getenv("OPERATOR_IMAGE") != "" {
+					operatorImage = os.Getenv("OPERATOR_IMAGE")
+				} else {
+					registry := strings.Split(os.Getenv("RELEASE_IMAGE_LATEST"), "/")[0]
+					operatorImage = registry + "/" + os.Getenv("NAMESPACE") + "/pipeline:run-once-duration-override-operator"
+				}
+
+				if os.Getenv("OPERAND_IMAGE") != "" {
+					operandImage = os.Getenv("OPERAND_IMAGE")
+				} else {
+					operandImage = "quay.io/jchaloup/run-once-duration-override:4.22.0"
+				}
+
+				required.Spec.Template.Spec.Containers[0].Image = operatorImage
 				for i, env := range required.Spec.Template.Spec.Containers[0].Env {
 					if env.Name == "RELATED_IMAGE_OPERAND_IMAGE" {
-						required.Spec.Template.Spec.Containers[0].Env[i].Value = "quay.io/jchaloup/run-once-duration-override:4.22.0"
+						required.Spec.Template.Spec.Containers[0].Env[i].Value = operandImage
 						break
 					}
 				}
@@ -180,60 +145,48 @@ func setupOperator(t testing.TB) (context.Context, context.CancelFunc, *k8sclien
 
 	// Apply all assets
 	klog.Infof("Creating operator resources (namespace, CRD, RBAC, deployment)")
-	deadline := time.Now().Add(10 * time.Second)
-	for time.Now().Before(deadline) {
-		var lastErr error
-		allSucceeded := true
+	err := wait.PollUntilContextTimeout(ctx, 1*time.Second, 10*time.Second, true, func(ctx context.Context) (bool, error) {
 		for _, asset := range assets {
 			klog.Infof("Creating %v", asset.path)
 			if err := asset.readerAndApply(bindata.MustAsset(asset.path)); err != nil {
 				klog.Errorf("Unable to create %v: %v", asset.path, err)
-				lastErr = err
-				allSucceeded = false
+				return false, nil
 			}
 		}
-		if allSucceeded {
-			break
-		}
-		if time.Now().Before(deadline) {
-			time.Sleep(1 * time.Second)
-		} else if lastErr != nil {
-			return ctx, cancelFnc, nil, fmt.Errorf("failed to create assets: %w", lastErr)
-		}
+		return true, nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create assets: %w", err)
 	}
 
 	// Wait for operator pod to be running
 	klog.Infof("Waiting for operator pod to be running")
-	deadline = time.Now().Add(1 * time.Minute)
-	operatorRunning := false
-	for time.Now().Before(deadline) {
+	err = wait.PollUntilContextTimeout(ctx, 5*time.Second, 1*time.Minute, true, func(ctx context.Context) (bool, error) {
 		podItems, err := kubeClient.CoreV1().Pods("openshift-run-once-duration-override-operator").List(ctx, metav1.ListOptions{})
-		if err == nil {
-			for _, pod := range podItems.Items {
-				if !strings.HasPrefix(pod.Name, "run-once-duration-override-") {
-					continue
-				}
-				if pod.Status.Phase == corev1.PodRunning && pod.GetDeletionTimestamp() == nil {
-					klog.Infof("Operator pod %v is running", pod.Name)
-					operatorRunning = true
-					break
-				}
+		if err != nil {
+			klog.Warningf("Failed to list operator pods: %v", err)
+			return false, nil
+		}
+		for _, pod := range podItems.Items {
+			if !strings.HasPrefix(pod.Name, "run-once-duration-override-") {
+				continue
+			}
+			if pod.Status.Phase == corev1.PodRunning && pod.GetDeletionTimestamp() == nil {
+				klog.Infof("Operator pod %v is running", pod.Name)
+				return true, nil
 			}
 		}
-		if operatorRunning {
-			break
-		}
-		time.Sleep(5 * time.Second)
-	}
-	if !operatorRunning {
-		return ctx, cancelFnc, nil, fmt.Errorf("operator pod not running after timeout")
+		return false, nil
+	})
+	if err != nil {
+		return fmt.Errorf("operator pod not running after timeout: %w", err)
 	}
 
 	// Count master nodes for webhook verification
 	klog.Infof("Counting master nodes")
 	nodeItems, err := kubeClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return ctx, cancelFnc, nil, fmt.Errorf("failed to list nodes: %w", err)
+		return fmt.Errorf("failed to list nodes: %w", err)
 	}
 	webhooksExpected := 0
 	for _, node := range nodeItems.Items {
@@ -244,57 +197,49 @@ func setupOperator(t testing.TB) (context.Context, context.CancelFunc, *k8sclien
 
 	// Wait for webhook daemonset pods to be running
 	klog.Infof("Waiting for webhook daemonset pods to be running")
-	deadline = time.Now().Add(1 * time.Minute)
-	webhooksReady := false
-	for time.Now().Before(deadline) {
+	err = wait.PollUntilContextTimeout(ctx, 5*time.Second, 1*time.Minute, true, func(ctx context.Context) (bool, error) {
 		podItems, err := kubeClient.CoreV1().Pods("openshift-run-once-duration-override-operator").List(ctx, metav1.ListOptions{})
-		if err == nil {
-			webhooksRunning := 0
-			for _, pod := range podItems.Items {
-				if !strings.HasPrefix(pod.Name, "runoncedurationoverride-") {
-					continue
-				}
-				if pod.Status.Phase == corev1.PodRunning && pod.GetDeletionTimestamp() == nil {
-					webhooksRunning++
-				}
+		if err != nil {
+			klog.Warningf("Failed to list webhook pods: %v", err)
+			return false, nil
+		}
+		webhooksRunning := 0
+		for _, pod := range podItems.Items {
+			if !strings.HasPrefix(pod.Name, "runoncedurationoverride-") {
+				continue
 			}
-			klog.Infof("Webhook pods running: %d/%d", webhooksRunning, webhooksExpected)
-			if webhooksRunning >= webhooksExpected {
-				webhooksReady = true
-				break
+			if pod.Status.Phase == corev1.PodRunning && pod.GetDeletionTimestamp() == nil {
+				webhooksRunning++
 			}
 		}
-		time.Sleep(5 * time.Second)
-	}
-	if !webhooksReady {
-		return ctx, cancelFnc, nil, fmt.Errorf("webhook pods not ready after timeout")
+		klog.Infof("Webhook pods running: %d/%d", webhooksRunning, webhooksExpected)
+		return webhooksRunning >= webhooksExpected, nil
+	})
+	if err != nil {
+		return fmt.Errorf("webhook pods not ready after timeout: %w", err)
 	}
 
 	// Wait for mutating webhook configuration to be created
 	klog.Infof("Waiting for mutating webhook configuration")
-	deadline = time.Now().Add(2 * time.Minute)
-	webhookConfigured := false
-	for time.Now().Before(deadline) {
+	err = wait.PollUntilContextTimeout(ctx, 5*time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
 		mutatingWebhooks, err := kubeClient.AdmissionregistrationV1().MutatingWebhookConfigurations().List(ctx, metav1.ListOptions{})
-		if err == nil {
-			for _, mutatingWebhook := range mutatingWebhooks.Items {
-				if strings.HasPrefix(mutatingWebhook.Name, "runoncedurationoverrides") {
-					webhookConfigured = true
-					break
-				}
+		if err != nil {
+			klog.Warningf("Failed to list mutating webhook configurations: %v", err)
+			return false, nil
+		}
+		for _, mutatingWebhook := range mutatingWebhooks.Items {
+			if strings.HasPrefix(mutatingWebhook.Name, "runoncedurationoverrides") {
+				return true, nil
 			}
 		}
-		if webhookConfigured {
-			break
-		}
-		time.Sleep(5 * time.Second)
-	}
-	if !webhookConfigured {
-		return ctx, cancelFnc, nil, fmt.Errorf("mutating webhook configuration not found after timeout")
+		return false, nil
+	})
+	if err != nil {
+		return fmt.Errorf("mutating webhook configuration not found after timeout: %w", err)
 	}
 
 	klog.Infof("All operator components are running and ready")
-	return ctx, cancelFnc, kubeClient, nil
+	return nil
 }
 
 // testActiveDeadlineSecondsWebhook tests that the webhook sets ActiveDeadlineSeconds on pods.
@@ -314,9 +259,7 @@ func testActiveDeadlineSecondsWebhook(t testing.TB, ctx context.Context, kubeCli
 
 	klog.Infof("Creating test namespace with webhook label")
 	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-	if err != nil {
-		t.Fatalf("Failed to create test namespace: %v", err)
-	}
+	o.Expect(err).NotTo(o.HaveOccurred(), "should create test namespace")
 
 	// Create a test pod
 	pod := &corev1.Pod{
@@ -349,49 +292,37 @@ func testActiveDeadlineSecondsWebhook(t testing.TB, ctx context.Context, kubeCli
 
 	klog.Infof("Creating test pod")
 	_, err = kubeClient.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
-	if err != nil {
-		t.Fatalf("Failed to create test pod: %v", err)
-	}
+	o.Expect(err).NotTo(o.HaveOccurred(), "should create test pod")
 
 	// Verify the pod gets ActiveDeadlineSeconds set to 800
 	klog.Infof("Verifying ActiveDeadlineSeconds is set to 800")
-	deadline := time.Now().Add(2 * time.Minute)
-	verified := false
-	for time.Now().Before(deadline) {
+	err = wait.PollUntilContextTimeout(ctx, 1*time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
 		retrievedPod, err := kubeClient.CoreV1().Pods(pod.Namespace).Get(ctx, pod.Name, metav1.GetOptions{})
 		if err != nil {
-			klog.Errorf("Unable to get pod: %v", err)
-			time.Sleep(1 * time.Second)
-			continue
+			klog.Warningf("Unable to get pod: %v", err)
+			return false, nil
 		}
 
 		if retrievedPod.Spec.NodeName == "" {
 			klog.Infof("Pod not yet assigned to a node")
-			time.Sleep(1 * time.Second)
-			continue
+			return false, nil
 		}
 		klog.Infof("Pod successfully assigned to node: %v", retrievedPod.Spec.NodeName)
 
 		if retrievedPod.Spec.ActiveDeadlineSeconds == nil {
 			klog.Infof("pod.Spec.ActiveDeadlineSeconds is not set")
-			time.Sleep(1 * time.Second)
-			continue
+			return false, nil
 		}
 
 		if *retrievedPod.Spec.ActiveDeadlineSeconds != 800 {
 			klog.Infof("pod.Spec.ActiveDeadlineSeconds is set to %d, expected 800", *retrievedPod.Spec.ActiveDeadlineSeconds)
-			time.Sleep(1 * time.Second)
-			continue
+			return false, nil
 		}
 
 		klog.Infof("pod.Spec.ActiveDeadlineSeconds = %v (expected: 800)", *retrievedPod.Spec.ActiveDeadlineSeconds)
-		verified = true
-		break
-	}
-
-	if !verified {
-		t.Fatalf("pod should have ActiveDeadlineSeconds set to 800")
-	}
+		return true, nil
+	})
+	o.Expect(err).NotTo(o.HaveOccurred(), "pod should have ActiveDeadlineSeconds set to 800")
 
 	return testNamespace
 }
