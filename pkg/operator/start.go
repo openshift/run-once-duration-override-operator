@@ -3,7 +3,6 @@ package operator
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"time"
 
@@ -135,13 +134,6 @@ func RunOperator(ctx context.Context, cc *controllercmd.ControllerContext) error
 	kubeInformersForNamespaces.Start(ctx.Done())
 	operatorInformerFactory.Start(ctx.Done())
 	configInformers.Start(ctx.Done())
-
-	// Serve a simple HTTP health check.
-	healthMux := http.NewServeMux()
-	healthMux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-	go http.ListenAndServe(":8080", healthMux)
 
 	klog.V(1).Infof("operator is starting controllers")
 

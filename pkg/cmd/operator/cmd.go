@@ -1,6 +1,8 @@
 package operator
 
 import (
+	"net/http"
+
 	"github.com/spf13/cobra"
 	"k8s.io/utils/clock"
 
@@ -15,6 +17,16 @@ func NewStartCommand() *cobra.Command {
 		NewCommand()
 	cmd.Use = "start"
 	cmd.Short = "Start the RunOnceDurationOverride Operator"
+
+	// Start the healthz server before the controller command runs leader
+	// election so that probes pass while waiting for the lease.
+	cmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		healthMux := http.NewServeMux()
+		healthMux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		go http.ListenAndServe(":8080", healthMux)
+	}
 
 	return cmd
 }
