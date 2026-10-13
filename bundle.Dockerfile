@@ -22,7 +22,7 @@ RUN hack/replace-image.sh manifests ${REPLACED_OPERATOR_IMG} ${OPERATOR_IMAGE}
 RUN hack/replace-image.sh manifests ${REPLACED_OPERAND_IMG} ${OPERAND_IMAGE}
 RUN sed -i "s/createdAt: \".*\"/createdAt: \"$(date -I)\"/" manifests/runoncedurationoverride-operator.clusterserviceversion.yaml
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal:latest@sha256:8fbe5ca09afa1990e9ff55fd8ee7cb073b823a7640c3c8381ece64f22401d2a2
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest@sha256:a21d19f72557aa893a0f6ca1177bb1ffd91df6015e60470a116c50a6a05efcd9
 
 COPY --from=builder /go/src/github.com/openshift/run-once-duration-override-operator/manifests /manifests
 COPY --from=builder /go/src/github.com/openshift/run-once-duration-override-operator/metadata /metadata
