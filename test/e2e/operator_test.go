@@ -26,6 +26,10 @@ func TestExtended(t *testing.T) {
 		}
 		defer cancelFnc()
 
+		t.Run("NetworkPolicy for operand configured", func(t *testing.T) {
+			testNetworkPolicyForOperand(t, ctx, kubeClient)
+		})
+
 		t.Run("ActiveDeadlineSeconds webhook", func(t *testing.T) {
 			testNamespace := testActiveDeadlineSecondsWebhook(t, ctx, kubeClient)
 			defer cleanupTestNamespace(t, ctx, kubeClient, testNamespace)
