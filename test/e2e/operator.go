@@ -71,11 +71,13 @@ func setupOperator(t testing.TB) (context.Context, context.CancelFunc, *k8sclien
 	if os.Getenv("KUBECONFIG") == "" {
 		return ctx, cancelFnc, nil, fmt.Errorf("KUBECONFIG environment variable must be set")
 	}
-	if os.Getenv("RELEASE_IMAGE_LATEST") == "" {
-		return ctx, cancelFnc, nil, fmt.Errorf("RELEASE_IMAGE_LATEST environment variable must be set")
-	}
-	if os.Getenv("NAMESPACE") == "" {
-		return ctx, cancelFnc, nil, fmt.Errorf("NAMESPACE environment variable must be set")
+	if os.Getenv("IMAGE") == "" {
+		if os.Getenv("RELEASE_IMAGE_LATEST") == "" {
+			return ctx, cancelFnc, nil, fmt.Errorf("RELEASE_IMAGE_LATEST environment variable must be set")
+		}
+		if os.Getenv("NAMESPACE") == "" {
+			return ctx, cancelFnc, nil, fmt.Errorf("NAMESPACE environment variable must be set")
+		}
 	}
 
 	// Initialize clients
@@ -143,7 +145,11 @@ func setupOperator(t testing.TB) (context.Context, context.CancelFunc, *k8sclien
 				required := resourceread.ReadDeploymentV1OrDie(objBytes)
 				// Override the operator image with the one built in CI
 				registry := strings.Split(os.Getenv("RELEASE_IMAGE_LATEST"), "/")[0]
-				required.Spec.Template.Spec.Containers[0].Image = registry + "/" + os.Getenv("NAMESPACE") + "/pipeline:run-once-duration-override-operator"
+				image := registry + "/" + os.Getenv("NAMESPACE") + "/pipeline:run-once-duration-override-operator"
+				if os.Getenv("IMAGE") != "" {
+					image = os.Getenv("IMAGE")
+				}
+				required.Spec.Template.Spec.Containers[0].Image = image
 
 				// Set RELATED_IMAGE_OPERAND_IMAGE env
 				for i, env := range required.Spec.Template.Spec.Containers[0].Env {
