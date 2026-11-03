@@ -12,6 +12,7 @@ import (
 	o "github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sclient "k8s.io/client-go/kubernetes"
@@ -48,6 +49,12 @@ var _ = g.Describe("[sig-scheduling][Operator][Serial] RunOnceDurationOverride O
 		if cancelFnc != nil {
 			cancelFnc()
 		}
+	})
+
+	g.Describe("NetworkPolicy", g.Ordered, func() {
+		g.It("should have NetworkPolicy for operand configured", func() {
+			testNetworkPolicyForOperand(g.GinkgoTB(), ctx, kubeClient)
+		})
 	})
 
 	g.Context("when webhook is active", func() {
@@ -412,4 +419,72 @@ func cleanupTestNamespace(t testing.TB, ctx context.Context, kubeClient *k8sclie
 	if err != nil {
 		klog.Errorf("Failed to delete test namespace: %v", err)
 	}
+}
+
+func testNetworkPolicyForOperand(t testing.TB, ctx context.Context, kubeClient *k8sclient.Clientset) {
+	testRunOnceDurationOverrideOperandNetworkPolicy(t, ctx, kubeClient)
+
+	klog.Infof("Testing NetworkPolicy reconciliation (recreation after deletion)")
+	testNetworkPolicyRecreation(t, ctx, kubeClient, "run-once-duration-override-operand")
+
+	klog.Infof("Testing NetworkPolicy reconciliation (reversion of manual changes)")
+	testNetworkPolicyReversion(t, ctx, kubeClient, "run-once-duration-override-operand")
+}
+
+func testRunOnceDurationOverrideOperandNetworkPolicy(t testing.TB, ctx context.Context, kubeClient *k8sclient.Clientset) {
+	networkPolicyName := "run-once-duration-override-operand"
+
+	networkPolicy, err := kubeClient.NetworkingV1().NetworkPolicies("openshift-run-once-duration-override-operator").Get(ctx, networkPolicyName, metav1.GetOptions{})
+	o.Expect(err).NotTo(o.HaveOccurred(), "NetworkPolicy %s should exist in namespace openshift-run-once-duration-override-operator", networkPolicyName)
+	klog.Infof("NetworkPolicy %s exists in namespace openshift-run-once-duration-override-operator", networkPolicy.Name)
+
+	o.Expect(networkPolicy.Spec.PolicyTypes).To(o.ContainElement(networkingv1.PolicyTypeIngress), "policyTypes should include Ingress")
+	o.Expect(networkPolicy.Spec.PolicyTypes).To(o.ContainElement(networkingv1.PolicyTypeEgress), "policyTypes should include Egress")
+
+	o.Expect(networkPolicy.Spec.Ingress).To(o.BeEmpty(), "Ingress rules should be empty (default deny)")
+	o.Expect(networkPolicy.Spec.Egress).To(o.BeEmpty(), "Egress rules should be empty (default deny)")
+	klog.Infof("NetworkPolicy default-deny configuration validated")
+}
+
+func testNetworkPolicyRecreation(t testing.TB, ctx context.Context, kubeClient *k8sclient.Clientset, networkPolicyName string) {
+	err := kubeClient.NetworkingV1().NetworkPolicies("openshift-run-once-duration-override-operator").Delete(ctx, networkPolicyName, metav1.DeleteOptions{})
+	o.Expect(err).NotTo(o.HaveOccurred())
+
+	o.Eventually(func() bool {
+		_, err := kubeClient.NetworkingV1().NetworkPolicies("openshift-run-once-duration-override-operator").Get(ctx, networkPolicyName, metav1.GetOptions{})
+		return err == nil
+	}).WithTimeout(1*time.Minute).WithPolling(2*time.Second).Should(o.BeTrue(), "Operator should recreate NetworkPolicy")
+}
+
+func testNetworkPolicyReversion(t testing.TB, ctx context.Context, kubeClient *k8sclient.Clientset, networkPolicyName string) {
+	np, err := kubeClient.NetworkingV1().NetworkPolicies("openshift-run-once-duration-override-operator").Get(ctx, networkPolicyName, metav1.GetOptions{})
+	o.Expect(err).NotTo(o.HaveOccurred())
+
+	originalResourceVersion := np.ResourceVersion
+	originalIngressRuleCount := len(np.Spec.Ingress)
+
+	np.Spec.Ingress = append(np.Spec.Ingress, networkingv1.NetworkPolicyIngressRule{
+		From: []networkingv1.NetworkPolicyPeer{
+			{
+				NamespaceSelector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"test.e2e/manual": "should-revert",
+					},
+				},
+			},
+		},
+	})
+
+	updatedNP, err := kubeClient.NetworkingV1().NetworkPolicies("openshift-run-once-duration-override-operator").Update(ctx, np, metav1.UpdateOptions{})
+	o.Expect(err).NotTo(o.HaveOccurred())
+
+	modifiedResourceVersion := updatedNP.ResourceVersion
+
+	o.Eventually(func() bool {
+		np, err := kubeClient.NetworkingV1().NetworkPolicies("openshift-run-once-duration-override-operator").Get(ctx, networkPolicyName, metav1.GetOptions{})
+		if err != nil {
+			return false
+		}
+		return len(np.Spec.Ingress) == originalIngressRuleCount && np.ResourceVersion != modifiedResourceVersion && np.ResourceVersion != originalResourceVersion
+	}).WithTimeout(1*time.Minute).WithPolling(2*time.Second).Should(o.BeTrue(), "Operator should revert manual changes")
 }
