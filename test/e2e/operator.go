@@ -15,6 +15,7 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	k8sclient "k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 	clocktesting "k8s.io/utils/clock/testing"
@@ -25,6 +26,7 @@ import (
 	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
 
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/apis/runoncedurationoverride/v1"
+	runoncedurationoverrideclient "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned"
 	runoncedurationoverridescheme "github.com/openshift/run-once-duration-override-operator/pkg/generated/clientset/versioned/scheme"
 	"github.com/openshift/run-once-duration-override-operator/test/e2e/bindata"
 )
@@ -61,6 +63,17 @@ var _ = g.Describe("[sig-scheduling][Operator][Serial] RunOnceDurationOverride O
 		g.It("should set ActiveDeadlineSeconds on pods in labeled namespaces [Suite:openshift/run-once-duration-override-operator/operator/serial]", func() {
 			g.By("Creating test namespace and verifying webhook sets ActiveDeadlineSeconds")
 			testNamespace = testActiveDeadlineSecondsWebhook(g.GinkgoTB(), ctx, kubeClient)
+			g.DeferCleanup(func() {
+				g.By("Cleaning up test namespace")
+				cleanupTestNamespace(g.GinkgoTB(), ctx, kubeClient, testNamespace)
+			})
+		})
+	})
+
+	g.Context("when a pod declares its own activeDeadlineSeconds", func() {
+		g.It("should set activeDeadlineSeconds to the minimum of the pod and RODO values [Suite:openshift/run-once-duration-override-operator/operator/serial]", func() {
+			g.By("Verifying webhook sets activeDeadlineSeconds to the min of pod and RODO values")
+			testNamespace = testActiveDeadlineSecondsMinValue(g.GinkgoTB(), ctx, kubeClient)
 			g.DeferCleanup(func() {
 				g.By("Cleaning up test namespace")
 				cleanupTestNamespace(g.GinkgoTB(), ctx, kubeClient, testNamespace)
@@ -407,6 +420,210 @@ func testActiveDeadlineSecondsWebhook(t testing.TB, ctx context.Context, kubeCli
 	}
 
 	return testNamespace
+}
+
+// tests that activeDeadlineSeconds is set to the min of the pod's and the RODO configured value, that CR updates are picked up,
+// and that pods fail with DeadlineExceeded
+func testActiveDeadlineSecondsMinValue(t testing.TB, ctx context.Context, kubeClient *k8sclient.Clientset) string {
+	runOnceDurationOverrideClient := GetRunOnceDurationOverrideClient()
+
+	// Restore the CR to the value (800) applied at setup time by assets/09_cr.yaml.
+	defer func() {
+		if err := setActiveDeadlineSecondsAndWait(ctx, runOnceDurationOverrideClient, kubeClient, 800, 5*time.Minute); err != nil {
+			klog.Errorf("Failed to restore activeDeadlineSeconds to 800: %v", err)
+		}
+	}()
+
+	// Lower the configured value to 60 and wait for the webhook to serve it.
+	if err := setActiveDeadlineSecondsAndWait(ctx, runOnceDurationOverrideClient, kubeClient, 60, 5*time.Minute); err != nil {
+		t.Fatalf("Failed to configure activeDeadlineSeconds=60: %v", err)
+	}
+
+	testNamespace := "e2e-test-rodo-min-value"
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: testNamespace,
+			Labels: map[string]string{
+				"runoncedurationoverrides.admission.runoncedurationoverride.openshift.io/enabled": "true",
+			},
+		},
+	}
+
+	klog.Infof("Creating test namespace with webhook label")
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("Failed to create test namespace: %v", err)
+	}
+
+	// Phase 1: pod value (120) > configured value (60), so the webhook must set 60.
+	podWithGreaterValue := newActiveDeadlineTestPod(testNamespace, "podwithactivedeadlineseconds62690", 120, corev1.RestartPolicyOnFailure)
+	created, err := kubeClient.CoreV1().Pods(testNamespace).Create(ctx, podWithGreaterValue, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("Failed to create pod %s: %v", podWithGreaterValue.Name, err)
+	}
+	if created.Spec.ActiveDeadlineSeconds == nil {
+		t.Fatalf("pod %s has no activeDeadlineSeconds, expected 60", podWithGreaterValue.Name)
+	}
+	if *created.Spec.ActiveDeadlineSeconds != 60 {
+		t.Fatalf("pod %s has activeDeadlineSeconds=%d, expected 60 (min of pod 120 and configured 60)", podWithGreaterValue.Name, *created.Spec.ActiveDeadlineSeconds)
+	}
+	klog.Infof("pod %s activeDeadlineSeconds=%d", podWithGreaterValue.Name, *created.Spec.ActiveDeadlineSeconds)
+	verifyPodDeadlineExceeded(t, ctx, kubeClient, testNamespace, podWithGreaterValue.Name)
+
+	// Phase 2: raise the configured value to 80 and wait for the webhook to serve it.
+	if err := setActiveDeadlineSecondsAndWait(ctx, runOnceDurationOverrideClient, kubeClient, 80, 5*time.Minute); err != nil {
+		t.Fatalf("Failed to configure activeDeadlineSeconds=80: %v", err)
+	}
+
+	podAfterUpdate := newActiveDeadlineTestPod(testNamespace, "podwithadsgo62690", 240, corev1.RestartPolicyNever)
+	created, err = kubeClient.CoreV1().Pods(testNamespace).Create(ctx, podAfterUpdate, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("Failed to create pod %s: %v", podAfterUpdate.Name, err)
+	}
+	if created.Spec.ActiveDeadlineSeconds == nil {
+		t.Fatalf("pod %s has no activeDeadlineSeconds, expected 80", podAfterUpdate.Name)
+	}
+	if *created.Spec.ActiveDeadlineSeconds != 80 {
+		t.Fatalf("pod %s has activeDeadlineSeconds=%d, expected 80 (min of pod 240 and configured 80)", podAfterUpdate.Name, *created.Spec.ActiveDeadlineSeconds)
+	}
+	klog.Infof("pod %s activeDeadlineSeconds=%d", podAfterUpdate.Name, *created.Spec.ActiveDeadlineSeconds)
+	verifyPodDeadlineExceeded(t, ctx, kubeClient, testNamespace, podAfterUpdate.Name)
+
+	return testNamespace
+}
+
+// sets activeDeadlineSeconds on the cluster RunOnceDurationOverride and waits until the webhook daemonset serves the new value.
+// A CR change rolls the daemonset, so replacement of the previously observed pods guarantees the new value is being served.
+func setActiveDeadlineSecondsAndWait(ctx context.Context, runOnceDurationOverrideClient *runoncedurationoverrideclient.Clientset, kubeClient *k8sclient.Clientset, value int64, timeout time.Duration) error {
+	// Capture the webhook pods currently serving the configuration.
+	podItems, err := kubeClient.CoreV1().Pods("openshift-run-once-duration-override-operator").List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to list webhook pods: %w", err)
+	}
+
+	oldPods := map[string]struct{}{}
+	for _, pod := range podItems.Items {
+		if strings.HasPrefix(pod.Name, "runoncedurationoverride-") {
+			oldPods[pod.Name] = struct{}{}
+		}
+	}
+
+	// Webhook pods run on master nodes.
+	nodeItems, err := kubeClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to list nodes: %w", err)
+	}
+	webhooksExpected := 0
+	for _, node := range nodeItems.Items {
+		if _, exists := node.Labels["node-role.kubernetes.io/master"]; exists {
+			webhooksExpected++
+		}
+	}
+	if webhooksExpected == 0 {
+		return fmt.Errorf("no master nodes found in the cluster")
+	}
+
+	// Use a JSON patch like the original case does: unlike get+update it carries no
+	// resourceVersion, so it cannot conflict with the operator's status updates.
+	patch := fmt.Sprintf(`[{"op":"replace","path":"/spec/runOnceDurationOverride/spec/activeDeadlineSeconds","value":%d}]`, value)
+	if _, err := runOnceDurationOverrideClient.RunOnceDurationOverrideV1().RunOnceDurationOverrides().Patch(ctx, "cluster", types.JSONPatchType, []byte(patch), metav1.PatchOptions{}); err != nil {
+		return fmt.Errorf("failed to set activeDeadlineSeconds to %d: %w", value, err)
+	}
+
+	klog.Infof("Waiting for webhook daemonset to serve activeDeadlineSeconds=%d", value)
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		podItems, err := kubeClient.CoreV1().Pods("openshift-run-once-duration-override-operator").List(ctx, metav1.ListOptions{})
+		if err != nil {
+			klog.Errorf("Unable to list webhook pods: %v", err)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+
+		running, oldStillPresent := 0, false
+		for _, pod := range podItems.Items {
+			if !strings.HasPrefix(pod.Name, "runoncedurationoverride-") {
+				continue
+			}
+			if pod.Status.Phase == corev1.PodRunning && pod.GetDeletionTimestamp() == nil {
+				running++
+			}
+			if _, exists := oldPods[pod.Name]; exists && pod.GetDeletionTimestamp() == nil {
+				oldStillPresent = true
+			}
+		}
+
+		if !oldStillPresent && running >= webhooksExpected {
+			klog.Infof("Webhook daemonset serves activeDeadlineSeconds=%d", value)
+			return nil
+		}
+
+		klog.Infof("Waiting for webhook daemonset rollout: %d/%d pods running, old pods replaced: %v", running, webhooksExpected, !oldStillPresent)
+		time.Sleep(5 * time.Second)
+	}
+
+	return fmt.Errorf("webhook daemonset did not roll out within %v", timeout)
+}
+
+// verifyPodDeadlineExceeded polls the pod until it fails with DeadlineExceeded.
+func verifyPodDeadlineExceeded(t testing.TB, ctx context.Context, kubeClient *k8sclient.Clientset, namespace, name string) {
+	klog.Infof("Verifying pod %s/%s fails with DeadlineExceeded", namespace, name)
+	deadline := time.Now().Add(5 * time.Minute)
+	for time.Now().Before(deadline) {
+		retrievedPod, err := kubeClient.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			klog.Errorf("Unable to get pod: %v", err)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+
+		if retrievedPod.Status.Phase == corev1.PodFailed {
+			if retrievedPod.Status.Reason == "DeadlineExceeded" {
+				klog.Infof("pod %s/%s failed with reason DeadlineExceeded", namespace, name)
+				return
+			}
+
+			t.Fatalf("pod %s/%s failed with reason %q, expected DeadlineExceeded", namespace, name, retrievedPod.Status.Reason)
+		}
+
+		klog.Infof("Waiting for pod %s/%s to exceed its activeDeadlineSeconds, current phase: %s", namespace, name, retrievedPod.Status.Phase)
+		time.Sleep(5 * time.Second)
+	}
+
+	t.Fatalf("pod %s/%s should reach the Failed phase with DeadlineExceeded", namespace, name)
+}
+
+// newActiveDeadlineTestPod creates a pod that keeps running until its activeDeadlineSeconds elapse.
+func newActiveDeadlineTestPod(namespace, name string, activeDeadlineSeconds int64, restartPolicy corev1.RestartPolicy) *corev1.Pod {
+	return &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Spec: corev1.PodSpec{
+			ActiveDeadlineSeconds: &activeDeadlineSeconds,
+			RestartPolicy:         restartPolicy,
+			SecurityContext: &corev1.PodSecurityContext{
+				RunAsNonRoot: utilpointer.BoolPtr(true),
+				RunAsUser:    utilpointer.Int64Ptr(1000),
+				SeccompProfile: &corev1.SeccompProfile{
+					Type: corev1.SeccompProfileTypeRuntimeDefault,
+				},
+			},
+			Containers: []corev1.Container{{
+				SecurityContext: &corev1.SecurityContext{
+					AllowPrivilegeEscalation: utilpointer.BoolPtr(false),
+					Capabilities: &corev1.Capabilities{
+						Drop: []corev1.Capability{"ALL"},
+					},
+				},
+				Name:            "busybox",
+				ImagePullPolicy: corev1.PullIfNotPresent,
+				Image:           "quay.io/openshifttest/busybox@sha256:c5439d7db88ab5423999530349d327b04279ad3161d7596d2126dfb5b02bfd1f",
+				Command:         []string{"/bin/sh", "-ec", "while sleep 5; do date; done"},
+			}},
+		},
+	}
 }
 
 // cleanupTestNamespace deletes the test namespace.
