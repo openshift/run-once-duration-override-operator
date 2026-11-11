@@ -34,5 +34,10 @@ func TestExtended(t *testing.T) {
 			testNamespace := testActiveDeadlineSecondsWebhook(t, ctx, kubeClient)
 			defer cleanupTestNamespace(t, ctx, kubeClient, testNamespace)
 		})
+
+		t.Run("ActiveDeadlineSeconds min value webhook", func(t *testing.T) {
+			testNamespace := testActiveDeadlineSecondsMinValue(t, ctx, kubeClient)
+			defer cleanupTestNamespace(t, ctx, kubeClient, testNamespace)
+		})
 	})
 }
