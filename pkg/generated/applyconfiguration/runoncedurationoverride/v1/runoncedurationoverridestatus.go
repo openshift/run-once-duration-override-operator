@@ -10,7 +10,7 @@ import (
 // RunOnceDurationOverrideStatusApplyConfiguration represents a declarative configuration of the RunOnceDurationOverrideStatus type for use
 // with apply.
 type RunOnceDurationOverrideStatusApplyConfiguration struct {
-	operatorv1.OperatorStatusApplyConfiguration `json:",inline"`
+	operatorv1.OperatorStatusApplyConfiguration `json:""`
 	// Resources is a set of resources associated with the operand.
 	Resources *RunOnceDurationOverrideResourcesApplyConfiguration    `json:"resources,omitempty"`
 	Hash      *RunOnceDurationOverrideResourceHashApplyConfiguration `json:"hash,omitempty"`

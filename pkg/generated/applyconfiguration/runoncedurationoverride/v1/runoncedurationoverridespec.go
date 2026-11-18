@@ -11,7 +11,7 @@ import (
 // RunOnceDurationOverrideSpecApplyConfiguration represents a declarative configuration of the RunOnceDurationOverrideSpec type for use
 // with apply.
 type RunOnceDurationOverrideSpecApplyConfiguration struct {
-	operatorv1.OperatorSpecApplyConfiguration `json:",inline"`
+	operatorv1.OperatorSpecApplyConfiguration `json:""`
 	RunOnceDurationOverrideConfig             *RunOnceDurationOverrideConfigApplyConfiguration `json:"runOnceDurationOverride,omitempty"`
 }
 

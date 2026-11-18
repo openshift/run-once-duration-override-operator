@@ -9,7 +9,7 @@ import (
 // Interface provides access to all the informers in this group version.
 type Interface interface {
 	// RunOnceDurationOverrides returns a RunOnceDurationOverrideInformer.
-	RunOnceDurationOverrides() RunOnceDurationOverrideInformer
+	RunOnceDurationOverrides() TypedRunOnceDurationOverrideInformer
 }
 
 type version struct {
@@ -23,7 +23,7 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// RunOnceDurationOverrides returns a RunOnceDurationOverrideInformer.
-func (v *version) RunOnceDurationOverrides() RunOnceDurationOverrideInformer {
+// RunOnceDurationOverrides returns a TypedRunOnceDurationOverrideInformer.
+func (v *version) RunOnceDurationOverrides() TypedRunOnceDurationOverrideInformer {
 	return &runOnceDurationOverrideInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
