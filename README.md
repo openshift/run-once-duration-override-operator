@@ -22,6 +22,12 @@ releases:
 
 ## Deploy the Operator
 
+Before any `podman build` step that uses `Dockerfile` or `bundle.Dockerfile`, log in to the Red Hat registry. The builder stage of both files pulls from `registry.redhat.io`:
+
+```sh
+podman login registry.redhat.io
+```
+
 ### Quick Development
 
 1. Build and push the operator image to a registry:
@@ -44,24 +50,27 @@ releases:
    oc apply -f deploy/
    ```
 
-### Building index image from a bundle image (built in Brew)
+### Building index image from a bundle image
 
-This process requires access to the Brew building system.
+This process is used for building index images from bundle images in production builds.
 
-1. List available bundle images (as IMAGE):
-  ```
-  $ brew list-builds --package=run-once-duration-override-operator-bundle-container
-  ```
+1. Build and push the bundle image:
+   ```sh
+   export QUAY_USER=${your_quay_user_id}
+   export IMAGE_TAG=${your_image_tag}
+   # Build bundle image. Optionally specify --build-arg OPERATOR_IMAGE=<image> to reference
+   # a different operator image in the bundle; omitting it preserves the default.
+   podman build -t quay.io/${QUAY_USER}/run-once-duration-override-operator-bundle:${IMAGE_TAG} -f bundle.Dockerfile .
+   podman login quay.io -u ${QUAY_USER}
+   podman push quay.io/${QUAY_USER}/run-once-duration-override-operator-bundle:${IMAGE_TAG}
+   ```
 
-1. Get pull secret for selected bundle image (as IMAGE_PULL):
-  ```
-  $ brew --noauth call --json getBuild IMAGE |jq -r '.extra.image.index.pull[0]'
-  ```
-
-1. Build the index image (with IMAGE_TAG):
-  ```
-  $ opm index add --bundles IMAGE_PULL --tag quay.io/${QUAY_USER}/run-once-duration-override-operator-index:IMAGE_TAG
-  ```
+1. Build the index image using `opm`:
+   ```sh
+   opm index add --bundles quay.io/${QUAY_USER}/run-once-duration-override-operator-bundle:${IMAGE_TAG} \
+     --tag quay.io/${QUAY_USER}/run-once-duration-override-operator-index:${IMAGE_TAG}
+   podman push quay.io/${QUAY_USER}/run-once-duration-override-operator-index:${IMAGE_TAG}
+   ```
 
 ### OperatorHub install with custom index image
 
