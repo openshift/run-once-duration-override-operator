@@ -1,0 +1,8 @@
+diff --no-dereference -N -r current/vendor/sigs.k8s.io/controller-tools/pkg/schemapatcher/gen.go updated/vendor/sigs.k8s.io/controller-tools/pkg/schemapatcher/gen.go
+130,135d129
+< 			// CARRY PATCH: skip packages that do not contain the kind, mirroring
+< 			// pkg/crd NeedCRDFor. Without it, schema generation's indexing of
+< 			// same-group packages (openshift/api operator/v1) panics.
+< 			if _, known := parser.Types[typeIdent]; !known {
+< 				continue
+< 			}

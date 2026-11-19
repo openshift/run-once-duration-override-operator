@@ -14,7 +14,7 @@ import (
 // RunOnceDurationOverrideApplyConfiguration represents a declarative configuration of the RunOnceDurationOverride type for use
 // with apply.
 type RunOnceDurationOverrideApplyConfiguration struct {
-	metav1.TypeMetaApplyConfiguration    `json:",inline"`
+	metav1.TypeMetaApplyConfiguration    `json:""`
 	*metav1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
 	// spec holds user settable values for configuration
 	Spec *RunOnceDurationOverrideSpecApplyConfiguration `json:"spec,omitempty"`
