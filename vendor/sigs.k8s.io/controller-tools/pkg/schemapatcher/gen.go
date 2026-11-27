@@ -127,6 +127,12 @@ func (g Generator) Generate(ctx *genall.GenerationContext) (result error) {
 			}
 
 			typeIdent := crdgen.TypeIdent{Package: pkg, Name: groupKind.Kind}
+			// CARRY PATCH: skip packages that do not contain the kind, mirroring
+			// pkg/crd NeedCRDFor. Without it, schema generation's indexing of
+			// same-group packages (openshift/api operator/v1) panics.
+			if _, known := parser.Types[typeIdent]; !known {
+				continue
+			}
 			parser.NeedFlattenedSchemaFor(typeIdent)
 
 			fullSchema := parser.FlattenedSchemata[typeIdent]

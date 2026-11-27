@@ -12,7 +12,7 @@ import (
 // RunOnceDurationOverrideConfig is the configuration for the admission controller which
 // overrides activeDeadlineSeconds for pods with restartPolicy set to Never or OnFailure.
 type RunOnceDurationOverrideConfigApplyConfiguration struct {
-	metav1.TypeMetaApplyConfiguration `json:",inline"`
+	metav1.TypeMetaApplyConfiguration `json:""`
 	Spec                              *RunOnceDurationOverrideConfigSpecApplyConfiguration `json:"spec,omitempty"`
 }
 

@@ -13,7 +13,7 @@ import (
 )
 
 type Interface interface {
-	Discovery() discovery.DiscoveryInterface
+	Discovery() discovery.DiscoveryInterfaces
 	RunOnceDurationOverrideV1() runoncedurationoverridev1.RunOnceDurationOverrideV1Interface
 }
 
@@ -29,7 +29,7 @@ func (c *Clientset) RunOnceDurationOverrideV1() runoncedurationoverridev1.RunOnc
 }
 
 // Discovery retrieves the DiscoveryClient
-func (c *Clientset) Discovery() discovery.DiscoveryInterface {
+func (c *Clientset) Discovery() discovery.DiscoveryInterfaces {
 	if c == nil {
 		return nil
 	}

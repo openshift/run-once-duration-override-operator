@@ -12,16 +12,45 @@ import (
 	runoncedurationoverridev1 "github.com/openshift/run-once-duration-override-operator/pkg/generated/listers/runoncedurationoverride/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
 )
 
 // RunOnceDurationOverrideInformer provides access to a shared informer and lister for
-// RunOnceDurationOverrides.
+// RunOnceDurationOverrides. Prefer using the type-safe variant (see [TypedRunOnceDurationOverrideInformer]).
 type RunOnceDurationOverrideInformer interface {
 	Informer() cache.SharedIndexInformer
 	Lister() runoncedurationoverridev1.RunOnceDurationOverrideLister
 }
+
+// TypedRunOnceDurationOverrideInformer provides access to a shared informer and lister for
+// RunOnceDurationOverrides, including the type-safe TypedInformer variant.
+// It is a superset of RunOnceDurationOverrideInformer.
+type TypedRunOnceDurationOverrideInformer interface {
+	Informer() cache.SharedIndexInformer
+	TypedInformer() RunOnceDurationOverrideIndexInformer
+	Lister() runoncedurationoverridev1.RunOnceDurationOverrideLister
+}
+
+// RunOnceDurationOverrideIndexInformer is a wrapper around the underlying [cache.SharedIndexInformer]
+// with type-safe variants of several methods.
+type RunOnceDurationOverrideIndexInformer cache.TypedSharedIndexInformer[*apisrunoncedurationoverridev1.RunOnceDurationOverride]
+
+// RunOnceDurationOverrideHandlerFuncs is a specialization of [cache.TypedResourceEventHandlerFuncs] for RunOnceDurationOverride.
+type RunOnceDurationOverrideHandlerFuncs = cache.TypedResourceEventHandlerFuncs[*apisrunoncedurationoverridev1.RunOnceDurationOverride]
+
+// RunOnceDurationOverrideDetailedHandlerFuncs is a specialization of [cache.TypedResourceEventHandlerDetailedFuncs] for RunOnceDurationOverride.
+type RunOnceDurationOverrideDetailedHandlerFuncs = cache.TypedResourceEventHandlerDetailedFuncs[*apisrunoncedurationoverridev1.RunOnceDurationOverride]
+
+// RunOnceDurationOverrideFilteringHandler is a specialization of [cache.TypedFilteringResourceEventHandler] for RunOnceDurationOverride.
+type RunOnceDurationOverrideFilteringHandler = cache.TypedFilteringResourceEventHandler[*apisrunoncedurationoverridev1.RunOnceDurationOverride]
+
+// RunOnceDurationOverrideIndexers is a specialization of [cache.TypedIndexers] for RunOnceDurationOverride.
+type RunOnceDurationOverrideIndexers = cache.TypedIndexers[*apisrunoncedurationoverridev1.RunOnceDurationOverride]
+
+// DeletedRunOnceDurationOverride is a specialization of [cache.DeletedObject] for RunOnceDurationOverride.
+type DeletedRunOnceDurationOverride = cache.DeletedObject[*apisrunoncedurationoverridev1.RunOnceDurationOverride]
 
 type runOnceDurationOverrideInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -31,55 +60,132 @@ type runOnceDurationOverrideInformer struct {
 // NewRunOnceDurationOverrideInformer constructs a new informer for RunOnceDurationOverride type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedRunOnceDurationOverrideInformer]).
 func NewRunOnceDurationOverrideInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredRunOnceDurationOverrideInformer(client, resyncPeriod, indexers, nil)
+	return NewRunOnceDurationOverrideInformerWithOptions(client, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers})
+}
+
+// NewTypedRunOnceDurationOverrideInformer constructs a new informer for RunOnceDurationOverride type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedRunOnceDurationOverrideInformer(client versioned.Interface, resyncPeriod time.Duration, indexers RunOnceDurationOverrideIndexers) RunOnceDurationOverrideIndexInformer {
+	return NewTypedRunOnceDurationOverrideInformerWithOptions(client, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.TypedIndexersToIndexers(indexers)})
 }
 
 // NewFilteredRunOnceDurationOverrideInformer constructs a new informer for RunOnceDurationOverride type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedFilteredRunOnceDurationOverrideInformer]).
 func NewFilteredRunOnceDurationOverrideInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
-	return cache.NewSharedIndexInformer(
+	return NewTypedRunOnceDurationOverrideInformerWithOptions(client, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers, TweakListOptions: tweakListOptions})
+}
+
+// NewTypedFilteredRunOnceDurationOverrideInformer constructs a new informer for RunOnceDurationOverride type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedFilteredRunOnceDurationOverrideInformer(client versioned.Interface, resyncPeriod time.Duration, indexers RunOnceDurationOverrideIndexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) RunOnceDurationOverrideIndexInformer {
+	return NewTypedRunOnceDurationOverrideInformerWithOptions(client, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.TypedIndexersToIndexers(indexers), TweakListOptions: tweakListOptions})
+}
+
+// NewRunOnceDurationOverrideInformerWithOptions constructs a new informer for RunOnceDurationOverride type with additional options.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedRunOnceDurationOverrideInformerWithOptions]).
+func NewRunOnceDurationOverrideInformerWithOptions(client versioned.Interface, options internalinterfaces.InformerOptions) cache.SharedIndexInformer {
+	return NewTypedRunOnceDurationOverrideInformerWithOptions(client, options)
+}
+
+// NewTypedRunOnceDurationOverrideInformerWithOptions constructs a new informer for RunOnceDurationOverride type with additional options.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedRunOnceDurationOverrideInformerWithOptions(client versioned.Interface, options internalinterfaces.InformerOptions) RunOnceDurationOverrideIndexInformer {
+	gvr := schema.GroupVersionResource{Group: "operator.openshift.io", Version: "v1", Resource: "runoncedurationoverrides"}
+	identifier := options.InformerName.WithResource(gvr)
+	tweakListOptions := options.TweakListOptions
+	return cache.NewTypedSharedIndexInformer[*apisrunoncedurationoverridev1.RunOnceDurationOverride](cache.NewSharedIndexInformerWithOptions(
 		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
-			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
-					tweakListOptions(&options)
+					tweakListOptions(&opts)
 				}
-				return client.RunOnceDurationOverrideV1().RunOnceDurationOverrides().List(context.Background(), options)
+				return client.RunOnceDurationOverrideV1().RunOnceDurationOverrides().List(context.Background(), opts)
 			},
-			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+			WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
-					tweakListOptions(&options)
+					tweakListOptions(&opts)
 				}
-				return client.RunOnceDurationOverrideV1().RunOnceDurationOverrides().Watch(context.Background(), options)
+				return client.RunOnceDurationOverrideV1().RunOnceDurationOverrides().Watch(context.Background(), opts)
 			},
-			ListWithContextFunc: func(ctx context.Context, options metav1.ListOptions) (runtime.Object, error) {
+			ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
-					tweakListOptions(&options)
+					tweakListOptions(&opts)
 				}
-				return client.RunOnceDurationOverrideV1().RunOnceDurationOverrides().List(ctx, options)
+				return client.RunOnceDurationOverrideV1().RunOnceDurationOverrides().List(ctx, opts)
 			},
-			WatchFuncWithContext: func(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
+			WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
-					tweakListOptions(&options)
+					tweakListOptions(&opts)
 				}
-				return client.RunOnceDurationOverrideV1().RunOnceDurationOverrides().Watch(ctx, options)
+				return client.RunOnceDurationOverrideV1().RunOnceDurationOverrides().Watch(ctx, opts)
 			},
 		}, client),
 		&apisrunoncedurationoverridev1.RunOnceDurationOverride{},
-		resyncPeriod,
-		indexers,
-	)
+		cache.SharedIndexInformerOptions{
+			ResyncPeriod: options.ResyncPeriod,
+			Indexers:     options.Indexers,
+			Identifier:   identifier,
+		},
+	))
 }
 
 func (f *runOnceDurationOverrideInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredRunOnceDurationOverrideInformer(client, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+	return NewTypedRunOnceDurationOverrideInformerWithOptions(client, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, InformerName: f.factory.InformerName(), TweakListOptions: f.tweakListOptions})
 }
 
 func (f *runOnceDurationOverrideInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&apisrunoncedurationoverridev1.RunOnceDurationOverride{}, f.defaultInformer)
+	return f.TypedInformer()
+}
+
+func (f *runOnceDurationOverrideInformer) TypedInformer() RunOnceDurationOverrideIndexInformer {
+	return cache.NewTypedSharedIndexInformer[*apisrunoncedurationoverridev1.RunOnceDurationOverride](f.factory.InformerFor(&apisrunoncedurationoverridev1.RunOnceDurationOverride{}, f.defaultInformer))
 }
 
 func (f *runOnceDurationOverrideInformer) Lister() runoncedurationoverridev1.RunOnceDurationOverrideLister {
 	return runoncedurationoverridev1.NewRunOnceDurationOverrideLister(f.Informer().GetIndexer())
+}
+
+// ToTypedRunOnceDurationOverrideInformer converts an untyped informer into a TypedRunOnceDurationOverrideInformer.
+//
+// WARNING: this conversion is only safe if the informer handles objects of type
+// *RunOnceDurationOverride. If that is not the case, calling type-safe methods of the returned
+// TypedRunOnceDurationOverrideInformer leads to runtime panics. A safer alternative is to pass
+// around a TypedRunOnceDurationOverrideInformer instances that was obtained from a
+// SharedInformerFactory.
+func ToTypedRunOnceDurationOverrideInformer(informer RunOnceDurationOverrideInformer) TypedRunOnceDurationOverrideInformer {
+	if informer, ok := informer.(TypedRunOnceDurationOverrideInformer); ok {
+		return informer
+	}
+	return &runOnceDurationOverrideTypedInformerAdapter{informer}
+}
+
+type runOnceDurationOverrideTypedInformerAdapter struct {
+	RunOnceDurationOverrideInformer
+}
+
+func (a *runOnceDurationOverrideTypedInformerAdapter) TypedInformer() RunOnceDurationOverrideIndexInformer {
+	return cache.NewTypedSharedIndexInformer[*apisrunoncedurationoverridev1.RunOnceDurationOverride](a.Informer())
+}
+
+// ToRunOnceDurationOverrideIndexInformer converts an untyped informer into a RunOnceDurationOverrideIndexInformer.
+//
+// WARNING: this conversion is only safe if the informer handles objects of type
+// *RunOnceDurationOverride. If that is not the case, calling type-safe methods of the returned
+// RunOnceDurationOverrideIndexInformer leads to runtime panics. A safer alternative is to pass
+// around a RunOnceDurationOverrideIndexInformer instances that was obtained from a
+// SharedInformerFactory.
+func ToRunOnceDurationOverrideIndexInformer(informer cache.SharedIndexInformer) RunOnceDurationOverrideIndexInformer {
+	if informer, ok := informer.(RunOnceDurationOverrideIndexInformer); ok {
+		return informer
+	}
+	return cache.NewTypedSharedIndexInformer[*apisrunoncedurationoverridev1.RunOnceDurationOverride](informer)
 }
